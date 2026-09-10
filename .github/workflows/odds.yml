@@ -1,0 +1,72 @@
+# Fetches Kalshi market data on a schedule and commits it into this repo.
+# GitHub Pages then serves it from your own domain, so the browser makes a
+# same-origin request and CORS never enters into it.
+#
+# This runs from a GitHub-hosted runner, which is a different IP range than
+# Cloudflare's shared edge — the one that Kalshi rate-limits into the ground.
+name: Refresh Kalshi odds
+
+on:
+  schedule:
+    - cron: "7,37 * * * *"   # twice an hour, off the hour to dodge the crowd
+  workflow_dispatch:          # and a Run workflow button in the Actions tab
+
+permissions:
+  contents: write
+
+concurrency:
+  group: odds
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch from Kalshi
+        run: |
+          set -uo pipefail
+          BASE="https://api.elections.kalshi.com/trade-api/v2"
+          UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+
+          grab () {   # grab <url> <outfile>
+            for attempt in 1 2 3 4 5; do
+              code=$(curl -sS -w '%{http_code}' -o "$2.tmp" \
+                     -H "accept: application/json" -H "user-agent: $UA" "$1" || echo 000)
+              if [ "$code" = "200" ]; then
+                mv "$2.tmp" "$2"
+                echo "  $2 <- HTTP 200 ($(wc -c <"$2") bytes)"
+                return 0
+              fi
+              echo "  attempt $attempt for $2 got HTTP $code: $(head -c 160 "$2.tmp")"
+              sleep $((attempt * 10))
+            done
+            echo "::error::gave up on $2"
+            return 1
+          }
+
+          grab "$BASE/markets?event_ticker=KXNCAAF-27&limit=200&status=open" odds-title.json
+          grab "$BASE/markets?tickers=KXNCAAF-27-ND,KXNCAAFPLAYOFF-26-ND"    odds-nd.json
+
+      - name: Refuse to commit anything that is not market data
+        run: |
+          python3 - <<'PY'
+          import json, sys
+          for f in ("odds-title.json", "odds-nd.json"):
+              try:
+                  d = json.load(open(f))
+              except Exception as e:
+                  sys.exit(f"{f} is not valid JSON: {e}")
+              if "markets" not in d:
+                  sys.exit(f"{f} has no markets key — refusing to commit")
+              print(f, "->", len(d["markets"]), "markets")
+          PY
+
+      - name: Commit if the numbers moved
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add odds-title.json odds-nd.json
+          git diff --staged --quiet || git commit -m "Refresh Kalshi odds"
+          git push
