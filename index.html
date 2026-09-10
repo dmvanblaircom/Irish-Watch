@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A1B33">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Irish Watch — Notre Dame football</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=Grenze+Gotisch:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* NOTE: --ink is the palette base, but the page background is written as the
+       literal #0A1B33 in three places below so a host webview cannot override it.
+       Change the colour here AND in those three spots. */
+    --ink:#0A1B33; --ink-2:#102844; --ink-3:#294A6E;
+    --leaf:#C5A24A;                    /* gold, 7.1:1 on ink */
+    --gold-dark:#B8952F;               /* darkest gradient stop */
+    --gold-light:#F0DBA0;              /* lightest gradient stop */
+    --on-gold:#2E2306;                 /* 5.4:1 on the darkest gold */
+    --on-gold-2:#3A2D08;               /* 4.7:1 on the darkest gold */
+    --parch:#F2EFE6; --dim:#9DAABC;    /* dim = 7.3:1 on ink */
+    --win:#6FD69B;                     /* 5.3:1 on ink */
+    --loss:#F5A79C;                    /* 4.9:1 on ink */
+    --live-bg:#A3382E;                 /* 6.6:1 against white text */
+    --live-fg:#FFFFFF; --live-fg-2:#FFD9D3;
+    --neutral:#7FC8E8;                 /* 5.1:1 on ink */
+    --focus:#FFD966;
+  }
+  *{box-sizing:border-box}
+  /* Some embedded webviews force a light canvas. Declare the scheme, then paint
+     the background on html, body AND a full-height wrapper so at least one wins. */
+  :root{color-scheme:dark}
+  html,body{margin:0;padding:0;background-color:#0A1B33 !important}
+  body{
+    color:var(--parch);
+    font-family:'Barlow',system-ui,-apple-system,sans-serif;
+    font-size:1rem; line-height:1.5; -webkit-font-smoothing:antialiased;
+  }
+  .page{background-color:#0A1B33;min-height:100vh;min-height:100dvh;padding-bottom:3rem}
+  @media (prefers-color-scheme:light){
+    html,body,.page{background-color:#0A1B33 !important;color:#F2EFE6}
+  }
+  .wrap{max-width:38rem;margin:0 auto;padding:0 1rem}
+
+  /* 2.4.7 — one visible focus style everywhere, never removed */
+  :focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:2px}
+
+  .sr-only{
+    position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+    overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;
+  }
+  .skip{
+    position:absolute;left:1rem;top:-4rem;z-index:10;
+    background:var(--leaf);color:#231A03;font-weight:600;
+    padding:.75rem 1rem;border-radius:3px;text-decoration:none;
+  }
+  .skip:focus{top:.75rem}
+
+  /* header */
+  .bar{display:flex;align-items:center;gap:.6rem;padding:.75rem 0 .6rem;flex-wrap:wrap}
+  .bar h1{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.4rem;margin:0;color:var(--leaf);letter-spacing:.02em}
+  .bar .rank{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.9rem;color:#231A03;background:var(--leaf);padding:.1rem .45rem;border-radius:2px}
+  .bar .rec{font-size:.9rem;color:var(--dim);font-variant-numeric:tabular-nums}
+  .bar .spacer{flex:1}
+  /* 2026 team motto. One line to change next season.
+     Grenze Gotisch keeps the gothic character but with open counters and
+     roman-derived shapes, so it reads at a glance. Mixed case on purpose —
+     uppercase gothic is much harder to parse. */
+  .motto{
+    margin:0;padding:.35rem 0 .6rem;text-align:center;
+    font-family:'Grenze Gotisch','Barlow Condensed',serif;font-weight:700;
+    /* Scales with the viewport but stops growing once the wrap hits its
+       38rem cap, so it fills a phone without ballooning on a desktop.
+       cqw would be cleaner; vw is the safe version for older Safari. */
+    font-size:clamp(2rem,11.5vw,4.1rem);
+    line-height:1.02;letter-spacing:.01em;
+    text-wrap:balance;
+    color:var(--leaf);
+    border-bottom:1px solid var(--ink-3);
+  }
+  /* Very narrow phones: let it break to two lines rather than overflow. */
+  @media (max-width:22rem){ .motto{font-size:2.6rem;line-height:1.05} }
+  /* 2.5.5 — 44px minimum target */
+  .refresh{
+    min-height:2.75rem;min-width:5.5rem;
+    background:none;border:1px solid var(--ink-3);color:var(--parch);
+    font-family:inherit;font-size:.9rem;padding:0 .9rem;border-radius:3px;cursor:pointer;
+  }
+  .refresh:hover{border-color:var(--leaf);color:var(--leaf)}
+
+  /* hero */
+  .hero{
+    position:relative;
+    margin:1rem 0 0;padding:1.25rem 1.1rem 1.1rem;border-radius:3px 3px 0 0;overflow:hidden;
+    background:linear-gradient(103deg,var(--gold-dark) 0%,var(--leaf) 20%,var(--gold-light) 36%,
+      var(--leaf) 50%,var(--gold-dark) 64%,var(--leaf) 80%,var(--gold-light) 93%,var(--leaf) 100%);
+    color:var(--on-gold);
+    box-shadow:0 1px 0 rgba(255,255,255,.35) inset;
+    opacity:0;animation:reveal .7s cubic-bezier(.2,.7,.3,1) forwards;
+  }
+  @keyframes reveal{from{opacity:0;transform:translateY(.4rem)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){.hero{animation:none;opacity:1}}
+  .hero .when,.hero .opp{padding-right:5.5rem}
+  .hero .when{font-size:.78rem;font-weight:600;letter-spacing:.08em;color:var(--on-gold-2)}
+  .hero .opp{font-family:'Barlow Condensed',sans-serif;font-weight:700;
+    font-size:clamp(1.9rem,8vw,2.6rem);line-height:1.03;letter-spacing:-.01em;margin:.15rem 0 .5rem}
+  .hero .opp .vs{font-weight:500;opacity:.75;font-size:.62em;margin-right:.35rem}
+  .hero .line{font-size:.95rem;font-weight:500}
+  .hero .line b{font-weight:600}
+  .hero .venue{font-size:.85rem;color:var(--on-gold-2);margin-top:.1rem}
+  .hero .series{font-size:.9rem;font-weight:600;margin:.4rem 0 0;padding-right:5.5rem}
+  .hero .clock{margin-top:.85rem;padding-top:.75rem;border-top:1px solid rgba(46,35,6,.35);
+    font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:1.6rem;font-variant-numeric:tabular-nums}
+  .hero .clock small{font-size:.5em;font-weight:600;margin-left:.1rem;margin-right:.55rem}
+  .hero .spread{position:absolute;top:1.25rem;right:1.1rem;margin:0;font-size:.9rem;font-weight:600;line-height:1.35;text-align:right;font-variant-numeric:tabular-nums}
+  .hero.live{background:var(--live-bg);color:var(--live-fg);box-shadow:none}
+  .hero.live .when,.hero.live .venue{color:var(--live-fg-2)}
+  .hero.live .clock{border-top-color:rgba(255,255,255,.4)}
+
+  /* market strip */
+  .strip{display:flex;background:var(--ink-2);border:1px solid var(--ink-3);border-top:none;
+    border-radius:0 0 3px 3px;margin-bottom:1.25rem}
+  .strip > div{flex:1;padding:.6rem .75rem;border-right:1px solid var(--ink-3);
+    display:flex;flex-direction:column;justify-content:space-between;gap:.25rem}
+  .strip > div:last-child{border-right:none}
+  .strip dt{font-size:.72rem;letter-spacing:.06em;color:var(--dim);font-weight:600;
+    line-height:1.25;text-wrap:balance}
+  .strip dd{margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:700;
+    font-size:1.4rem;line-height:1.1;font-variant-numeric:tabular-nums}
+  .strip dd.pending{font-size:.95rem;font-weight:500;color:var(--dim);
+    font-family:'Barlow',system-ui,sans-serif}
+  .strip dd em{font-style:normal;font-size:.6em;font-weight:600;margin-left:.3rem}
+  .up{color:var(--win)} .down{color:var(--loss)}
+
+  /* tabs */
+  [role="tablist"]{display:flex;gap:2px;border-bottom:1px solid var(--ink-3)}
+  [role="tab"]{flex:1;min-height:2.75rem;background:none;border:none;
+    border-bottom:3px solid transparent;color:var(--parch);
+    font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.95rem;
+    letter-spacing:.03em;padding:.5rem .15rem;cursor:pointer;white-space:nowrap}
+  [role="tab"][aria-selected="false"]{color:var(--dim)}
+  [role="tab"][aria-selected="true"]{color:var(--leaf);border-bottom-color:var(--leaf)}
+  [role="tabpanel"]{padding-top:.15rem}
+  [role="tabpanel"]:focus:not(:focus-visible){outline:none}
+
+  /* lists */
+  ul.plain,ol.plain{list-style:none;margin:0;padding:0}
+  .row{display:flex;align-items:center;gap:.75rem;padding:.8rem .15rem;border-bottom:1px solid var(--ink-3)}
+  .row .date{width:3.2rem;flex:none;text-align:center;font-family:'Barlow Condensed',sans-serif;line-height:1.05}
+  .row .date .m,.row .date .d{display:block}
+  .row .date .m{font-size:.72rem;font-weight:600;color:var(--dim);letter-spacing:.06em;text-transform:uppercase}
+  .row .date .d{font-size:1.3rem;font-weight:700}
+  .row .mid{flex:1;min-width:0}
+  .row .team,.row .sub,.row .score,.row .wl,.row .status{display:block}
+  .row .team{font-weight:500;font-size:1rem}
+  .row .team .pre,.row .team .rk{display:inline}
+  .row .team .pre{color:var(--dim);font-weight:400;margin-right:.3rem}
+  .row .sub{font-size:.82rem;color:var(--dim);margin-top:.1rem}
+  .row .right{flex:none;text-align:right;font-family:'Barlow Condensed',sans-serif}
+  .row .score{font-size:1.2rem;font-weight:700;font-variant-numeric:tabular-nums}
+  .row .wl{font-size:.78rem;font-weight:600;letter-spacing:.04em}
+  .row .wl.w{color:var(--win)} .row .wl.l{color:var(--loss)}
+  .row .status{font-size:.78rem;font-weight:600;color:var(--dim)}
+  .row .net{display:inline-block;font-size:.78rem;font-weight:600;color:var(--leaf);
+    border:1px solid var(--leaf);border-radius:2px;padding:.15rem .4rem;white-space:nowrap}
+  .row .net.tbd{color:var(--dim);border-color:var(--dim)}
+  .row.past{opacity:.85}
+  .row.next,.row.nd{background:rgba(197,162,74,.14);margin:0 -.5rem;padding-left:.65rem;padding-right:.65rem;
+    border-left:3px solid var(--leaf)}
+  .rk{color:var(--leaf);font-weight:600;font-size:.88em;margin-right:.15rem}
+  /* HOME / AWAY / NEUTRAL. Filled for home so the ones you can drive to pop. */
+  .tag{display:inline-block;font-family:'Barlow Condensed',sans-serif;font-weight:700;
+    font-size:.7rem;letter-spacing:.07em;line-height:1;padding:.22rem .34rem;
+    border-radius:2px;border:1px solid;vertical-align:.08em;margin-right:.4rem}
+  .tag.h{color:#231A03;background:var(--leaf);border-color:var(--leaf)}
+  .tag.a{color:var(--dim);background:none;border-color:var(--dim)}
+  .tag.n{color:var(--neutral);background:none;border-color:var(--neutral)}
+  .trophy{display:block;font-size:.78rem;font-weight:600;color:var(--leaf);margin-top:.12rem}
+
+  /* odds board */
+  .obar{display:flex;align-items:center;gap:.65rem;padding:.65rem .15rem;border-bottom:1px solid var(--ink-3)}
+  .obar .nm{flex:1;font-weight:500}
+  .obar .track{width:6rem;flex:none;height:.5rem;background:var(--ink-2);
+    border:1px solid var(--ink-3);border-radius:3px;overflow:hidden}
+  .obar .fill{display:block;height:100%;background:var(--leaf)}
+  .obar .pc{width:3rem;flex:none;text-align:right;font-family:'Barlow Condensed',sans-serif;
+    font-weight:700;font-size:1.2rem;font-variant-numeric:tabular-nums}
+  .obar.nd{background:rgba(197,162,74,.14);margin:0 -.5rem;padding-left:.65rem;padding-right:.65rem;
+    border-left:3px solid var(--leaf)}
+  .obar.nd .nm{color:var(--leaf);font-weight:600}
+
+  h2.sec{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:1rem;letter-spacing:.04em;
+    color:var(--parch);margin:1.4rem 0 .15rem;padding-bottom:.4rem;border-bottom:1px solid var(--ink-3)}
+
+  a.art{display:flex;gap:.75rem;padding:.85rem .15rem;border-bottom:1px solid var(--ink-3);
+    text-decoration:none;color:inherit}
+  a.art:hover .hl{color:var(--leaf);text-decoration:underline}
+  a.art img{width:4.75rem;height:3.25rem;flex:none;object-fit:cover;border-radius:2px;background:var(--ink-2)}
+  a.art .hl,a.art .meta{display:block}
+  a.art .hl{font-weight:600;font-size:.95rem;line-height:1.3}
+  a.art .meta{font-size:.78rem;color:var(--dim);margin-top:.25rem}
+
+  .msg{padding:1.5rem .25rem;color:var(--parch);font-size:.95rem;line-height:1.6}
+  .msg strong{display:block;font-weight:600;margin-bottom:.3rem}
+  .msg a{color:var(--leaf)}
+  .loading{padding:1.5rem .25rem;color:var(--dim);font-size:.95rem}
+  .foot{padding:1.4rem .25rem 0;font-size:.8rem;color:var(--dim);line-height:1.6}
+  [hidden]{display:none !important}
+</style>
+</head>
+<body>
+<a class="skip" href="#tabpanel">Skip to the schedule</a>
+<div class="page">
+<div class="wrap">
+
+  <header class="bar">
+    <h1>Irish Watch</h1>
+    <span class="rank" id="rank" hidden></span>
+    <span class="rec" id="rec"></span>
+    <span class="spacer"></span>
+    <button type="button" class="refresh" id="refresh">Refresh</button>
+  </header>
+
+  <!-- 2026 team motto -->
+  <p class="motto">Leave No Doubt</p>
+
+  <!-- 4.1.3 — one polite region announces every load result -->
+  <p class="sr-only" id="live" role="status" aria-live="polite"></p>
+
+  <main>
+    <section class="hero" id="hero" aria-labelledby="heroHead" hidden>
+      <h2 class="sr-only" id="heroHead">Next Notre Dame game</h2>
+      <p class="when" id="heroWhen">Next up</p>
+      <p class="opp" id="heroOpp"></p>
+      <p class="line" id="heroLine"></p>
+      <p class="venue" id="heroVenue"></p>
+      <p class="series" id="heroSeries" hidden></p>
+      <p class="spread" id="heroSpread"></p>
+      <!-- aria-live off: a countdown that announced itself every 30s would be unusable -->
+      <p class="clock" id="heroClock" aria-live="off"></p>
+    </section>
+
+    <dl class="strip">
+      <div>
+        <dt id="lblTitle">Odds to win the national title</dt>
+        <dd class="pending" id="mTitle" aria-labelledby="lblTitle">Loading…</dd>
+      </div>
+      <div>
+        <dt id="lblPlayoff">Odds to make the playoff</dt>
+        <dd class="pending" id="mPlayoff" aria-labelledby="lblPlayoff">Loading…</dd>
+      </div>
+    </dl>
+
+    <h2 class="sr-only">Notre Dame and national football data</h2>
+    <div role="tablist" aria-label="Sections">
+      <button type="button" role="tab" id="tab-schedule" aria-controls="panel-schedule" aria-selected="true"  tabindex="0">Schedule</button>
+      <button type="button" role="tab" id="tab-around"   aria-controls="panel-around"   aria-selected="false" tabindex="-1">Top 25</button>
+      <button type="button" role="tab" id="tab-odds"     aria-controls="panel-odds"     aria-selected="false" tabindex="-1">Title odds</button>
+      <button type="button" role="tab" id="tab-news"     aria-controls="panel-news"     aria-selected="false" tabindex="-1">News</button>
+    </div>
+
+    <div id="tabpanel" tabindex="-1">
+      <div role="tabpanel" id="panel-schedule" aria-labelledby="tab-schedule" tabindex="0">
+        <p class="loading">Loading the schedule…</p>
+      </div>
+      <div role="tabpanel" id="panel-around" aria-labelledby="tab-around" tabindex="0" hidden></div>
+      <div role="tabpanel" id="panel-odds"   aria-labelledby="tab-odds"   tabindex="0" hidden></div>
+      <div role="tabpanel" id="panel-news"   aria-labelledby="tab-news"   tabindex="0" hidden></div>
+    </div>
+  </main>
+
+  <footer><p class="foot" id="foot">Loading…</p></footer>
+</div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+var ESPN = "https://site.api.espn.com/apis/site/v2/sports/football/college-football";
+var TEAM = "87";
+// Kalshi serves public market data without a key, but sends no CORS header, so
+// a browser cannot read it directly. Each entry below is a way to reach them;
+// they are tried in order until one works.
+//
+// If you deploy worker.js to Cloudflare Workers, paste the worker URL here and
+// it goes first — your own relay, no third party, no rate limit worth worrying
+// about. Leave it empty and the public relays below carry the load.
+var KALSHI_PROXY = "";
+
+var KALSHI_DIRECT = "https://api.elections.kalshi.com/trade-api/v2";
+
+// Each builder turns a Kalshi path into a full URL to fetch.
+var KALSHI_ROUTES = [];
+if (KALSHI_PROXY) {
+  KALSHI_ROUTES.push(function(path){ return KALSHI_PROXY + path; });
+}
+KALSHI_ROUTES.push(
+  // direct, in case Kalshi ever starts sending the header
+  function(path){ return KALSHI_DIRECT + path; },
+  function(path){ return "https://corsproxy.io/?url=" + encodeURIComponent(KALSHI_DIRECT + path); },
+  function(path){ return "https://api.allorigins.win/raw?url=" + encodeURIComponent(KALSHI_DIRECT + path); },
+  function(path){ return "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(KALSHI_DIRECT + path); }
+);
+var TITLE_EVENT   = "KXNCAAF-27";          // national championship winner
+var PLAYOFF_EVENT = "KXNCAAFPLAYOFF-26";   // playoff qualifiers
+var ND_TICKERS = [TITLE_EVENT+"-ND", PLAYOFF_EVENT+"-ND"];
+
+var S = { games:null, next:null, tick:null };
+function $(id){ return document.getElementById(id); }
+function say(msg){ $("live").textContent = msg; }
+
+function get(url){
+  return fetch(url,{cache:"no-store"}).then(function(r){
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    return r.json();
+  });
+}
+// Walk the routes until one returns usable market data. A relay that is up but
+// returns an error page counts as a failure, so check the shape too.
+function kalshi(path){
+  var i=0;
+  function attempt(){
+    if(i>=KALSHI_ROUTES.length) return Promise.reject(new Error("all Kalshi routes failed"));
+    var url;
+    try { url = KALSHI_ROUTES[i++](path); }
+    catch(e){ return attempt(); }
+    return get(url).then(function(d){
+      if(!d || !d.markets) throw new Error("unexpected shape");
+      return d;
+    }).catch(attempt);
+  }
+  return attempt();
+}
+
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+function fmtTime(iso){ return new Date(iso).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}); }
+function fmtDay(iso){ return new Date(iso).toLocaleDateString([],{weekday:"long",month:"long",day:"numeric"}); }
+function timeIsSet(iso){ var d=new Date(iso); return !(d.getUTCHours()===0&&d.getUTCMinutes()===0); }
+function tzAbbr(){
+  try{ var p=new Intl.DateTimeFormat([],{timeZoneName:"short"}).formatToParts(new Date());
+    for(var i=0;i<p.length;i++) if(p[i].type==="timeZoneName") return p[i].value; }catch(e){}
+  return "";
+}
+// Visual chip shows "SEP 13"; the accessible name says "September 13".
+function localISO(d){
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+
+         "-"+String(d.getDate()).padStart(2,"0");
+}
+function dateChip(iso){
+  var d=new Date(iso);
+  return '<time class="date" datetime="'+localISO(d)+'">'+
+    '<span class="sr-only">'+d.toLocaleDateString([],{month:"long",day:"numeric"})+"</span>"+
+    '<span class="m" aria-hidden="true">'+d.toLocaleDateString([],{month:"short"})+"</span>"+
+    '<span class="d" aria-hidden="true">'+d.getDate()+"</span></time>";
+}
+
+function network(comp){
+  var out=[], b=comp.broadcasts||[];
+  b.forEach(function(x){
+    if(x.media&&x.media.shortName) out.push(x.media.shortName);
+    else if(Array.isArray(x.names)) out=out.concat(x.names);
+    else if(x.shortName) out.push(x.shortName);
+    else if(x.name) out.push(x.name);
+  });
+  if(!out.length&&comp.geoBroadcasts) comp.geoBroadcasts.forEach(function(g){
+    if(g.media&&g.media.shortName) out.push(g.media.shortName); });
+  return out.filter(function(v,i){return out.indexOf(v)===i;}).join(", ");
+}
+function oddsOf(comp){
+  var o=(comp.odds&&comp.odds[0])||(comp.pickcenter&&comp.pickcenter[0]);
+  if(!o) return null;
+  return { line:o.details||(o.spread!=null?String(o.spread):null),
+           total:o.overUnder!=null?o.overUnder:null };
+}
+// ESPN does not always set neutralSite. A game where Notre Dame is the listed
+// home team but the venue is not Notre Dame Stadium is a neutral site in
+// practice — Lambeau, Gillette, the Shamrock Series and so on.
+// Venues that are never a college team's home field. Notre Dame plays one or
+// two of these a year — the Shamrock Series, and Navy selling its home date to
+// a stadium bigger than its own 34,000-seat one in Annapolis.
+var NEUTRAL_VENUES = /lambeau|gillette|metlife|m&t bank|soldier field|yankee stadium|aviva|at&t stadium|allegiant|mercedes-benz|hard rock|raymond james|caesars superdome|camping world|alamodome/i;
+
+function isNeutral(comp, us){
+  if(comp.neutralSite===true) return true;
+  var v = comp.venue && comp.venue.fullName ? comp.venue.fullName : "";
+  if(v === "") return false;
+  // A pro or event venue is neutral no matter which side is listed as home.
+  if(NEUTRAL_VENUES.test(v)) return true;
+  // Notre Dame listed at home but not actually in South Bend.
+  var listedHome = us ? us.homeAway==="home" : false;
+  return listedHome && !/notre dame stadium/i.test(v);
+}
+function venueTag(g){
+  if(g.neutral) return '<span class="tag n"><span class="sr-only">Neutral site game. </span>'+
+    '<span aria-hidden="true">NEUTRAL</span></span>';
+  if(g.home)    return '<span class="tag h"><span class="sr-only">Home game. </span>'+
+    '<span aria-hidden="true">HOME</span></span>';
+  return '<span class="tag a"><span class="sr-only">Away game. </span>'+
+    '<span aria-hidden="true">AWAY</span></span>';
+}
+// Trophy and series names for Notre Dame's 2026 opponents. Matched on the
+// opponent name because no public feed carries this. Sourced from Notre Dame's
+// own schedule release; the USC entry is dormant while that series is paused.
+var SERIES = [
+  [/wisconsin/i,                 "Shamrock Series"],
+  [/michigan st/i,               "Megaphone Trophy"],
+  [/purdue/i,                    "Shillelagh Trophy"],
+  [/stanford/i,                  "Legends Trophy"],
+  [/navy|midshipmen/i,           "Rip Miller Trophy"],
+  [/boston college/i,            "Frank Leahy Memorial Bowl"],
+  [/^usc$|southern cal|trojans/i,"Jeweled Shillelagh"],
+  [/northwestern/i,              "Lost Shillelagh"]
+];
+function seriesFor(name){
+  for(var i=0;i<SERIES.length;i++){ if(SERIES[i][0].test(name||"")) return SERIES[i][1]; }
+  return null;
+}
+function normalize(ev){
+  var comp=(ev.competitions&&ev.competitions[0])||{}, cs=comp.competitors||[];
+  var us=null,them=null;
+  cs.forEach(function(c){ var id=c.id||(c.team&&c.team.id);
+    if(String(id)===TEAM) us=c; else them=c; });
+  var st=(comp.status&&comp.status.type)||(ev.status&&ev.status.type)||{};
+  return {
+    id:ev.id, date:ev.date,
+    home: us?us.homeAway==="home":true,
+    neutral: isNeutral(comp, us),
+    oppName: them&&them.team?(them.team.shortDisplayName||them.team.displayName):"opponent to be announced",
+    oppRank: them&&them.curatedRank&&them.curatedRank.current<26?them.curatedRank.current:null,
+    venue: comp.venue?(comp.venue.fullName||""):"",
+    city: comp.venue&&comp.venue.address?comp.venue.address.city:"",
+    net: network(comp), odds: oddsOf(comp),
+    series: seriesFor(them&&them.team?(them.team.displayName||them.team.shortDisplayName):""),
+    state: st.state||"pre", detail: st.shortDetail||"",
+    us: us&&us.score?(us.score.displayValue||us.score.value||us.score):null,
+    them: them&&them.score?(them.score.displayValue||them.score.value||them.score):null,
+    won: us?us.winner===true:null
+  };
+}
+
+/* ---------- hero ---------- */
+function paintHero(g){
+  var hero=$("hero"); hero.hidden=false;
+  hero.classList.toggle("live", g.state==="in");
+  var prefix=g.neutral?"vs":(g.home?"vs":"at");
+  var prefixWord=g.neutral?"versus":(g.home?"at home versus":"away at");
+  $("heroOpp").innerHTML='<span class="sr-only">'+prefixWord+" </span>"+
+    '<span class="vs" aria-hidden="true">'+prefix+"</span>"+
+    (g.oppRank?'<span class="sr-only">number '+g.oppRank+" </span>"+
+               '<span aria-hidden="true">#'+g.oppRank+" </span>":"")+esc(g.oppName);
+
+  $("heroSpread").innerHTML = g.odds
+    ? '<span class="sr-only">Betting line: </span>'+esc(g.odds.line||"")+
+      (g.odds.total!=null?'<br><span class="sr-only">Over-under </span>'+
+        '<span aria-hidden="true">O/U </span>'+g.odds.total:"")
+    : "";
+
+  if(g.state==="in"){
+    $("heroWhen").textContent="Playing now \u00B7 "+
+      (g.neutral?"neutral site":(g.home?"home game":"road game"));
+    $("heroLine").innerHTML="<b>Notre Dame "+(g.us||0)+", "+esc(g.oppName)+" "+(g.them||0)+"</b>";
+    $("heroVenue").textContent=g.venue;
+    $("heroSeries").hidden = !g.series;
+    if(g.series) $("heroSeries").textContent="Playing for the "+g.series;
+    $("heroClock").textContent=g.detail;
+    return;
+  }
+  $("heroWhen").textContent="Next up \u00B7 "+
+    (g.neutral?"neutral site":(g.home?"home game":"road game"));
+  var known=timeIsSet(g.date), line=fmtDay(g.date);
+  line += known ? " at "+fmtTime(g.date)+" "+tzAbbr() : ", kickoff time not announced";
+  if(g.net) line += " on <b>"+esc(g.net)+"</b>";
+  else if(known) line += ", network not announced";
+  $("heroLine").innerHTML=line;
+  $("heroVenue").textContent=g.venue+(g.city?", "+g.city:"");
+  $("heroSeries").hidden = !g.series;
+  if(g.series) $("heroSeries").textContent="Playing for the "+g.series;
+
+  if(S.tick) clearInterval(S.tick);
+  if(!known){ $("heroClock").textContent=""; return; }
+  function tickOnce(){
+    var ms=new Date(g.date)-new Date();
+    if(ms<=0){ $("heroClock").textContent="Kickoff"; clearInterval(S.tick); return; }
+    var s=Math.floor(ms/1000), d=Math.floor(s/86400), h=Math.floor(s%86400/3600), m=Math.floor(s%3600/60);
+    var full=(d?d+" days ":"")+h+" hours "+m+" minutes until kickoff";
+    $("heroClock").innerHTML='<span class="sr-only">'+full+"</span>"+
+      '<span aria-hidden="true">'+(d?d+"<small>d</small>":"")+h+"<small>h</small>"+m+"<small>m</small></span>";
+  }
+  tickOnce(); S.tick=setInterval(tickOnce,30000);
+}
+
+/* ---------- schedule ---------- */
+function paintSchedule(games){
+  var el=$("panel-schedule");
+  if(!games.length){ el.innerHTML='<p class="msg">No games on the schedule yet.</p>'; return; }
+  var nextId=S.next?S.next.id:null;
+  var html='<h2 class="sr-only">2026 Notre Dame schedule</h2><ul class="plain">';
+  games.forEach(function(g){
+    var done=g.state==="post", right, srResult="";
+    if(done){
+      srResult=(g.won?"Won":"Lost")+" "+(g.us||0)+" to "+(g.them||0)+". ";
+      right='<span class="sr-only">'+srResult+"</span>"+
+        '<span aria-hidden="true"><span class="score">'+(g.us||0)+"\u2013"+(g.them||0)+"</span>"+
+        '<span class="wl '+(g.won?"w":"l")+'">'+(g.won?"WIN":"LOSS")+"</span></span>";
+    } else {
+      right = g.net
+        ? '<span class="net"><span class="sr-only">Watch on </span>'+esc(g.net)+"</span>"
+        : '<span class="net tbd">Network <abbr title="to be determined">TBD</abbr></span>';
+    }
+    var sub = done ? esc(g.venue||"")+(g.city&&g.neutral?", "+esc(g.city):"")
+      : (timeIsSet(g.date)?fmtTime(g.date)+" "+tzAbbr():"Kickoff time not announced")
+        + (g.odds&&g.odds.line?" \u00B7 line "+esc(g.odds.line):"")
+        + (g.venue?" \u00B7 "+esc(g.venue):"");
+    html+='<li class="row '+(done?"past":"")+" "+(g.id===nextId?"next":"")+'">'+
+      dateChip(g.date)+
+      '<span class="mid"><span class="team">'+ venueTag(g) +
+        (g.oppRank?'<span class="rk"><span class="sr-only">number </span>'+
+          '<span aria-hidden="true">#</span>'+g.oppRank+"</span> ":"")+esc(g.oppName)+
+      '</span><span class="sub">'+sub+"</span>"+
+      (g.series?'<span class="trophy">'+
+        (done?(g.won?"Retained ":"Lost "):"Playing for ")+esc(g.series)+"</span>":"")+
+      "</span>"+
+      '<span class="right">'+right+"</span></li>";
+  });
+  el.innerHTML=html+"</ul>";
+}
+
+/* ---------- top 25 ---------- */
+function loadAround(){
+  var el=$("panel-around");
+  if(el.dataset.loaded) return;
+  el.innerHTML='<p class="loading">Loading ranked games and the poll…</p>';
+
+  Promise.all([
+    get(ESPN+"/scoreboard?groups=80&limit=400").catch(function(){return null;}),
+    get(ESPN+"/rankings").catch(function(){return null;})
+  ]).then(function(res){
+    var sb=res[0], rk=res[1], html="";
+
+    if(sb&&sb.events){
+      var ranked=sb.events.filter(function(ev){
+        var c0=ev.competitions&&ev.competitions[0];
+        return !!c0 && (c0.competitors||[]).some(function(c){
+          return c.curatedRank&&c.curatedRank.current<26; });
+      }).sort(function(a,b){ return new Date(a.date)-new Date(b.date); });
+
+      html+='<h2 class="sec">Ranked games this week</h2>';
+      if(!ranked.length) html+='<p class="msg">No ranked teams are playing in this window.</p>';
+      else html+='<ul class="plain">';
+
+      ranked.forEach(function(ev){
+        var comp=ev.competitions[0], cs=comp.competitors||[];
+        var home=cs.filter(function(c){return c.homeAway==="home";})[0]||cs[0];
+        var away=cs.filter(function(c){return c.homeAway==="away";})[0]||cs[1];
+        var st=(comp.status&&comp.status.type)||{};
+        var isND=cs.some(function(c){ return String(c.id)===TEAM; });
+        var o=oddsOf(comp), net=network(comp);
+        function nm(c){
+          if(!c||!c.team) return "opponent to be announced";
+          var r=c.curatedRank&&c.curatedRank.current<26
+            ? '<span class="rk"><span class="sr-only">number </span><span aria-hidden="true">#</span>'+c.curatedRank.current+"</span> " : "";
+          return r+esc(c.team.shortDisplayName||c.team.displayName);
+        }
+        var right;
+        if(st.state==="post"||st.state==="in"){
+          right='<span class="sr-only">Score: '+((away&&away.score)||0)+" to "+((home&&home.score)||0)+". "+esc(st.shortDetail||"")+"</span>"+
+            '<span aria-hidden="true"><span class="score">'+((away&&away.score)||0)+"\u2013"+((home&&home.score)||0)+"</span>"+
+            '<span class="status">'+esc(st.shortDetail||"")+"</span></span>";
+        } else {
+          right = net ? '<span class="net"><span class="sr-only">Watch on </span>'+esc(net)+"</span>"
+                      : '<span class="net tbd">Network <abbr title="to be determined">TBD</abbr></span>';
+        }
+        var sub=(st.state==="pre"
+            ? (timeIsSet(ev.date)?fmtTime(ev.date)+" "+tzAbbr():"Kickoff time not announced")
+            : (comp.venue?esc(comp.venue.fullName||""):""))
+          +(o&&o.line?" \u00B7 line "+esc(o.line):"")
+          +(o&&o.total!=null?" \u00B7 over-under "+o.total:"");
+        html+='<li class="row '+(isND?"nd":"")+'">'+dateChip(ev.date)+
+          '<span class="mid"><span class="team">'+nm(away)+' <span class="pre">at</span> '+nm(home)+
+          '</span><span class="sub">'+sub+"</span></span>"+
+          '<span class="right">'+right+"</span></li>";
+      });
+      if(ranked.length) html+="</ul>";
+    }
+
+    if(rk&&rk.rankings&&rk.rankings.length){
+      var ap=rk.rankings.filter(function(r){return /AP/i.test(r.shortName||r.name||"");})[0]||rk.rankings[0];
+      html+='<h2 class="sec">'+esc(ap.name||"Top 25")+"</h2><ol class=\"plain\">";
+      (ap.ranks||[]).forEach(function(r){
+        var isND=r.team&&String(r.team.id)===TEAM;
+        var mv=r.previous&&r.previous>0?r.previous-r.current:0;
+        var move = mv>0 ? '<span class="up"><span class="sr-only">up '+mv+'</span><span aria-hidden="true">\u25B2'+mv+"</span></span>"
+                : mv<0 ? '<span class="down"><span class="sr-only">down '+Math.abs(mv)+'</span><span aria-hidden="true">\u25BC'+Math.abs(mv)+"</span></span>"
+                : "";
+        html+='<li class="row '+(isND?"nd":"")+'" style="padding:.5rem .15rem">'+
+          '<span class="date" style="width:2rem"><span class="sr-only">Rank </span>'+
+          '<span class="d">'+r.current+"</span></span>"+
+          '<span class="mid"><span class="team">'+esc(r.team?(r.team.nickname||r.team.name||r.team.location):"")+"</span></span>"+
+          '<span class="right"><span class="status">'+esc(r.recordSummary||"")+" "+move+"</span></span></li>";
+      });
+      html+="</ol>";
+    }
+
+    if(!html){
+      el.innerHTML='<p class="msg"><strong>The national picture didn\u2019t load.</strong>'+
+        'ESPN returned no scoreboard or rankings data. Choose Refresh to try again.</p>';
+      say("Top 25 failed to load."); return;
+    }
+    el.innerHTML=html; el.dataset.loaded="1";
+    say("Top 25 loaded.");
+  }).catch(function(){
+    el.innerHTML='<p class="msg"><strong>The national picture didn\u2019t load.</strong>'+
+      'ESPN returned data this page couldn\u2019t read. Choose Refresh to try again.</p>';
+    say("Top 25 failed to load.");
+  });
+}
+
+/* ---------- kalshi ---------- */
+function price(m){
+  var b=m.yes_bid, a=m.yes_ask;
+  if(typeof b==="number"&&typeof a==="number"&&(b||a)) return (b+a)/2;
+  if(typeof m.last_price==="number") return m.last_price;
+  return null;
+}
+function teamOf(m){ return m.yes_sub_title||m.subtitle||m.title||m.ticker; }
+
+function kalshiHelp(){
+  return '<p class="msg"><strong>Kalshi didn\u2019t answer.</strong>'+
+    'Kalshi sends no CORS header, and the public relays this page falls back on are '+
+    'down or rate-limited right now. Choose Refresh in a minute, or deploy worker.js '+
+    'to Cloudflare Workers for a relay of your own that will not do this. '+
+    'The live board is at '+
+    '<a href="https://kalshi.com/markets/kxncaaf/ncaaf-championship" target="_blank" rel="noopener">'+
+    'kalshi.com, national championship winner<span class="sr-only"> (opens in a new tab)</span></a>.</p>';
+}
+
+function loadOdds(){
+  var el=$("panel-odds");
+  if(el.dataset.loaded) return;
+  el.innerHTML='<p class="loading">Loading the Kalshi title board…</p>';
+
+  kalshi("/markets?event_ticker="+TITLE_EVENT+"&limit=200&status=open").then(function(d){
+    var ms=(d.markets||[]).map(function(m){
+      return { name:teamOf(m), ticker:m.ticker, p:price(m) };
+    }).filter(function(m){return m.p!=null;}).sort(function(a,b){return b.p-a.p;});
+    if(!ms.length) throw new Error("empty");
+
+    var top=ms[0].p||1;
+    var html='<h2 class="sec">Kalshi: who wins the national championship</h2>'+
+      '<p class="foot" style="padding-top:.6rem">Each price is the midpoint of the current bid and ask, '+
+      'in cents, which reads directly as a probability. These are traded prices, not a model.</p>'+
+      '<ol class="plain">';
+    ms.forEach(function(m){
+      var isND=/notre dame/i.test(m.name)||/-ND$/.test(m.ticker);
+      html+='<li class="obar '+(isND?"nd":"")+'">'+
+        '<span class="nm">'+esc(m.name)+"</span>"+
+        '<span class="track" aria-hidden="true"><span class="fill" style="width:'+
+          Math.round(m.p/top*100)+'%"></span></span>'+
+        '<span class="pc">'+m.p.toFixed(0)+'<span aria-hidden="true">%</span>'+
+        '<span class="sr-only"> percent</span></span></li>';
+    });
+    el.innerHTML=html+"</ol>";
+    el.dataset.loaded="1";
+    say("Title odds loaded. Notre Dame is on the board.");
+  }).catch(function(){
+    el.innerHTML=kalshiHelp();
+    say("Kalshi odds could not be loaded.");
+  });
+}
+
+function loadStrip(){
+  kalshi("/markets?tickers="+ND_TICKERS.join(",")).then(function(d){
+    (d.markets||[]).filter(function(m){
+      return ND_TICKERS.indexOf(m.ticker)!==-1;
+    }).forEach(function(m){
+      var p=price(m); if(p==null) return;
+      var mv=(typeof m.previous_price==="number")?p-m.previous_price:null;
+      var move = (mv==null||Math.abs(mv)<0.5) ? ""
+        : mv>0 ? '<em class="up"><span class="sr-only">, up '+Math.abs(mv).toFixed(0)+'</span><span aria-hidden="true">\u25B2'+Math.abs(mv).toFixed(0)+"</span></em>"
+               : '<em class="down"><span class="sr-only">, down '+Math.abs(mv).toFixed(0)+'</span><span aria-hidden="true">\u25BC'+Math.abs(mv).toFixed(0)+"</span></em>";
+      var cell=/PLAYOFF/i.test(m.ticker)?"mPlayoff":"mTitle";
+      $(cell).className="";
+      $(cell).innerHTML=p.toFixed(0)+'<span aria-hidden="true">%</span><span class="sr-only"> percent</span>'+move;
+    });
+    // A route answered but this ticker was missing from the payload.
+    ["mTitle","mPlayoff"].forEach(function(id){
+      if(/Loading/.test($(id).textContent)) $(id).textContent="No market";
+    });
+  }).catch(function(){
+    $("mTitle").textContent="Unavailable";
+    $("mPlayoff").textContent="Unavailable";
+  });
+}
+
+/* ---------- news ---------- */
+function loadNews(){
+  var el=$("panel-news");
+  if(el.dataset.loaded) return;
+  el.innerHTML='<p class="loading">Loading Notre Dame news…</p>';
+  get(ESPN+"/news?team="+TEAM+"&limit=30").then(function(d){
+    var arts=d.articles||[];
+    if(!arts.length){ el.innerHTML='<p class="msg">No Notre Dame stories are posted right now.</p>'; return; }
+    var html='<h2 class="sr-only">Latest Notre Dame stories</h2><ul class="plain">';
+    arts.forEach(function(a){
+      var href=a.links&&a.links.web?a.links.web.href:null;
+      var img=a.images&&a.images[0]?a.images[0].url:"";
+      var when=a.published?new Date(a.published).toLocaleDateString([],{month:"long",day:"numeric"}):"";
+      if(!href) return;
+      html+='<li><a class="art" href="'+esc(href)+'" target="_blank" rel="noopener">'+
+        (img?'<img src="'+esc(img)+'" alt="" loading="lazy">':"")+
+        '<span><span class="hl">'+esc(a.headline)+"</span>"+
+        '<span class="meta">'+when+(a.byline?" \u00B7 "+esc(a.byline):"")+
+        '<span class="sr-only"> (opens in a new tab)</span></span></span></a></li>';
+    });
+    el.innerHTML=html+"</ul>"; el.dataset.loaded="1";
+    say("News loaded, "+arts.length+" stories.");
+  }).catch(function(){
+    el.innerHTML='<p class="msg"><strong>News didn\u2019t load.</strong>Choose Refresh to try again.</p>';
+    say("News failed to load.");
+  });
+}
+
+/* ---------- tabs: full keyboard support per ARIA practices ---------- */
+var tabs=[].slice.call(document.querySelectorAll('[role="tab"]'));
+function selectTab(tab, focusIt){
+  tabs.forEach(function(t){
+    var on = t===tab;
+    t.setAttribute("aria-selected",String(on));
+    t.tabIndex = on ? 0 : -1;
+    $(t.getAttribute("aria-controls")).hidden = !on;
+  });
+  if(focusIt) tab.focus();
+  var name=tab.id.replace("tab-","");
+  if(name==="around") loadAround();
+  if(name==="odds")   loadOdds();
+  if(name==="news")   loadNews();
+}
+tabs.forEach(function(tab,i){
+  tab.addEventListener("click",function(){ selectTab(tab,false); });
+  tab.addEventListener("keydown",function(e){
+    var n=null;
+    if(e.key==="ArrowRight") n=tabs[(i+1)%tabs.length];
+    else if(e.key==="ArrowLeft") n=tabs[(i-1+tabs.length)%tabs.length];
+    else if(e.key==="Home") n=tabs[0];
+    else if(e.key==="End") n=tabs[tabs.length-1];
+    if(n){ e.preventDefault(); selectTab(n,true); }
+  });
+});
+
+/* ---------- boot ---------- */
+function load(){
+  $("panel-schedule").innerHTML='<p class="loading">Loading the schedule…</p>';
+
+  get(ESPN+"/teams/"+TEAM).then(function(d){
+    var t=d.team||{};
+    if(t.rank&&t.rank<26){
+      $("rank").innerHTML='<span class="sr-only">Ranked number </span>'+
+        '<span aria-hidden="true">#</span>'+t.rank;
+      $("rank").hidden=false;
+    }
+    var r=t.record&&t.record.items&&t.record.items[0];
+    if(r) $("rec").innerHTML='<span class="sr-only">Record </span>'+esc(r.summary);
+  }).catch(function(){});
+
+  get(ESPN+"/teams/"+TEAM+"/schedule").then(function(d){
+    var games=(d.events||[]).map(normalize).sort(function(a,b){return new Date(a.date)-new Date(b.date);});
+    S.games=games;
+    var live=games.filter(function(g){return g.state==="in";})[0];
+    var up=games.filter(function(g){return g.state==="pre";})[0];
+    S.next=live||up||null;
+    if(S.next) paintHero(S.next); else $("hero").hidden=true;
+    paintSchedule(games);
+    say("Schedule loaded, "+games.length+" games."+(S.next?" Next game is "+(S.next.home?"versus ":"at ")+S.next.oppName+".":""));
+
+    if(S.next&&!S.next.odds){
+      get(ESPN+"/summary?event="+S.next.id).then(function(sm){
+        var pc=sm.pickcenter&&sm.pickcenter[0]; if(!pc) return;
+        S.next.odds={ line:pc.details||null, total:pc.overUnder!=null?pc.overUnder:null };
+        paintHero(S.next); paintSchedule(S.games);
+      }).catch(function(){});
+    }
+
+    $("foot").textContent="Schedule, scores, betting lines and news come from ESPN\u2019s public feed. "+
+      "Championship odds come from Kalshi. Everything reloads when you open the page. Last loaded "+
+      new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})+".";
+  }).catch(function(){
+    $("panel-schedule").innerHTML='<p class="msg"><strong>The schedule didn\u2019t load.</strong>'+
+      'If you are viewing this inside another app\u2019s file preview, that preview is most likely '+
+      'blocking outside requests. Open the file in Safari or Chrome directly and it should fill in. '+
+      'Otherwise, check your connection and choose Refresh.</p>';
+    say("Schedule failed to load.");
+  });
+
+  loadStrip();
+}
+
+$("refresh").addEventListener("click",function(){
+  ["around","odds","news"].forEach(function(n){ $("panel-"+n).dataset.loaded=""; });
+  say("Refreshing…");
+  load();
+  var cur=tabs.filter(function(t){return t.getAttribute("aria-selected")==="true";})[0];
+  var name=cur.id.replace("tab-","");
+  if(name==="around") loadAround();
+  if(name==="odds")   loadOdds();
+  if(name==="news")   loadNews();
+});
+
+load();
+})();
+</script>
+</body>
+</html>

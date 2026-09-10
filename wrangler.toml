@@ -1,0 +1,3 @@
+name = "irish-odds"
+main = "worker.js"
+compatibility_date = "2026-09-10"
