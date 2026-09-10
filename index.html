@@ -243,7 +243,13 @@
 
 var ESPN = "https://site.api.espn.com/apis/site/v2/sports/football/college-football";
 var TEAM = "87";
-var KALSHI_HOSTS = [
+// Kalshi serves public market data without a key, but sends no CORS header,
+// so a browser can't call it directly. Deploy worker.js to Cloudflare Workers
+// (free), then paste your worker URL here with no trailing slash. Leave it
+// empty and the page will try Kalshi directly, which will fail in a browser.
+var KALSHI_PROXY = "";
+
+var KALSHI_HOSTS = KALSHI_PROXY ? [KALSHI_PROXY] : [
   "https://external-api.kalshi.com/trade-api/v2",
   "https://api.elections.kalshi.com/trade-api/v2"
 ];
@@ -512,8 +518,9 @@ function teamOf(m){ return m.yes_sub_title||m.subtitle||m.title||m.ticker; }
 
 function kalshiHelp(){
   return '<p class="msg"><strong>Kalshi didn\u2019t answer.</strong>'+
-    'Their market data is public and needs no key, but your browser may be blocking the request. '+
-    'A small Cloudflare Worker relaying the call fixes it for good. '+
+    'Kalshi serves this data without a key but sends no CORS header, so the browser '+
+    'refuses to read it. Deploy worker.js to Cloudflare Workers and set KALSHI_PROXY '+
+    'at the top of this file to your worker URL. '+
     'In the meantime the live board is at '+
     '<a href="https://kalshi.com/markets/kxncaaf/ncaaf-championship" target="_blank" rel="noopener">'+
     'kalshi.com, national championship winner<span class="sr-only"> (opens in a new tab)</span></a>.</p>';
