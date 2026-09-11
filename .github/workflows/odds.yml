@@ -350,10 +350,16 @@ jobs:
 
           if __name__ == "__main__":
               # Anything already parsed stays put; only genuinely new posts are fetched.
+              # This file is written as {"updated":..., "snapshots":[...]}. Read it back
+              # the same way, and tolerate a bare list from an older run.
               try:
-                  history = json.load(open("depth-history.json"))
+                  raw = json.load(open("depth-history.json"))
+                  history = raw.get("snapshots", []) if isinstance(raw, dict) else raw
+                  if not isinstance(history, list):
+                      history = []
               except Exception:
                   history = []
+              history = [h for h in history if isinstance(h, dict) and h.get("source")]
               known = {h["source"].rstrip("/") for h in history}
 
               articles = all_articles()
