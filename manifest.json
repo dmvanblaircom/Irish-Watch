@@ -1,0 +1,31 @@
+{
+  "name": "Irish Watch \u2014 Notre Dame football",
+  "short_name": "Irish Watch",
+  "description": "Notre Dame schedule, depth chart, rankings and championship odds.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0C2340",
+  "theme_color": "#0C2340",
+  "icons": [
+    {
+      "src": "irish-watch-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "irish-watch-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "irish-watch-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

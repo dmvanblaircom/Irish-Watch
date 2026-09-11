@@ -3,16 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0A1B33">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Irish Watch — Notre Dame football</title>
-<link rel="manifest" href="manifest.json">
-<meta name="mobile-web-app-capable" content="yes">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
-<meta name="apple-mobile-web-app-title" content="Irish Watch">
-<meta name="application-name" content="Irish Watch">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=Grenze+Gotisch:wght@600;700&display=swap" rel="stylesheet">
@@ -800,28 +791,31 @@
     }
   }
 </style>
-
-  <meta name="theme-color" content="#0C2340">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Irish Watch">
   <meta name="description" content="Irish Watch — a Notre Dame football game-day dashboard.">
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="Irish Watch — Notre Dame Football">
-  <meta property="og:description" content="Game day. Every day.">
-  <meta property="og:image" content="assets/irish-watch-og-1200x630.png">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Irish Watch — Notre Dame Football">
-  <meta name="twitter:description" content="Game day. Every day.">
-  <meta name="twitter:image" content="assets/irish-watch-og-1200x630.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="assets/irish-watch-favicon-32.png">
-  <link rel="icon" type="image/png" sizes="64x64" href="assets/irish-watch-favicon-64.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="assets/irish-watch-icon-180.png">
-  <link rel="icon" type="image/png" sizes="192x192" href="assets/irish-watch-icon-192.png">
-  <link rel="icon" type="image/png" sizes="512x512" href="assets/irish-watch-icon-512.png">
-  <link rel="manifest" href="manifest.webmanifest">
+
+<meta name="theme-color" content="#0C2340">
+<meta name="application-name" content="Irish Watch">
+
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Irish Watch">
+
+<link rel="icon" type="image/png" sizes="32x32" href="irish-watch-favicon-32.png">
+<link rel="icon" type="image/png" sizes="64x64" href="irish-watch-favicon-64.png">
+<link rel="apple-touch-icon" sizes="180x180" href="irish-watch-icon-180.png">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="Irish Watch — Notre Dame Football">
+<meta property="og:description" content="Game day. Every day.">
+<meta property="og:image" content="irish-watch-og-1200x630.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Irish Watch — Notre Dame Football">
+<meta name="twitter:description" content="Game day. Every day.">
+<meta name="twitter:image" content="irish-watch-og-1200x630.png">
 </head>
 <body>
 <a class="skip" href="#tabpanel">Skip to the schedule</a>
@@ -906,7 +900,10 @@ var TEAM = "87";
 // If you deploy worker.js to Cloudflare Workers, paste the worker URL here and
 // it goes first — your own relay, no third party, no rate limit worth worrying
 // about. Leave it empty and the public relays below carry the load.
-var KALSHI_PROXY = "https://irish-watch.dmvanblaircom.workers.dev";
+// Left empty on purpose. A Cloudflare worker was tried here and Kalshi
+// rate-limits Cloudflare's shared edge IPs, so the GitHub Action writes the
+// snapshot files instead. Paste a worker URL here only if that ever changes.
+var KALSHI_PROXY = "";
 
 var KALSHI_DIRECT = "https://api.elections.kalshi.com/trade-api/v2";
 
