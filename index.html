@@ -7,6 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Irish Watch — Notre Dame football</title>
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
 <meta name="apple-mobile-web-app-title" content="Irish Watch">
@@ -774,6 +776,29 @@
     .refresh,.row,[role="tab"],a.art{transition:none}
   }
 
+
+  /* ---- iOS standalone safe areas ----
+     apple-mobile-web-app-status-bar-style is black-translucent, which is what
+     lets the navy run edge to edge behind the clock. The cost is that the web
+     view starts at y=0, so the header sits under the status bar unless we
+     reserve the inset ourselves. In normal Safari these all evaluate to 0. */
+  .page{
+    padding-top:env(safe-area-inset-top, 0px);
+    padding-bottom:calc(3rem + env(safe-area-inset-bottom, 0px));
+  }
+  .wrap{
+    padding-left:calc(.85rem + env(safe-area-inset-left, 0px));
+    padding-right:calc(.85rem + env(safe-area-inset-right, 0px));
+  }
+  /* A little air between the status bar and the wordmark in standalone mode. */
+  @media (display-mode: standalone){
+    .bar{padding-top:1.35rem}
+  }
+  @supports (-webkit-touch-callout: none){
+    @media (display-mode: standalone){
+      .bar{padding-top:1.35rem}
+    }
+  }
 </style>
 
   <meta name="theme-color" content="#0C2340">
