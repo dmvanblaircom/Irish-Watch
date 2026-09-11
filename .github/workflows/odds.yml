@@ -107,8 +107,9 @@ jobs:
               for it in root.iter("item"):
                   t, l = text(it.find("title")), text(it.find("link"))
                   d = when(text(it.find("pubDate")))
+                  summ = (text(it.find("description")) or "")[:600]
                   if t and l:
-                      items.append({"title": t, "link": l, "source": name,
+                      items.append({"title": t, "link": l, "source": name, "summary": summ,
                                     "published": d.isoformat() if d else None})
                       found += 1
               # Atom
@@ -118,8 +119,10 @@ jobs:
                   link = en.find(ns + "link")
                   l = link.get("href") if link is not None else ""
                   d = when(text(en.find(ns + "updated")) or text(en.find(ns + "published")))
+                  summ = (text(en.find(ns + "summary")) or
+                          text(en.find(ns + "content")) or "")[:600]
                   if t and l:
-                      items.append({"title": t, "link": l, "source": name,
+                      items.append({"title": t, "link": l, "source": name, "summary": summ,
                                     "published": d.isoformat() if d else None})
                       found += 1
               print(f"  {name}: {found} items")
@@ -312,6 +315,39 @@ jobs:
               for n in sorted(ao - bo): out.append(f"{n} no longer listed out")
               return out[:25]
 
+
+          def later_reporting(latest, chart_date):
+              """Flag players written about AFTER this chart was published. This never
+              decides who is right — it only says newer reporting exists, and links it.
+              Matching is exact: full name, or a last name that is unique on the roster."""
+              try:
+                  news = json.load(open("news.json")).get("items", [])
+              except Exception:
+                  return
+
+              everyone = [r["name"] for rows in latest["groups"].values() for r in rows]
+              for p in latest["availability"]["out"] + latest["availability"]["questionable"]:
+                  everyone.append(p["name"])
+              surnames = {}
+              for n in everyone:
+                  last = n.split()[-1].strip(".")
+                  surnames.setdefault(last, set()).add(n)
+
+              fresh = [i for i in news if (i.get("published") or "") > chart_date + "T23:59:59"]
+
+              for p in latest["availability"]["out"] + latest["availability"]["questionable"]:
+                  blob_hits, name = [], p["name"]
+                  last = name.split()[-1].strip(".")
+                  unique_last = len(surnames.get(last, set())) == 1 and len(last) >= 5
+                  for item in fresh:
+                      hay = (item.get("title", "") + " " + item.get("summary", ""))
+                      if name in hay or (unique_last and re.search(r"\b" + re.escape(last) + r"\b", hay)):
+                          blob_hits.append({"source": item.get("source"), "title": item.get("title"),
+                                            "link": item.get("link"), "published": item.get("published")})
+                  if blob_hits:
+                      blob_hits.sort(key=lambda x: x["published"] or "", reverse=True)
+                      p["newer"] = blob_hits[:2]
+
           if __name__ == "__main__":
               # Anything already parsed stays put; only genuinely new posts are fetched.
               try:
@@ -355,6 +391,10 @@ jobs:
               latest = history[-1]
               for p in latest["availability"]["out"] + latest["availability"]["questionable"]:
                   p["weeks"] = weeks_out(p["name"], history)
+              later_reporting(latest, latest["date"])
+              flagged = sum(1 for p in latest["availability"]["out"]
+                            + latest["availability"]["questionable"] if p.get("newer"))
+              print(f"  {flagged} player(s) have reporting newer than the {latest['date']} chart")
 
               json.dump(latest, open("depth.json", "w"), indent=1)
               json.dump({"updated": datetime.now(timezone.utc).isoformat(),
