@@ -260,7 +260,511 @@
   .loading{padding:1.5rem .25rem;color:var(--dim);font-size:.95rem}
   .foot{padding:1.4rem .25rem 0;font-size:.8rem;color:var(--dim);line-height:1.6}
   [hidden]{display:none !important}
+
+  /* ================================================================
+     IRISH WATCH — VISUAL ELEVATION
+     Presentation-only layer. Existing IDs, data flow and JS behavior
+     are intentionally untouched.
+     Notre Dame Athletics palette: Blue #0C2340 / Gold #C99700.
+     ================================================================ */
+
+  :root{
+    --nd-blue:#0C2340;
+    --nd-blue-2:#07192F;
+    --nd-blue-3:#143865;
+    --nd-gold:#C99700;
+    --nd-gold-bright:#FFCD00;
+    --nd-gold-dark:#AC8400;
+    --nd-warm:#F8F4EC;
+    --nd-muted:#A9B7C9;
+    --nd-green:#0A843D;
+    --nd-line:rgba(201,151,0,.20);
+    --nd-glow:rgba(201,151,0,.14);
+  }
+
+  html,body{
+    background:
+      radial-gradient(circle at 50% -10%, rgba(20,56,101,.55), transparent 38rem),
+      var(--nd-blue-2) !important;
+  }
+
+  body{
+    color:var(--nd-warm);
+    background-image:
+      linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+    background-size:32px 32px;
+  }
+
+  .page{
+    position:relative;
+    isolation:isolate;
+    overflow:hidden;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(201,151,0,.075), transparent 34rem),
+      linear-gradient(180deg,#0C2340 0%,#091D35 24rem,#07192F 100%);
+    min-height:100vh;
+    min-height:100dvh;
+  }
+
+  .page::before{
+    content:"";
+    position:absolute;
+    inset:0 0 auto;
+    height:4px;
+    background:linear-gradient(90deg,var(--nd-blue),var(--nd-gold),var(--nd-gold-bright),var(--nd-gold),var(--nd-blue));
+    z-index:5;
+  }
+
+  .page::after{
+    content:"";
+    position:absolute;
+    width:34rem;
+    height:34rem;
+    right:-24rem;
+    top:9rem;
+    border:1px solid rgba(201,151,0,.08);
+    border-radius:50%;
+    box-shadow:0 0 0 4rem rgba(201,151,0,.025),0 0 0 8rem rgba(201,151,0,.018);
+    pointer-events:none;
+    z-index:-1;
+  }
+
+  .wrap{
+    max-width:46rem;
+    padding:0 1.15rem 3rem;
+  }
+
+  .bar{
+    min-height:4.6rem;
+    padding:1rem 0 .75rem;
+    gap:.7rem;
+    border-bottom:1px solid rgba(201,151,0,.18);
+  }
+
+  .brand-lockup{display:flex;flex-direction:column;gap:.05rem}
+  .brand-kicker{
+    font-family:'Barlow Condensed',sans-serif;
+    font-size:.64rem;
+    line-height:1;
+    letter-spacing:.18em;
+    font-weight:700;
+    color:var(--nd-muted);
+  }
+
+  .bar h1{
+    color:var(--nd-gold-bright);
+    font-family:'Barlow Condensed',sans-serif;
+    font-size:1.75rem;
+    line-height:1;
+    letter-spacing:.055em;
+    text-transform:uppercase;
+    text-shadow:0 1px 18px rgba(201,151,0,.16);
+  }
+
+  .bar .rec{
+    color:#BAC6D5;
+    font-family:'Barlow Condensed',sans-serif;
+    font-size:.86rem;
+    letter-spacing:.04em;
+  }
+
+  .bar .rank{
+    background:var(--nd-gold);
+    color:#111A26;
+    border-radius:999px;
+    padding:.18rem .52rem;
+    font-size:.72rem;
+    letter-spacing:.06em;
+  }
+
+  .refresh{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:.4rem;
+    border:1px solid rgba(201,151,0,.45);
+    background:rgba(12,35,64,.7);
+    color:var(--nd-warm);
+    border-radius:999px;
+    min-height:2.65rem;
+    padding:0 1rem;
+    font-family:'Barlow Condensed',sans-serif;
+    font-weight:700;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    transition:all .18s ease;
+  }
+
+  .refresh-icon{font-size:1rem;line-height:1}
+  .refresh:hover{
+    border-color:var(--nd-gold-bright);
+    color:var(--nd-gold-bright);
+    background:rgba(201,151,0,.08);
+    transform:translateY(-1px);
+  }
+
+  .motto{
+    position:relative;
+    margin:.8rem 0 1.15rem;
+    padding:.8rem 0 .95rem;
+    font-family:'Grenze Gotisch','Barlow Condensed',serif;
+    font-size:clamp(2.25rem,11vw,4.25rem);
+    line-height:.92;
+    letter-spacing:.015em;
+    color:var(--nd-warm);
+    text-shadow:0 2px 28px rgba(0,0,0,.28);
+    border-bottom:0;
+  }
+
+  .motto::after{
+    content:"";
+    position:absolute;
+    left:0;
+    bottom:0;
+    width:5.5rem;
+    height:3px;
+    background:var(--nd-gold);
+    box-shadow:12px 0 0 rgba(201,151,0,.28);
+  }
+
+  /* Next-game feature: make it feel like a broadcast/game-day card. */
+  .hero{
+    margin:0;
+    padding:1.45rem 1.35rem 1.25rem;
+    border:1px solid rgba(201,151,0,.52);
+    border-radius:8px 8px 0 0;
+    background:
+      linear-gradient(135deg,rgba(20,56,101,.96),rgba(7,25,47,.98) 70%),
+      var(--nd-blue);
+    color:var(--nd-warm);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.06),
+      0 18px 45px rgba(0,0,0,.22);
+  }
+
+  .hero::before{
+    content:"GAME DAY";
+    position:absolute;
+    right:1.2rem;
+    bottom:1rem;
+    font-family:'Barlow Condensed',sans-serif;
+    font-size:.62rem;
+    font-weight:700;
+    letter-spacing:.22em;
+    color:rgba(201,151,0,.42);
+    transform:rotate(-90deg) translateX(100%);
+    transform-origin:right bottom;
+    pointer-events:none;
+  }
+
+  .hero .when{
+    color:var(--nd-gold-bright);
+    font-size:.7rem;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+  }
+
+  .hero .opp{
+    margin:.3rem 0 .65rem;
+    font-size:clamp(2.05rem,8vw,3.1rem);
+    letter-spacing:.015em;
+    text-transform:uppercase;
+    text-shadow:0 2px 16px rgba(0,0,0,.24);
+  }
+
+  .hero .opp .vs{color:var(--nd-gold);opacity:1}
+  .hero .line{color:#DDE5EE}
+  .hero .venue{color:#9FB0C4}
+  .hero .series{
+    color:var(--nd-gold-bright);
+    letter-spacing:.02em;
+  }
+
+  .hero .clock{
+    border-top:1px solid rgba(201,151,0,.28);
+    color:var(--nd-warm);
+    letter-spacing:.02em;
+  }
+
+  .hero .spread{
+    top:1.35rem;
+    right:1.35rem;
+    color:#DCE5EF;
+  }
+
+  .hero.live{
+    background:linear-gradient(135deg,#7E241F,#3C1717);
+    border-color:#D06A5D;
+  }
+
+  .hero.live .when{color:#FFD9D3}
+
+  /* Market strip */
+  .strip{
+    margin-bottom:1.45rem;
+    background:rgba(10,28,50,.88);
+    border:1px solid rgba(201,151,0,.24);
+    border-top:0;
+    border-radius:0 0 8px 8px;
+    box-shadow:0 12px 30px rgba(0,0,0,.16);
+  }
+
+  .strip > div{
+    padding:.8rem .9rem;
+    border-right:1px solid rgba(201,151,0,.16);
+  }
+
+  .strip dt{
+    color:#8FA2B8;
+    font-size:.64rem;
+    text-transform:uppercase;
+    letter-spacing:.11em;
+  }
+
+  .strip dd{
+    color:var(--nd-gold-bright);
+    font-size:1.55rem;
+  }
+
+  /* Navigation becomes a premium segmented control. */
+  [role="tablist"]{
+    gap:.3rem;
+    padding:.3rem;
+    border:1px solid rgba(201,151,0,.16);
+    border-radius:8px;
+    background:rgba(5,19,36,.7);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
+  }
+
+  [role="tab"]{
+    min-height:2.6rem;
+    border:0;
+    border-radius:5px;
+    color:#8295AA;
+    font-size:.82rem;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    transition:all .18s ease;
+  }
+
+  [role="tab"][aria-selected="true"]{
+    color:#101C2B;
+    background:var(--nd-gold);
+    border-bottom-color:transparent;
+    box-shadow:0 4px 14px rgba(201,151,0,.16);
+  }
+
+  [role="tab"]:hover:not([aria-selected="true"]){
+    color:var(--nd-warm);
+    background:rgba(201,151,0,.08);
+  }
+
+  /* Content sections */
+  h2.sec{
+    margin:1.6rem 0 .35rem;
+    padding:.7rem .7rem .55rem;
+    border-bottom:1px solid rgba(201,151,0,.23);
+    border-left:3px solid var(--nd-gold);
+    color:var(--nd-warm);
+    background:linear-gradient(90deg,rgba(201,151,0,.07),transparent 70%);
+    font-size:.92rem;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+  }
+
+  .row{
+    margin:.22rem 0;
+    padding:.88rem .7rem;
+    border:1px solid transparent;
+    border-bottom-color:rgba(169,183,201,.10);
+    border-radius:5px;
+    transition:background .16s ease,border-color .16s ease,transform .16s ease;
+  }
+
+  .row:hover{
+    background:rgba(20,56,101,.28);
+    border-color:rgba(201,151,0,.12);
+  }
+
+  .row.next,.row.nd{
+    margin:.35rem 0;
+    padding-left:.72rem;
+    padding-right:.72rem;
+    background:linear-gradient(90deg,rgba(201,151,0,.14),rgba(201,151,0,.035));
+    border:1px solid rgba(201,151,0,.28);
+    border-left:3px solid var(--nd-gold);
+    box-shadow:0 6px 18px rgba(0,0,0,.10);
+  }
+
+  .row .date .m{color:#879AB0}
+  .row .date .d{color:var(--nd-warm)}
+  .row .team{font-weight:600}
+  .row .sub{color:#8FA2B8}
+  .row .rk,.row .net,.row .trophy{color:var(--nd-gold-bright)}
+  .row .net{
+    border-color:rgba(201,151,0,.55);
+    background:rgba(201,151,0,.06);
+  }
+
+  .tag.h{
+    background:var(--nd-gold);
+    border-color:var(--nd-gold);
+    color:#101A28;
+  }
+
+  .tag.a{
+    border-color:#657990;
+    color:#A8B7C9;
+  }
+
+  .tag.n{
+    color:#5BC48A;
+    border-color:#338B60;
+  }
+
+  /* Odds board */
+  .obar{
+    margin:.22rem 0;
+    padding:.72rem .7rem;
+    border:1px solid transparent;
+    border-bottom-color:rgba(169,183,201,.10);
+    border-radius:5px;
+  }
+
+  .obar.nd{
+    background:linear-gradient(90deg,rgba(201,151,0,.15),rgba(201,151,0,.035));
+    border:1px solid rgba(201,151,0,.28);
+    border-left:3px solid var(--nd-gold);
+  }
+
+  .obar .track{
+    background:#081A30;
+    border-color:rgba(169,183,201,.12);
+    height:.42rem;
+  }
+
+  .obar .fill{background:linear-gradient(90deg,var(--nd-gold-dark),var(--nd-gold-bright))}
+  .obar .pc{color:var(--nd-gold-bright)}
+
+  /* Depth / utility blocks */
+  .depth-pos{
+    margin:1rem 0 .25rem;
+    padding:.35rem .55rem;
+    border-left:3px solid var(--nd-gold);
+    background:rgba(201,151,0,.055);
+  }
+
+  .depth-pos b{color:var(--nd-gold-bright)}
+  .depth-pos .battle{background:var(--nd-gold);color:#111A26}
+
+  ul.ladder li,.avail li{
+    border-bottom-color:rgba(169,183,201,.10);
+  }
+
+  ul.ladder li.d1{color:var(--nd-warm)}
+  ul.ladder .jersey{color:#788CA4}
+  ul.ladder .ortag{
+    color:var(--nd-gold-bright);
+    border-color:rgba(201,151,0,.55);
+  }
+
+  .newer{
+    background:rgba(20,56,101,.34);
+    border-left-color:#5AAFD1;
+  }
+
+  .newer b{color:#78C6E6}
+  .stamp a,a.art .src,.msg a,.foot a{color:var(--nd-gold-bright)}
+
+  details.week{
+    border-bottom-color:rgba(169,183,201,.10);
+  }
+
+  details.week summary:hover{background:rgba(20,56,101,.22)}
+  details.week summary .wd{color:var(--nd-gold-bright)}
+
+  a.art{
+    padding:.95rem .7rem;
+    margin:.2rem 0;
+    border:1px solid transparent;
+    border-bottom-color:rgba(169,183,201,.10);
+    border-radius:5px;
+  }
+
+  a.art:hover{
+    background:rgba(20,56,101,.22);
+    border-color:rgba(201,151,0,.12);
+  }
+
+  a.art img{
+    width:5.4rem;
+    height:3.65rem;
+    border-radius:4px;
+    border:1px solid rgba(201,151,0,.12);
+  }
+
+  a.art .hl{font-size:1rem}
+  a.art:hover .hl{color:var(--nd-gold-bright)}
+
+  .msg{
+    margin-top:1rem;
+    padding:1.25rem 1rem;
+    border:1px solid rgba(201,151,0,.16);
+    border-radius:6px;
+    background:rgba(20,56,101,.18);
+  }
+
+  .loading{
+    padding:1.35rem .7rem;
+    color:#8FA2B8;
+  }
+
+  .foot{
+    margin-top:1.5rem;
+    padding-top:1rem;
+    border-top:1px solid rgba(201,151,0,.14);
+    color:#73879E;
+  }
+
+  @media (max-width:32rem){
+    .wrap{padding-left:.85rem;padding-right:.85rem}
+    .bar{min-height:4.15rem}
+    .brand-kicker{font-size:.57rem;letter-spacing:.14em}
+    .bar h1{font-size:1.5rem}
+    .refresh{padding:0 .75rem;font-size:.78rem}
+    .refresh-icon{font-size:.9rem}
+    .hero{padding:1.25rem 1rem 1.1rem}
+    .hero .spread{right:1rem}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    .refresh,.row,[role="tab"],a.art{transition:none}
+  }
+
 </style>
+
+  <meta name="theme-color" content="#0C2340">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Irish Watch">
+  <meta name="description" content="Irish Watch — a Notre Dame football game-day dashboard.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Irish Watch — Notre Dame Football">
+  <meta property="og:description" content="Game day. Every day.">
+  <meta property="og:image" content="assets/irish-watch-og-1200x630.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Irish Watch — Notre Dame Football">
+  <meta name="twitter:description" content="Game day. Every day.">
+  <meta name="twitter:image" content="assets/irish-watch-og-1200x630.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/irish-watch-favicon-32.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="assets/irish-watch-favicon-64.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/irish-watch-icon-180.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/irish-watch-icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="assets/irish-watch-icon-512.png">
+  <link rel="manifest" href="manifest.webmanifest">
 </head>
 <body>
 <a class="skip" href="#tabpanel">Skip to the schedule</a>
@@ -268,11 +772,14 @@
 <div class="wrap">
 
   <header class="bar">
-    <h1>Irish Watch</h1>
+    <div class="brand-lockup">
+      <div class="brand-kicker">NOTRE DAME FOOTBALL</div>
+      <h1>Irish Watch</h1>
+    </div>
     <span class="rank" id="rank" hidden></span>
     <span class="rec" id="rec"></span>
     <span class="spacer"></span>
-    <button type="button" class="refresh" id="refresh">Refresh</button>
+    <button type="button" class="refresh" id="refresh"><span class="refresh-icon" aria-hidden="true">↻</span> Refresh</button>
   </header>
 
   <!-- 2026 team motto -->
