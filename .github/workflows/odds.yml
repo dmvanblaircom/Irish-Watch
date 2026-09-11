@@ -143,7 +143,7 @@ jobs:
                 f"{len({i['source'] for i in keep})} sources")
           PY
 
-      - name: Parse the UHND depth chart and availability report
+      - name: Parse the UHND depth chart, availability and week-by-week history
         continue-on-error: true
         run: |
           pip install --quiet beautifulsoup4
@@ -161,16 +161,40 @@ jobs:
               req = urllib.request.Request(url, headers={"user-agent": UA})
               return urllib.request.urlopen(req, timeout=30).read().decode("utf-8", "replace")
 
-          def newest_article():
-              html = fetch(INDEX)
-              links = re.findall(r'href="(https://www\.uhnd\.com/football/\d{4}/\d{2}/\d{2}/[^"]*depth-chart[^"]*)"', html)
-              if not links:
-                  sys.exit("no depth chart link found on the index page")
-              seen, out = set(), []
-              for l in links:
-                  if l not in seen:
-                      seen.add(l); out.append(l)
-              return out[0]
+          SEASON = "2026"
+
+          def all_articles():
+              """Every depth chart post for this season, oldest first. The index paginates,
+              so walk a few pages. Dates come from the URL, which UHND puts there."""
+              found = {}
+              for page in range(1, 5):
+                  url = INDEX if page == 1 else INDEX.rstrip("/") + f"/page/{page}/"
+                  try:
+                      html = fetch(url)
+                  except Exception:
+                      break
+                  hits = re.findall(
+                      r'href="(https://www\.uhnd\.com/football/(\d{4})/(\d{2})/(\d{2})/[^"]*depth-chart[^"]*?)"',
+                      html)
+                  if not hits:
+                      break
+                  for link, y, m, d in hits:
+                      if y == SEASON:
+                          found[link.rstrip("/")] = f"{y}-{m}-{d}"
+              return sorted(found.items(), key=lambda kv: kv[1])
+
+
+          def weeks_out(name, history):
+              """Consecutive snapshots, counting back from the latest, where this player
+              was listed out. Turns a status into a trend."""
+              n = 0
+              for snap in reversed(history):
+                  names = {p["name"] for p in snap.get("availability", {}).get("out", [])}
+                  if name in names:
+                      n += 1
+                  else:
+                      break
+              return n
 
           def cells(tr):
               return [c.get_text(" ", strip=True) for c in tr.find_all(["td", "th"])]
@@ -289,24 +313,58 @@ jobs:
               return out[:25]
 
           if __name__ == "__main__":
-              url = newest_article()
-              print("  article:", url)
-              data = build(url, fetch(url))
+              # Anything already parsed stays put; only genuinely new posts are fetched.
               try:
-                  old = json.load(open("depth.json"))
+                  history = json.load(open("depth-history.json"))
               except Exception:
-                  old = None
-              data["changes"] = diff(data, old)
+                  history = []
+              known = {h["source"].rstrip("/") for h in history}
 
-              n = sum(len(v) for v in data["groups"].values())
-              print(f"  {n} depth rows across {len(data['groups'])} groups")
-              print(f"  {len(data['battles'])} battles, "
-                    f"{len(data['availability']['out'])} out, "
-                    f"{len(data['availability']['questionable'])} questionable, "
-                    f"{len(data['changes'])} changes")
-              if n < 25 or not data["groups"]:
-                  sys.exit("parse looks wrong — refusing to overwrite depth.json")
-              json.dump(data, open("depth.json", "w"), indent=1)
+              articles = all_articles()
+              print(f"  {len(articles)} depth chart posts found for {SEASON}")
+              if not articles:
+                  sys.exit("index returned nothing — leaving existing files alone")
+
+              added = 0
+              for url, date in articles:
+                  if url in known:
+                      continue
+                  print("  fetching", date, url.split("/")[-1][:52])
+                  try:
+                      snap = build(url, fetch(url))
+                  except Exception as e:
+                      print(f"    SKIP: {str(e)[:90]}")
+                      continue
+                  rows = sum(len(v) for v in snap["groups"].values())
+                  if rows < 25:
+                      print(f"    SKIP: only {rows} rows parsed")
+                      continue
+                  snap["date"] = date
+                  history.append(snap)
+                  added += 1
+
+              if not history:
+                  sys.exit("nothing parsed — refusing to write")
+
+              history.sort(key=lambda h: h["date"])
+
+              # each snapshot carries its diff against the one before it
+              for i, snap in enumerate(history):
+                  snap["changes"] = diff(snap, history[i - 1] if i else None)
+
+              latest = history[-1]
+              for p in latest["availability"]["out"] + latest["availability"]["questionable"]:
+                  p["weeks"] = weeks_out(p["name"], history)
+
+              json.dump(latest, open("depth.json", "w"), indent=1)
+              json.dump({"updated": datetime.now(timezone.utc).isoformat(),
+                         "snapshots": history}, open("depth-history.json", "w"), indent=1)
+
+              print(f"  {added} new snapshot(s); history now {len(history)} weeks "
+                    f"({history[0]['date']} to {latest['date']})")
+              print(f"  latest: {len(latest['battles'])} battles, "
+                    f"{len(latest['availability']['out'])} out, "
+                    f"{len(latest['changes'])} changes vs prior week")
 
           PY
 
@@ -314,6 +372,6 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add odds-title.json odds-playoff.json news.json depth.json
+          git add odds-title.json odds-playoff.json news.json depth.json depth-history.json
           git diff --staged --quiet || git commit -m "Refresh Kalshi odds"
           git push
