@@ -1,7 +1,7 @@
 {
- "source": "https://www.uhnd.com/football/2026/09/08/notre-dame-football-week-2-depth-chart-2026-rice/",
+ "source": "https://www.uhnd.com/football/2026/09/08/notre-dame-football-week-2-depth-chart-2026-rice",
  "title": "Notre Dame Football Depth Chart: Week 2 Rice",
- "fetched": "2026-09-11T03:53:28.613879+00:00",
+ "fetched": "2026-09-11T03:59:43.592074+00:00",
  "groups": {
   "Offense": [
    {
@@ -685,7 +685,8 @@
     "no": "27",
     "pos": "LB",
     "name": "Kyngstonn Viliamu-Asa",
-    "detail": "Left Knee"
+    "detail": "Left Knee",
+    "weeks": 0
    }
   ],
   "out": [
@@ -693,63 +694,86 @@
     "no": "58",
     "pos": "OL",
     "name": "Matty Augustine",
-    "detail": "Right Foot"
+    "detail": "Right Foot",
+    "weeks": 2
    },
    {
     "no": "6",
     "pos": "DL",
     "name": "Christopher Burgess Jr.",
-    "detail": "Left Tibia"
+    "detail": "Left Tibia",
+    "weeks": 2
    },
    {
     "no": "55",
     "pos": "DL",
     "name": "Tiki Hola",
-    "detail": "Right Knee"
+    "detail": "Right Knee",
+    "weeks": 2
    },
    {
     "no": "56",
     "pos": "OL",
     "name": "Charles Jagusah",
-    "detail": "Left Humerus"
+    "detail": "Left Humerus",
+    "weeks": 2
    },
    {
     "no": "9",
     "pos": "S",
     "name": "Brauntae Johnson",
-    "detail": "Left Foot"
+    "detail": "Left Foot",
+    "weeks": 1
    },
    {
     "no": "16",
     "pos": "LB",
     "name": "Ko\u2019o Kia",
-    "detail": "Left Shoulder"
+    "detail": "Left Shoulder",
+    "weeks": 2
    },
    {
     "no": "47",
     "pos": "DL",
     "name": "Jason Onye",
-    "detail": "Left Ankle"
+    "detail": "Left Ankle",
+    "weeks": 1
    },
    {
     "no": "0",
     "pos": "WR",
     "name": "Quincy Porter",
-    "detail": "Left Knee"
+    "detail": "Left Knee",
+    "weeks": 2
    },
    {
     "no": "26",
     "pos": "DB",
     "name": "Chaz Smith",
-    "detail": "Right Wrist"
+    "detail": "Right Wrist",
+    "weeks": 2
    },
    {
     "no": "55",
     "pos": "OL",
     "name": "Chris Terek",
-    "detail": "Right Knee"
+    "detail": "Right Knee",
+    "weeks": 2
    }
   ]
  },
- "changes": []
+ "date": "2026-09-08",
+ "changes": [
+  "Francis Brewu moves up to 1 at DT",
+  "Tionne Gray moves up to 1 at DT",
+  "Sean Sevillano Jr. moves up to 2 at DT",
+  "Jayden Sanders drops to 2 at CB",
+  "Ethan Long enters the two-deep at BOUND",
+  "Luke Talich moves up to 1 at FIELD",
+  "Joey O\u2019Brien moves from BOUND to FIELD",
+  "Jason Onye off the two-deep",
+  "Brauntae Johnson off the two-deep",
+  "Brauntae Johnson now listed out",
+  "Jason Onye now listed out"
+ ]
 }
