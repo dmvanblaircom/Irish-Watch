@@ -263,6 +263,48 @@
   details.poll summary .ws{font-size:.85rem}
   details.poll ol{padding-bottom:.4rem}
   .pollnote{font-size:.82rem;color:var(--dim);padding:.55rem .15rem}
+  /* live game view */
+  .gscore{display:flex;align-items:center;gap:.6rem;padding:.8rem .15rem;border-bottom:1px solid var(--ink-3)}
+  .gscore .side{flex:1;min-width:0}
+  .gscore .side .nm{font-weight:600;font-size:1.05rem}
+  .gscore .side .rec{font-size:.8rem;color:var(--dim)}
+  .gscore .pts{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:2rem;
+    font-variant-numeric:tabular-nums;line-height:1}
+  .gscore.lead .pts{color:var(--leaf)}
+  .gstatus{display:flex;align-items:baseline;gap:.5rem;padding:.5rem .15rem;font-size:.9rem}
+  .gstatus .dot{width:.5rem;height:.5rem;border-radius:50%;background:var(--loss);flex:none;
+    animation:pulse 1.6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  @media (prefers-reduced-motion:reduce){.gstatus .dot{animation:none}}
+  .lastplay{margin:.5rem 0;padding:.7rem .8rem;background:var(--ink-2);border-left:3px solid var(--leaf);
+    border-radius:0 3px 3px 0}
+  .lastplay .k{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.72rem;
+    letter-spacing:.08em;color:var(--leaf)}
+  .lastplay .t{font-size:.95rem;line-height:1.45;margin-top:.2rem}
+  .lastplay .dd{font-size:.82rem;color:var(--dim);margin-top:.3rem}
+  .statrow{display:flex;align-items:center;gap:.6rem;padding:.42rem .15rem;border-bottom:1px solid var(--ink-3);
+    font-variant-numeric:tabular-nums}
+  .statrow .lbl{flex:1;text-align:center;font-size:.82rem;color:var(--dim)}
+  .statrow .v{width:4.2rem;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem}
+  .statrow .v.r{text-align:right}
+  .statrow .v.win{color:var(--leaf)}
+  .linescore{width:100%;border-collapse:collapse;margin:.3rem 0 .2rem;font-variant-numeric:tabular-nums}
+  .linescore th,.linescore td{padding:.35rem .3rem;text-align:center;border-bottom:1px solid var(--ink-3);
+    font-size:.9rem}
+  .linescore th{font-family:'Barlow Condensed',sans-serif;font-weight:600;color:var(--dim);font-size:.78rem;
+    letter-spacing:.05em}
+  .linescore td:first-child,.linescore th:first-child{text-align:left;font-weight:600}
+  .linescore td.tot{font-weight:700;color:var(--leaf)}
+  .ldr{display:flex;gap:.6rem;padding:.4rem .15rem;border-bottom:1px solid var(--ink-3);font-size:.9rem}
+  .ldr .cat{width:4.6rem;flex:none;font-family:'Barlow Condensed',sans-serif;font-weight:600;
+    color:var(--dim);font-size:.8rem;letter-spacing:.04em}
+  .ldr .who{flex:1;min-width:0}
+  .ldr .line{color:var(--dim);font-size:.85rem}
+  .scorply{display:flex;gap:.6rem;padding:.4rem .15rem;border-bottom:1px solid var(--ink-3);font-size:.88rem}
+  .scorply .qc{width:3.4rem;flex:none;color:var(--dim);font-size:.8rem}
+  .scorply .tx{flex:1}
+  .scorply .sc{flex:none;font-family:'Barlow Condensed',sans-serif;font-weight:700;color:var(--leaf)}
+  .row .live{display:block;font-size:.82rem;color:var(--loss);margin-top:.15rem}
   .stamp{font-size:.78rem;color:var(--dim);padding:.5rem .15rem 0}
   .stamp a{color:var(--leaf)}
 
@@ -865,6 +907,7 @@
 
     <h2 class="sr-only">Notre Dame and national football data</h2>
     <div role="tablist" aria-label="Sections">
+      <button type="button" role="tab" id="tab-game"     aria-controls="panel-game"     aria-selected="false" tabindex="-1">Game</button>
       <button type="button" role="tab" id="tab-schedule" aria-controls="panel-schedule" aria-selected="true"  tabindex="0">Schedule</button>
       <button type="button" role="tab" id="tab-around"   aria-controls="panel-around"   aria-selected="false" tabindex="-1">Top 25</button>
       <button type="button" role="tab" id="tab-odds"     aria-controls="panel-odds"     aria-selected="false" tabindex="-1">Odds</button>
@@ -873,6 +916,7 @@
     </div>
 
     <div id="tabpanel" tabindex="-1">
+      <div role="tabpanel" id="panel-game" aria-labelledby="tab-game" tabindex="0" hidden></div>
       <div role="tabpanel" id="panel-schedule" aria-labelledby="tab-schedule" tabindex="0">
         <p class="loading">Loading the schedule…</p>
       </div>
@@ -1305,6 +1349,16 @@ function loadAround(){
           right = net ? '<span class="net"><span class="sr-only">Watch on </span>'+esc(net)+"</span>"
                       : '<span class="net tbd">Network <abbr title="to be determined">TBD</abbr></span>';
         }
+        // The scoreboard payload already carries live down/distance and the last
+        // play for in-progress games. No extra request needed.
+        var sit=comp.situation||{};
+        var liveLine="";
+        if(st.state==="in"){
+          var lp=(sit.lastPlay&&sit.lastPlay.text)||"";
+          var dd=sit.downDistanceText||sit.shortDownDistanceText||"";
+          var bits=[dd, lp].filter(Boolean).join(" \u00B7 ");
+          if(bits) liveLine='<span class="live">'+esc(bits.slice(0,150))+"</span>";
+        }
         var sub=(st.state==="pre"
             ? (timeIsSet(ev.date)?fmtTime(ev.date)+" "+tzAbbr():"Kickoff time not announced")
             : (comp.venue?esc(comp.venue.fullName||""):""))
@@ -1312,7 +1366,7 @@ function loadAround(){
           +(o&&o.total!=null?" \u00B7 over-under "+o.total:"");
         html+='<li class="row '+(isND?"nd":"")+'">'+dateChip(ev.date)+
           '<span class="mid"><span class="team">'+nm(away)+' <span class="pre">at</span> '+nm(home)+
-          '</span><span class="sub">'+sub+"</span></span>"+
+          '</span><span class="sub">'+sub+"</span>"+liveLine+"</span>"+
           '<span class="right">'+right+"</span></li>";
       });
       if(ranked.length) html+="</ul>";
@@ -1564,6 +1618,235 @@ function loadHistory(){
   }).catch(function(){ /* history is a bonus; silence is fine */ });
 }
 
+/* ---------- game view: live line, box score, leaders ---------- */
+// Everything here comes from ESPN's summary endpoint, which is CORS-open, so
+// this is all client side. Field names vary by game state, so every read is
+// defensive — a missing section drops out rather than blanking the tab.
+
+var G = { poll:null, id:null };
+
+function pick(o, path, dflt){
+  var cur=o;
+  for(var i=0;i<path.length;i++){
+    if(cur==null) return dflt;
+    cur=cur[path[i]];
+  }
+  return cur==null ? dflt : cur;
+}
+function statVal(team, keys){
+  var st=(team&&team.statistics)||[];
+  for(var i=0;i<st.length;i++){
+    var n=String(st[i].name||"").toLowerCase(), l=String(st[i].label||"").toLowerCase();
+    for(var k=0;k<keys.length;k++){
+      var want=keys[k].toLowerCase();
+      if(n===want||l===want) return st[i].displayValue!=null?st[i].displayValue:st[i].value;
+    }
+  }
+  return null;
+}
+function numOf(v){ var n=parseFloat(String(v).replace(/[^0-9.\-]/g,"")); return isNaN(n)?null:n; }
+
+// Which game to show: one in progress, else the most recent finished, else next up.
+function gameToShow(){
+  if(!S.games||!S.games.length) return null;
+  var live=S.games.filter(function(g){return g.state==="in";})[0];
+  if(live) return live;
+  var done=S.games.filter(function(g){return g.state==="post";});
+  if(done.length) return done[done.length-1];
+  return S.games[0];
+}
+
+function loadGame(force){
+  var el=$("panel-game");
+  var g=gameToShow();
+  if(!g){ el.innerHTML='<p class="loading">Waiting on the schedule…</p>'; return; }
+  if(el.dataset.loaded===g.id && !force) return;
+  if(!el.dataset.loaded) el.innerHTML='<p class="loading">Loading the game…</p>';
+
+  get(ESPN+"/summary?event="+g.id).then(function(d){
+    el.innerHTML=renderGame(d);
+    el.dataset.loaded=g.id;
+    schedulePoll(d);
+  }).catch(function(){
+    if(el.dataset.loaded) return;              // keep the last good render
+    el.innerHTML='<p class="msg"><strong>Couldn\u2019t load the game.</strong>'+
+      'ESPN didn\u2019t return a summary for this one. Choose Refresh to try again.</p>';
+  });
+}
+
+// Poll only while the ball is actually in play, and stop when the tab is hidden.
+function schedulePoll(d){
+  if(G.poll){ clearInterval(G.poll); G.poll=null; }
+  var state=pick(d,["header","competitions",0,"status","type","state"],"post");
+  if(state!=="in") return;
+  G.poll=setInterval(function(){
+    if(document.hidden) return;
+    if($("panel-game").hidden) return;
+    loadGame(true);
+  }, 25000);
+}
+document.addEventListener("visibilitychange", function(){
+  if(!document.hidden && !$("panel-game").hidden) loadGame(true);
+});
+
+function renderGame(d){
+  var comp=pick(d,["header","competitions",0],{}) || {};
+  var cs=comp.competitors||[];
+  var home=cs.filter(function(c){return c.homeAway==="home";})[0]||cs[0]||{};
+  var away=cs.filter(function(c){return c.homeAway==="away";})[0]||cs[1]||{};
+  var st=pick(comp,["status","type"],{})||{};
+  var live=st.state==="in", done=st.state==="post";
+  var html="";
+
+  // ---- score line ----
+  function side(c){
+    var t=c.team||{};
+    var nm=t.shortDisplayName||t.displayName||t.name||"TBA";
+    var isND=String(t.id)===TEAM;
+    var rec=(c.records&&c.records[0]&&c.records[0].summary)||"";
+    var pts=c.score!=null?c.score:"";
+    var lead = done||live ? (numOf(pts)>numOf((c===home?away:home).score) ? " lead":"") : "";
+    return '<div class="gscore'+lead+'">'+
+      '<div class="side"><div class="nm">'+(isND?'<span class="rk">ND</span> ':"")+esc(nm)+"</div>"+
+      (rec?'<div class="rec">'+esc(rec)+"</div>":"")+"</div>"+
+      '<div class="pts">'+esc(String(pts))+"</div></div>";
+  }
+  html+=side(away)+side(home);
+
+  html+='<div class="gstatus">'+(live?'<span class="dot" aria-hidden="true"></span>':"")+
+    "<span>"+esc(st.detail||st.shortDetail||st.description||"")+"</span></div>";
+
+  // ---- last play and down/distance ----
+  var sit=d.situation||comp.situation||{};
+  var lastText=pick(sit,["lastPlay","text"],null);
+  if(!lastText){
+    var cur=pick(d,["drives","current","plays"],null);
+    if(cur&&cur.length) lastText=cur[cur.length-1].text;
+  }
+  if(!lastText){
+    var prev=pick(d,["drives","previous"],null);
+    if(prev&&prev.length){
+      var pl=prev[prev.length-1].plays;
+      if(pl&&pl.length) lastText=pl[pl.length-1].text;
+    }
+  }
+  if(lastText && (live||done)){
+    var dd=sit.downDistanceText||sit.shortDownDistanceText||"";
+    var poss=pick(sit,["lastPlay","team","abbreviation"],"")||"";
+    html+='<div class="lastplay"><div class="k">'+(live?"LAST PLAY":"FINAL PLAY")+"</div>"+
+      '<div class="t">'+esc(lastText)+"</div>"+
+      ((dd||poss)?'<div class="dd">'+esc([poss,dd].filter(Boolean).join(" · "))+"</div>":"")+
+      "</div>";
+  }
+
+  // ---- win probability ----
+  var wp=d.winprobability;
+  if(live && wp && wp.length){
+    var last=wp[wp.length-1];
+    var hp=last.homeWinPercentage;
+    if(typeof hp==="number"){
+      var favIsHome=hp>=0.5;
+      var fav=favIsHome?home:away;
+      var pct=Math.round((favIsHome?hp:1-hp)*100);
+      html+='<div class="statrow"><span class="v">'+pct+'%</span>'+
+        '<span class="lbl">win probability</span>'+
+        '<span class="v r">'+esc(pick(fav,["team","abbreviation"],"")||"")+"</span></div>";
+    }
+  }
+
+  // ---- linescore by quarter ----
+  var al=away.linescores||[], hl=home.linescores||[];
+  if(al.length||hl.length){
+    var qn=Math.max(al.length,hl.length);
+    html+='<h2 class="sec">By quarter</h2><table class="linescore"><thead><tr><th></th>';
+    for(var q=0;q<qn;q++) html+="<th>"+(q<4?(q+1):"OT"+(q-3))+"</th>";
+    html+="<th>T</th></tr></thead><tbody>";
+    [[away,al],[home,hl]].forEach(function(pair){
+      html+="<tr><td>"+esc(pick(pair[0],["team","abbreviation"],"")||"")+"</td>";
+      for(var q=0;q<qn;q++){
+        var v=pair[1][q];
+        html+="<td>"+(v?esc(String(v.displayValue!=null?v.displayValue:v.value)):"–")+"</td>";
+      }
+      html+='<td class="tot">'+esc(String(pair[0].score!=null?pair[0].score:""))+"</td></tr>";
+    });
+    html+="</tbody></table>";
+  }
+
+  // ---- team stats, away on the left to match the score line ----
+  var bt=pick(d,["boxscore","teams"],[])||[];
+  if(bt.length>=2){
+    var bh=bt.filter(function(t){return String(pick(t,["team","id"],""))===String(pick(home,["team","id"],""));})[0]||bt[1];
+    var ba=bt.filter(function(t){return t!==bh;})[0]||bt[0];
+    var rows=[
+      ["Total yards",["totalYards"]],
+      ["Passing",["netPassingYards","passingYards"]],
+      ["Rushing",["rushingYards"]],
+      ["First downs",["firstDowns"]],
+      ["3rd down",["thirdDownEff"]],
+      ["Turnovers",["turnovers"]],
+      ["Penalties",["totalPenaltiesYards"]],
+      ["Possession",["possessionTime"]]
+    ];
+    var body="";
+    rows.forEach(function(r){
+      var av=statVal(ba,r[1]), hv=statVal(bh,r[1]);
+      if(av==null&&hv==null) return;
+      var an=numOf(av), hn=numOf(hv);
+      var aw="", hw="";
+      if(an!=null&&hn!=null&&an!==hn){
+        var lowerWins = r[0]==="Turnovers"||r[0]==="Penalties";
+        var awin = lowerWins ? an<hn : an>hn;
+        aw=awin?" win":""; hw=awin?"":" win";
+      }
+      body+='<div class="statrow"><span class="v'+aw+'">'+esc(String(av==null?"–":av))+"</span>"+
+        '<span class="lbl">'+r[0]+"</span>"+
+        '<span class="v r'+hw+'">'+esc(String(hv==null?"–":hv))+"</span></div>";
+    });
+    if(body){
+      html+='<h2 class="sec">Team stats <span class="count" style="font-weight:500;color:var(--dim)">'+
+        esc(pick(ba,["team","abbreviation"],"")||"")+" vs "+esc(pick(bh,["team","abbreviation"],"")||"")+
+        "</span></h2>"+body;
+    }
+  }
+
+  // ---- leaders ----
+  var lead=d.leaders||[];
+  var lbody="";
+  lead.forEach(function(tl){
+    var abbr=pick(tl,["team","abbreviation"],"")||"";
+    (tl.leaders||[]).forEach(function(cat){
+      var top=(cat.leaders||[])[0];
+      if(!top) return;
+      var nm=pick(top,["athlete","shortName"],null)||pick(top,["athlete","displayName"],"");
+      if(!nm) return;
+      lbody+='<div class="ldr"><span class="cat">'+esc((cat.shortDisplayName||cat.displayName||"").slice(0,9))+"</span>"+
+        '<span class="who">'+esc(nm)+' <span style="color:var(--dim)">'+esc(abbr)+"</span>"+
+        '<span class="line">'+esc(top.displayValue||"")+"</span></span></div>";
+    });
+  });
+  if(lbody) html+='<h2 class="sec">Leaders</h2>'+lbody;
+
+  // ---- scoring summary ----
+  var sp=d.scoringPlays||[];
+  if(sp.length){
+    var sbody="";
+    sp.forEach(function(p){
+      sbody+='<div class="scorply"><span class="qc">'+esc((p.period&&p.period.number?"Q"+p.period.number:"")+
+        (p.clock&&p.clock.displayValue?" "+p.clock.displayValue:""))+"</span>"+
+        '<span class="tx">'+esc(p.text||"")+"</span>"+
+        '<span class="sc">'+esc((p.awayScore!=null?p.awayScore:"")+"–"+(p.homeScore!=null?p.homeScore:""))+
+        "</span></div>";
+    });
+    html+='<details class="fold"><summary>Scoring summary <span class="count">'+sp.length+
+      " scores</span></summary><div class=\"foldbody\">"+sbody+"</div></details>";
+  }
+
+  html+='<p class="stamp">'+(live
+      ? "Updating every 25 seconds while the game is live."
+      : "Final data from ESPN. Live updates resume at kickoff.")+"</p>";
+  return html;
+}
+
 /* ---------- news ---------- */
 // Two sources merged: ESPN's own feed, and the beat-writer RSS that the
 // GitHub Action fetches server-side and commits as news.json. RSS sites send
@@ -1653,6 +1936,7 @@ function selectTab(tab, focusIt){
   });
   if(focusIt) tab.focus();
   var name=tab.id.replace("tab-","");
+  if(name==="game")   loadGame();
   if(name==="around") loadAround();
   if(name==="odds")   loadOdds();
   if(name==="depth")  loadDepth();
@@ -1719,10 +2003,12 @@ function load(){
 
 $("refresh").addEventListener("click",function(){
   ["around","odds","depth","news"].forEach(function(n){ $("panel-"+n).dataset.loaded=""; });
+  $("panel-game").dataset.loaded="";
   say("Refreshing…");
   load();
   var cur=tabs.filter(function(t){return t.getAttribute("aria-selected")==="true";})[0];
   var name=cur.id.replace("tab-","");
+  if(name==="game")   loadGame(true);
   if(name==="around") loadAround();
   if(name==="odds")   loadOdds();
   if(name==="depth")  loadDepth();
