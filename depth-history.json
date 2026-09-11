@@ -1,5 +1,5 @@
 {
- "updated": "2026-09-11T03:59:43.594452+00:00",
+ "updated": "2026-09-11T05:47:12.234573+00:00",
  "snapshots": [
   {
    "source": "https://www.uhnd.com/football/2026/08/31/notre-dame-football-depth-chart-2026-week-1-vs-wisconsin",
@@ -1462,7 +1462,21 @@
       "pos": "S",
       "name": "Brauntae Johnson",
       "detail": "Left Foot",
-      "weeks": 1
+      "weeks": 1,
+      "newer": [
+       {
+        "source": "One Foot Down",
+        "title": "UPDATED Notre Dame injury report for home opener VS Rice Owls",
+        "link": "https://www.onefootdown.com/notre-dame-fighting-irish-football/84559/updated-notre-dame-injury-report-for-home-opener-vs-rice-owls",
+        "published": "2026-09-10T23:46:32+00:00"
+       },
+       {
+        "source": "UHND",
+        "title": "Notre Dame Football Depth Chart: Week 2 Rice",
+        "link": "https://www.uhnd.com/football/2026/09/08/notre-dame-football-week-2-depth-chart-2026-rice/",
+        "published": "2026-09-09T01:10:18+00:00"
+       }
+      ]
      },
      {
       "no": "16",
@@ -1476,7 +1490,21 @@
       "pos": "DL",
       "name": "Jason Onye",
       "detail": "Left Ankle",
-      "weeks": 1
+      "weeks": 1,
+      "newer": [
+       {
+        "source": "One Foot Down",
+        "title": "UPDATED Notre Dame injury report for home opener VS Rice Owls",
+        "link": "https://www.onefootdown.com/notre-dame-fighting-irish-football/84559/updated-notre-dame-injury-report-for-home-opener-vs-rice-owls",
+        "published": "2026-09-10T23:46:32+00:00"
+       },
+       {
+        "source": "UHND",
+        "title": "Notre Dame Football Depth Chart: Week 2 Rice",
+        "link": "https://www.uhnd.com/football/2026/09/08/notre-dame-football-week-2-depth-chart-2026-rice/",
+        "published": "2026-09-09T01:10:18+00:00"
+       }
+      ]
      },
      {
       "no": "0",
