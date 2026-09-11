@@ -63,10 +63,90 @@ jobs:
               print(f, "->", len(d["markets"]), "markets")
           PY
 
+      - name: Pull Notre Dame beat writers
+        continue-on-error: true      # a dead feed must never block the odds
+        run: |
+          python3 - <<'PY'
+          import json, re, urllib.request, xml.etree.ElementTree as ET
+          from datetime import datetime, timezone
+          from email.utils import parsedate_to_datetime
+
+          FEEDS = [
+              ("One Foot Down",      "https://www.onefootdown.com/rss/current.xml"),
+              ("Slap the Sign",      "https://slapthesign.com/feed/"),
+              ("Fighting Irish Wire","https://fightingirishwire.usatoday.com/feed/"),
+              ("UHND",               "https://www.uhnd.com/feed/"),
+              ("Irish Sports Daily", "https://www.irishsportsdaily.com/rss"),
+              ("NDNation",           "https://ndnation.com/feed"),
+          ]
+          UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+                "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
+
+          def when(s):
+              if not s: return None
+              try: return parsedate_to_datetime(s).astimezone(timezone.utc)
+              except Exception: pass
+              try: return datetime.fromisoformat(s.replace("Z","+00:00")).astimezone(timezone.utc)
+              except Exception: return None
+
+          def text(node):
+              return (node.text or "").strip() if node is not None else ""
+
+          items = []
+          for name, url in FEEDS:
+              try:
+                  req = urllib.request.Request(url, headers={"user-agent": UA})
+                  raw = urllib.request.urlopen(req, timeout=20).read()
+                  root = ET.fromstring(raw)
+              except Exception as e:
+                  print(f"  SKIP {name}: {str(e)[:90]}")
+                  continue
+
+              found = 0
+              # RSS 2.0
+              for it in root.iter("item"):
+                  t, l = text(it.find("title")), text(it.find("link"))
+                  d = when(text(it.find("pubDate")))
+                  if t and l:
+                      items.append({"title": t, "link": l, "source": name,
+                                    "published": d.isoformat() if d else None})
+                      found += 1
+              # Atom
+              ns = "{http://www.w3.org/2005/Atom}"
+              for en in root.iter(ns + "entry"):
+                  t = text(en.find(ns + "title"))
+                  link = en.find(ns + "link")
+                  l = link.get("href") if link is not None else ""
+                  d = when(text(en.find(ns + "updated")) or text(en.find(ns + "published")))
+                  if t and l:
+                      items.append({"title": t, "link": l, "source": name,
+                                    "published": d.isoformat() if d else None})
+                      found += 1
+              print(f"  {name}: {found} items")
+
+          # newest first, drop duplicate headlines, cap the file size
+          items.sort(key=lambda x: x["published"] or "", reverse=True)
+          seen, keep = set(), []
+          for it in items:
+              k = re.sub(r"\W+", "", it["title"].lower())[:70]
+              if k in seen: continue
+              seen.add(k)
+              keep.append(it)
+              if len(keep) == 60: break
+
+          if not keep:
+              raise SystemExit("no feed returned anything — leaving the old news.json alone")
+
+          json.dump({"updated": datetime.now(timezone.utc).isoformat(), "items": keep},
+                    open("news.json", "w"), indent=1)
+          print(f"wrote news.json with {len(keep)} items from "
+                f"{len({i['source'] for i in keep})} sources")
+          PY
+
       - name: Commit if the numbers moved
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add odds-title.json odds-playoff.json
+          git add odds-title.json odds-playoff.json news.json
           git diff --staged --quiet || git commit -m "Refresh Kalshi odds"
           git push
