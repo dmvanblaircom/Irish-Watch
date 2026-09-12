@@ -902,6 +902,23 @@
      a scroll container and position:sticky then has nothing to stick to.
      overflow:clip clips without creating one. */
   .page{overflow:visible;overflow-x:clip}
+
+  /* The redesign's 4px gold rule lives on .page::before, absolutely positioned
+     at the top of the page. The sticky header sits over it, and because the
+     header is 94% opaque the gold bled through and then scrolled away, which
+     reads as the header shifting. Pin the rule to the viewport instead so it
+     never moves, and put it above the header. */
+  .page::before{position:fixed;z-index:70}
+
+  /* Opaque enough that nothing behind it ghosts through as content scrolls
+     underneath, and promoted to its own layer up front so Safari does not
+     re-composite it at the moment it becomes stuck. */
+  .bar{
+    background:rgba(7,25,47,.985);
+    transform:translateZ(0);
+    -webkit-transform:translateZ(0);
+    will-change:transform;
+  }
   #refresh.polling::before{
     content:"";display:inline-block;width:.42rem;height:.42rem;border-radius:50%;
     background:var(--live);margin-right:.4rem;vertical-align:.06em;
@@ -1119,7 +1136,7 @@ KALSHI_ROUTES.push(
 var TITLE_EVENT   = "KXNCAAF-27";          // national championship winner
 var PLAYOFF_EVENT = "KXNCAAFPLAYOFF-26";   // playoff qualifiers
 
-var S = { games:null, next:null, tick:null };
+var S = { games:null, next:null, tick:null, oddsTried:null };
 function $(id){ return document.getElementById(id); }
 function say(msg){ $("live").textContent = msg; }
 
@@ -2411,8 +2428,13 @@ function selectTab(tab, focusIt){
     $(t.getAttribute("aria-controls")).hidden = !on;
   });
   if(focusIt) tab.focus();
+  // Carrying the previous tab's scroll position into a different list is
+  // disorienting. Jump, do not animate — smooth scrolling here feels laggy.
+  window.scrollTo(0,0);
   var name=tab.id.replace("tab-","");
-  if(name==="game")   loadGame();
+  // Force a refresh on entry: the dataset guard would otherwise skip
+  // schedulePoll and the tab would sit frozen after the first visit.
+  if(name==="game")   loadGame(true);
   else if(G.poll){ clearInterval(G.poll); G.poll=null; }   // left the tab, stop polling
   if(name==="around") loadAround();
   if(name==="depth")  loadDepth();
@@ -2431,6 +2453,25 @@ tabs.forEach(function(tab,i){
 });
 
 /* ---------- boot ---------- */
+/* ---------- background warm-up ---------- */
+// Every tab already guards against re-fetching once loaded, so the cost of a
+// tab switch is entirely the first fetch. Do those quietly after first paint,
+// staggered, and rendering into hidden panels — the bytes are the same, they
+// just happen before you ask rather than while you wait.
+function warmTabs(){
+  if(document.hidden) return;
+  var c=navigator.connection;
+  if(c && (c.saveData || /(^|-)2g$/.test(c.effectiveType||""))) return;  // respect data saver
+
+  var jobs=[loadAround, loadDepth, loadNews, function(){ loadGame(); }];
+  jobs.forEach(function(fn,i){
+    setTimeout(function(){
+      if(document.hidden) return;
+      try{ fn(); }catch(e){}
+    }, 900 + i*550);
+  });
+}
+
 /* ---------- automatic refresh ---------- */
 // Polls only while a game is actually in progress, only when the page is
 // visible, and only the things that change during a game. Odds, depth, roster
@@ -2483,7 +2524,12 @@ function autoTick(){
       var y=window.scrollY;
       $("panel-around").dataset.loaded="";
       loadAround();
-      setTimeout(function(){ window.scrollTo(0,y); }, 60);
+      setTimeout(function(){
+        // only if the user is still on this tab and has not scrolled since
+        if($("panel-around").hidden) return;
+        if(Math.abs(window.scrollY-0)>2 && window.scrollY!==0 && window.scrollY!==y) return;
+        window.scrollTo(0,y);
+      }, 60);
     }).catch(function(){});
   } else if(Date.now()-SB.at > 300000){
     // not looking, but re-check every five minutes so polling stands down
@@ -2532,8 +2578,13 @@ function refreshSchedule(first){
     if(first) say("Schedule loaded, "+games.length+" games."+
       (S.next?" Next game is "+(S.next.home?"versus ":"at ")+S.next.oppName+".":""));
     startAuto();
+    if(first){
+      if(window.requestIdleCallback) window.requestIdleCallback(warmTabs, {timeout:2500});
+      else setTimeout(warmTabs, 900);
+    }
 
-    if(S.next&&!S.next.odds){
+    if(S.next && !S.next.odds && S.oddsTried!==S.next.id){
+      S.oddsTried=S.next.id;          // ESPN often has no line for these; ask once
       get(ESPN+"/summary?event="+S.next.id).then(function(sm){
         var pc=sm.pickcenter&&sm.pickcenter[0]; if(!pc) return;
         S.next.odds={ line:pc.details||null, total:pc.overUnder!=null?pc.overUnder:null };
