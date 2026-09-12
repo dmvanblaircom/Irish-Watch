@@ -319,6 +319,8 @@
   .seg.pills .n{font-weight:600;opacity:.7;margin-left:.35rem;font-size:.85em}
   /* which poll, shown as options rather than hidden behind accordions */
   .seg.pills.polls{margin:.15rem 0 .2rem}
+  .seg.pills.roster{margin:.2rem 0 .35rem;flex-wrap:wrap}
+  .seg.pills.roster button{font-size:.85rem;min-width:4.4rem}
   .seg.pills.polls button{font-size:.88rem;letter-spacing:.04em}
   .seg.pills.polls .n{margin-left:.3rem;opacity:.85}
   .scorply{display:flex;gap:.55rem;padding:.5rem .15rem .5rem .55rem;
@@ -336,6 +338,16 @@
   .scorply .sc .ahead{color:var(--nd-gold-bright,var(--leaf))}
   .scorply .sc .tie{color:var(--parch)}
   .row .live{display:block;font-size:.82rem;color:var(--loss);margin-top:.15rem}
+  /* roster */
+  .plr{display:flex;align-items:baseline;gap:.6rem;padding:.42rem .15rem;
+    border-bottom:1px solid var(--ink-3);font-size:.92rem}
+  .plr .no{width:2.1rem;flex:none;text-align:right;font-family:'Barlow Condensed',sans-serif;
+    font-weight:700;color:var(--dim);font-variant-numeric:tabular-nums}
+  .plr .pos{width:2.6rem;flex:none;font-family:'Barlow Condensed',sans-serif;font-weight:600;
+    font-size:.8rem;letter-spacing:.04em;color:var(--leaf)}
+  .plr .who{flex:1;min-width:0}
+  .plr .meta{display:block;font-size:.78rem;color:var(--dim);margin-top:.05rem}
+  .plr .cl{flex:none;font-size:.78rem;color:var(--dim);width:2.2rem;text-align:right}
   .stamp{font-size:.78rem;color:var(--dim);padding:.5rem .15rem 0}
   .stamp a{color:var(--leaf)}
 
@@ -1762,13 +1774,21 @@ function loadDepth(){
     html+='<p class="stamp">From <a href="'+esc(d.source||"#")+'" target="_blank" rel="noopener">'+
       esc(d.title||"UHND")+'<span class="sr-only"> (opens in a new tab)</span></a>. '+
       'Notre Dame publishes a new two-deep most Tuesdays.</p>';
+    html+='<details class="fold" id="rosterFold"><summary>Full roster'+
+      '<span class="count">every player</span></summary>'+
+      '<div class="foldbody" id="rosterBody"></div></details>';
     el.innerHTML=html; el.dataset.loaded="1";
+    wireRosterFold(el);
     say("Depth chart loaded. "+av.out.length+" players out.");
     loadHistory();
   }).catch(function(){
-    el.innerHTML='<p class="msg"><strong>No depth chart yet.</strong>'+
+    el.innerHTML='<details class="fold" id="rosterFold"><summary>Full roster'+
+      '<span class="count">every player</span></summary>'+
+      '<div class="foldbody" id="rosterBody"></div></details>'+
+      '<p class="msg"><strong>No depth chart yet.</strong>'+
       'The scheduled job writes depth.json from UHND\u2019s weekly post. '+
       'If this stays empty, check the Actions log.</p>';
+    wireRosterFold(el);      // the roster is independent of the depth chart
   });
 }
 
@@ -2139,6 +2159,120 @@ function renderGame(d){
       ? "Updating every 25 seconds while the game is live."
       : "Final data from ESPN. Live updates resume at kickoff.")+"</p>";
   return html;
+}
+
+/* ---------- full roster ---------- */
+// ESPN's roster endpoint is CORS-open, so this stays client side like the
+// schedule. Fetched only when the fold is opened, then kept for the session.
+var ROSTER={ data:null, group:"all", loading:false };
+
+function normRoster(d){
+  // ESPN returns either a flat athletes array or one grouped by unit.
+  var groups=[];
+  var a=d.athletes||[];
+  if(a.length && a[0] && Array.isArray(a[0].items)){
+    a.forEach(function(g){
+      groups.push({ key:String(g.position||g.name||"squad").toLowerCase(),
+                    label:g.text||g.name||g.position||"Squad",
+                    items:g.items||[] });
+    });
+  } else {
+    groups.push({ key:"all", label:"Roster", items:a });
+  }
+  return groups;
+}
+
+function playerRow(p){
+  var no=p.jersey!=null?p.jersey:"";
+  var pos=pick(p,["position","abbreviation"],null)||pick(p,["position","name"],"")||"";
+  var name=p.displayName||p.fullName||"";
+  var ht=p.displayHeight||"", wt=p.displayWeight||"";
+  var cl=pick(p,["experience","abbreviation"],null)||pick(p,["experience","displayValue"],"")||"";
+  var city=pick(p,["birthPlace","city"],""), st=pick(p,["birthPlace","state"],"");
+  var home=[city,st].filter(Boolean).join(", ");
+  var meta=[ [ht,wt].filter(Boolean).join(" \u00B7 "), home ].filter(Boolean).join("  \u2014  ");
+  return '<li class="plr"><span class="no">'+esc(String(no))+"</span>"+
+    '<span class="pos">'+esc(pos)+"</span>"+
+    '<span class="who">'+esc(name)+
+      (meta?'<span class="meta">'+esc(meta)+"</span>":"")+"</span>"+
+    '<span class="cl">'+esc(String(cl).slice(0,3))+"</span></li>";
+}
+
+function renderRoster(){
+  var groups=ROSTER.data||[];
+  var all=[]; groups.forEach(function(g){ all=all.concat(g.items); });
+  if(!all.length) return '<p class="msg">ESPN returned no roster for this team.</p>';
+
+  var html="";
+  if(groups.length>1){
+    if(["all"].concat(groups.map(function(g){return g.key;})).indexOf(ROSTER.group)===-1)
+      ROSTER.group="all";
+    html+='<div class="seg pills roster" role="group" aria-label="Roster group">'+
+      '<button type="button" data-grp="all" aria-pressed="'+(ROSTER.group==="all")+'">'+
+        'All<span class="n">'+all.length+"</span></button>"+
+      groups.map(function(g){
+        return '<button type="button" data-grp="'+esc(g.key)+'" aria-pressed="'+
+          (ROSTER.group===g.key)+'">'+esc(g.label)+
+          '<span class="n">'+g.items.length+"</span></button>";
+      }).join("")+"</div>";
+  }
+
+  var show = ROSTER.group==="all" ? all
+    : (groups.filter(function(g){return g.key===ROSTER.group;})[0]||{items:[]}).items;
+  show=show.slice().sort(function(x,y){
+    var a=parseInt(x.jersey,10), b=parseInt(y.jersey,10);
+    if(isNaN(a)&&isNaN(b)) return 0;
+    if(isNaN(a)) return 1;
+    if(isNaN(b)) return -1;
+    return a-b;
+  });
+  html+='<ul class="plain">'+show.map(playerRow).join("")+"</ul>";
+  html+='<p class="stamp">'+show.length+' players \u00B7 numbers as listed by ESPN. '+
+    'Official roster at <a href="https://fightingirish.com/sports/football/roster" '+
+    'target="_blank" rel="noopener">fightingirish.com'+
+    '<span class="sr-only"> (opens in a new tab)</span></a>.</p>';
+  return html;
+}
+
+// Only hit the network when the fold is actually opened.
+function wireRosterFold(el){
+  var fold=el.querySelector("#rosterFold");
+  if(!fold) return;
+  fold.addEventListener("toggle", function(){
+    if(fold.open) loadRoster(el.querySelector("#rosterBody"));
+  });
+}
+
+function wireRosterPills(box){
+  var btns=box.querySelectorAll(".seg.pills.roster button");
+  btns.forEach(function(b){
+    b.addEventListener("click", function(){
+      ROSTER.group=b.dataset.grp;
+      box.innerHTML=renderRoster();
+      wireRosterPills(box);
+    });
+  });
+}
+
+function loadRoster(box){
+  if(ROSTER.data){ box.innerHTML=renderRoster(); wireRosterPills(box); return; }
+  if(ROSTER.loading) return;
+  ROSTER.loading=true;
+  box.innerHTML='<p class="loading">Loading the roster\u2026</p>';
+  get(ESPN+"/teams/"+TEAM+"/roster").then(function(d){
+    ROSTER.loading=false;
+    ROSTER.data=normRoster(d);
+    box.innerHTML=renderRoster();
+    wireRosterPills(box);
+    var n=0; ROSTER.data.forEach(function(g){ n+=g.items.length; });
+    say("Roster loaded, "+n+" players.");
+  }).catch(function(){
+    ROSTER.loading=false;
+    box.innerHTML='<p class="msg"><strong>Couldn\u2019t load the roster.</strong>'+
+      'ESPN didn\u2019t return one. The official list is at '+
+      '<a href="https://fightingirish.com/sports/football/roster" target="_blank" '+
+      'rel="noopener">fightingirish.com</a>.</p>';
+  });
 }
 
 /* ---------- news ---------- */
