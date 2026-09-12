@@ -321,10 +321,20 @@
   .seg.pills.polls{margin:.15rem 0 .2rem}
   .seg.pills.polls button{font-size:.88rem;letter-spacing:.04em}
   .seg.pills.polls .n{margin-left:.3rem;opacity:.85}
-  .scorply{display:flex;gap:.6rem;padding:.4rem .15rem;border-bottom:1px solid var(--ink-3);font-size:.88rem}
-  .scorply .qc{width:3.4rem;flex:none;color:var(--dim);font-size:.8rem}
-  .scorply .tx{flex:1}
-  .scorply .sc{flex:none;font-family:'Barlow Condensed',sans-serif;font-weight:700;color:var(--leaf)}
+  .scorply{display:flex;gap:.55rem;padding:.5rem .15rem .5rem .55rem;
+    border-bottom:1px solid var(--ink-3);font-size:.88rem;
+    border-left:3px solid transparent}
+  .scorply.byus{border-left-color:var(--leaf);background:rgba(201,151,0,.07)}
+  .scorply.bythem{border-left-color:var(--ink-3)}
+  .scorply .qc{width:3.2rem;flex:none;color:var(--dim);font-size:.78rem;padding-top:.1rem}
+  .scorply .tm{flex:none;width:2.6rem;font-family:'Barlow Condensed',sans-serif;font-weight:700;
+    font-size:.82rem;letter-spacing:.04em;color:var(--dim);padding-top:.1rem}
+  .scorply.byus .tm{color:var(--leaf)}
+  .scorply .tx{flex:1;min-width:0;line-height:1.35}
+  .scorply .sc{flex:none;font-family:'Barlow Condensed',sans-serif;font-weight:700;
+    font-variant-numeric:tabular-nums;color:var(--dim);white-space:nowrap;padding-top:.05rem}
+  .scorply .sc .ahead{color:var(--nd-gold-bright,var(--leaf))}
+  .scorply .sc .tie{color:var(--parch)}
   .row .live{display:block;font-size:.82rem;color:var(--loss);margin-top:.15rem}
   .stamp{font-size:.78rem;color:var(--dim);padding:.5rem .15rem 0}
   .stamp a{color:var(--leaf)}
@@ -2081,15 +2091,48 @@ function renderGame(d){
   var sp=d.scoringPlays||[];
   if(sp.length){
     var sbody="";
+    var awayAb=pick(away,["team","abbreviation"],"")||"";
+    var homeAb=pick(home,["team","abbreviation"],"")||"";
+    var spAwayId=String(pick(away,["team","id"],""));   // team-stats block may not have run
     sp.forEach(function(p){
-      sbody+='<div class="scorply"><span class="qc">'+esc((p.period&&p.period.number?"Q"+p.period.number:"")+
-        (p.clock&&p.clock.displayValue?" "+p.clock.displayValue:""))+"</span>"+
+      // who scored: match on team id, fall back to abbreviation
+      var pid=String(pick(p,["team","id"],""));
+      var pab=pick(p,["team","abbreviation"],null);
+      var scoredAway = pid ? pid===spAwayId : (pab ? pab===awayAb : false);
+      var ab = pab || (scoredAway?awayAb:homeAb);
+      var isND = pid ? pid===TEAM : ab===("ND");
+
+      var a=p.awayScore, hs=p.homeScore;
+      var an=typeof a==="number"?a:parseInt(a,10);
+      var hn=typeof hs==="number"?hs:parseInt(hs,10);
+      var cls=function(mine,other){
+        if(isNaN(mine)||isNaN(other)) return "";
+        if(mine===other) return "tie";
+        return mine>other ? "ahead" : "";
+      };
+      // colour alone must not carry the meaning, so say it in words too
+      var srlead = (isNaN(an)||isNaN(hn)) ? ""
+        : an===hn ? " Tied "+an+" all."
+        : " "+(an>hn?awayAb:homeAb)+" leads "+Math.max(an,hn)+" to "+Math.min(an,hn)+".";
+
+      sbody+='<div class="scorply '+(isND?"byus":"bythem")+'">'+
+        '<span class="qc">'+esc((p.period&&p.period.number?"Q"+p.period.number:"")+
+          (p.clock&&p.clock.displayValue?" "+p.clock.displayValue:""))+"</span>"+
+        '<span class="tm"><span class="sr-only">Scored by </span>'+esc(ab)+"</span>"+
         '<span class="tx">'+esc(p.text||"")+"</span>"+
-        '<span class="sc">'+esc((p.awayScore!=null?p.awayScore:"")+"–"+(p.homeScore!=null?p.homeScore:""))+
-        "</span></div>";
+        '<span class="sc"><span class="'+cls(an,hn)+'">'+esc(String(a==null?"":a))+"</span>"+
+          "\u2013"+
+          '<span class="'+cls(hn,an)+'">'+esc(String(hs==null?"":hs))+"</span>"+
+          '<span class="sr-only">.'+esc(srlead)+"</span></span>"+
+        "</div>";
     });
     html+='<details class="fold"><summary>Scoring summary <span class="count">'+sp.length+
-      " scores</span></summary><div class=\"foldbody\">"+sbody+"</div></details>";
+      " scores</span></summary><div class=\"foldbody\">"+
+      '<div class="scorply" style="border-bottom:2px solid var(--ink-3);color:var(--dim);font-size:.72rem;letter-spacing:.07em">'+
+        '<span class="qc">TIME</span><span class="tm">TEAM</span>'+
+        '<span class="tx">PLAY</span>'+
+        '<span class="sc">'+esc(awayAb)+"\u2013"+esc(homeAb)+"</span></div>"+
+      sbody+"</div></details>";
   }
 
   html+='<p class="stamp">'+(live
