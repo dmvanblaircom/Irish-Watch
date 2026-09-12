@@ -24,6 +24,10 @@
     --live-bg:#A3382E;                 /* 6.6:1 against white text */
     --live-fg:#FFFFFF; --live-fg-2:#FFD9D3;
     --neutral:#7FC8E8;                 /* 5.1:1 on ink */
+    --live:#FF5A4E;                    /* broadcast red, 5.1:1 on the page navy */
+    --inplay:#4FAE78;                  /* live play text, 5.8:1 on the page navy.
+                                          Notre Dame's own #0A843D is only 3.3:1,
+                                          so this is that hue lifted to pass. */
     --focus:#FFD966;
   }
   *{box-sizing:border-box}
@@ -269,14 +273,14 @@
     font-variant-numeric:tabular-nums;line-height:1}
   .gscore.lead .pts{color:var(--leaf)}
   .gstatus{display:flex;align-items:baseline;gap:.5rem;padding:.5rem .15rem;font-size:.9rem}
-  .gstatus .dot{width:.5rem;height:.5rem;border-radius:50%;background:var(--loss);flex:none;
+  .gstatus .dot{width:.5rem;height:.5rem;border-radius:50%;background:var(--inplay);flex:none;
     animation:pulse 1.6s ease-in-out infinite}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
   @media (prefers-reduced-motion:reduce){.gstatus .dot{animation:none}}
-  .lastplay{margin:.5rem 0;padding:.7rem .8rem;background:var(--ink-2);border-left:3px solid var(--leaf);
-    border-radius:0 3px 3px 0}
+  .lastplay{margin:.5rem 0;padding:.7rem .8rem;background:var(--ink-2);
+    border-left:3px solid var(--inplay);border-radius:0 3px 3px 0}
   .lastplay .k{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.72rem;
-    letter-spacing:.08em;color:var(--leaf)}
+    letter-spacing:.08em;color:var(--inplay)}
   .lastplay .t{font-size:.95rem;line-height:1.45;margin-top:.2rem}
   .lastplay .dd{font-size:.82rem;color:var(--dim);margin-top:.3rem}
   .statrow{display:flex;align-items:center;gap:.6rem;padding:.42rem .15rem;border-bottom:1px solid var(--ink-3);
@@ -339,7 +343,15 @@
     font-variant-numeric:tabular-nums;color:var(--dim);white-space:nowrap;padding-top:.05rem}
   .scorply .sc .ahead{color:var(--nd-gold-bright,var(--leaf))}
   .scorply .sc .tie{color:var(--parch)}
-  .row .live{display:block;font-size:.82rem;color:var(--loss);margin-top:.15rem}
+  .row .live{display:block;font-size:.82rem;color:var(--inplay);margin-top:.15rem}
+  .row .live .lbl{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.78rem;
+    letter-spacing:.09em;color:var(--live);margin-right:.35rem}
+  .row .live .lbl::before{
+    content:"";display:inline-block;width:.42rem;height:.42rem;border-radius:50%;
+    background:var(--live);margin-right:.3rem;vertical-align:.06em;
+    animation:pulse 1.6s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion:reduce){.row .live .lbl::before{animation:none}}
   /* roster */
   .plr{display:flex;align-items:baseline;gap:.6rem;padding:.42rem .15rem;
     border-bottom:1px solid var(--ink-3);font-size:.92rem}
@@ -1506,11 +1518,15 @@ function loadAround(){
           var lp=(sit.lastPlay&&sit.lastPlay.text)||"";
           var dd=sit.downDistanceText||sit.shortDownDistanceText||"";
           var bits=[dd, lp].filter(Boolean).join(" \u00B7 ");
-          if(bits) liveLine='<span class="live">'+esc(bits.slice(0,150))+"</span>";
+          if(bits) liveLine='<span class="live"><span class="lbl">LIVE</span>'+
+            esc(bits.slice(0,150))+"</span>";
         }
         var sub=(st.state==="pre"
             ? (timeIsSet(ev.date)?fmtTime(ev.date)+" "+tzAbbr():"Kickoff time not announced")
             : (comp.venue?esc(comp.venue.fullName||""):""))
+          // once the score takes over the right column the network chip vanishes,
+          // so carry it in the subtitle for live and finished games
+          +(st.state!=="pre"&&net?" \u00B7 "+esc(net):"")
           +(o&&o.line?" \u00B7 line "+esc(o.line):"")
           +(o&&o.total!=null?" \u00B7 over-under "+o.total:"");
         gameHtml+='<li class="row '+(isND?"nd":"")+'">'+dateChip(ev.date)+
