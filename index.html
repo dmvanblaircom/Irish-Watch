@@ -259,9 +259,6 @@
   }
   .more:hover{border-color:var(--leaf);color:var(--leaf)}
 
-  details.poll summary .wd{width:auto;min-width:3.4rem}
-  details.poll summary .ws{font-size:.85rem}
-  details.poll ol{padding-bottom:.4rem}
   .pollnote{font-size:.82rem;color:var(--dim);padding:.55rem .15rem}
   /* live game view */
   .gscore{display:flex;align-items:center;gap:.6rem;padding:.8rem .15rem;border-bottom:1px solid var(--ink-3)}
@@ -320,6 +317,10 @@
   .seg.pills{margin:.7rem 0 .3rem}
   .seg.pills button{min-height:2.5rem;font-size:.92rem;letter-spacing:.05em}
   .seg.pills .n{font-weight:600;opacity:.7;margin-left:.35rem;font-size:.85em}
+  /* which poll, shown as options rather than hidden behind accordions */
+  .seg.pills.polls{margin:.15rem 0 .2rem}
+  .seg.pills.polls button{font-size:.88rem;letter-spacing:.04em}
+  .seg.pills.polls .n{margin-left:.3rem;opacity:.85}
   .scorply{display:flex;gap:.6rem;padding:.4rem .15rem;border-bottom:1px solid var(--ink-3);font-size:.88rem}
   .scorply .qc{width:3.4rem;flex:none;color:var(--dim);font-size:.8rem}
   .scorply .tx{flex:1}
@@ -1335,19 +1336,25 @@ function pollLabel(r){
   return (r.shortName||r.name||"Poll").slice(0,10);
 }
 
-function renderPoll(r, isOpen){
-  var ranks=r.ranks||[], nd=null;
-  ranks.forEach(function(x){ if(x.team&&String(x.team.id)===TEAM) nd=x; });
+function pollSlug(r){ return pollLabel(r).replace(/[^A-Za-z0-9]/g,""); }
 
+// The pill carries the poll name and Notre Dame's place in it, so the options
+// and the one number you care about are both visible without tapping.
+function pollPill(r, active){
+  var nd=null;
+  (r.ranks||[]).forEach(function(x){ if(x.team&&String(x.team.id)===TEAM) nd=x; });
+  return '<button type="button" data-poll="'+pollSlug(r)+'" aria-pressed="'+active+'">'+
+    esc(pollLabel(r))+
+    (nd ? '<span class="n">#'+nd.current+"</span>"
+        : '<span class="n">NR</span>')+
+    "</button>";
+}
+
+function pollBody(r){
   var when=r.occurrence&&r.occurrence.displayValue ? r.occurrence.displayValue : "";
-  var summary = (nd ? "Notre Dame #"+nd.current : "Notre Dame unranked") + (when?" \u00B7 "+esc(when):"");
-
-  var html='<details class="week poll"'+(isOpen?" open":"")+'><summary>'+
-    '<span class="wd">'+esc(pollLabel(r))+"</span>"+
-    '<span class="ws">'+summary+"</span></summary>"+
-    '<ol class="plain" aria-label="'+esc(r.name||"Poll")+'">';
-
-  ranks.forEach(function(x){
+  var html = when ? '<p class="pollnote">'+esc(r.name||"Poll")+" \u00B7 "+esc(when)+"</p>" : "";
+  html+='<ol class="plain" aria-label="'+esc(r.name||"Poll")+'">';
+  (r.ranks||[]).forEach(function(x){
     var isND=x.team&&String(x.team.id)===TEAM;
     var mv=x.previous&&x.previous>0 ? x.previous-x.current : 0;
     var move = mv>0 ? '<span class="up"><span class="sr-only">up '+mv+'</span><span aria-hidden="true">\u25B2'+mv+"</span></span>"
@@ -1360,24 +1367,36 @@ function renderPoll(r, isOpen){
         esc(x.team?(x.team.nickname||x.team.name||x.team.location||x.team.shortDisplayName):"")+"</span></span>"+
       '<span class="right"><span class="status">'+esc(x.recordSummary||"")+" "+move+"</span></span></li>";
   });
-  return html+"</ol></details>";
+  return html+"</ol>";
 }
 
 // Games is the default because that is the several-times-a-week view; the polls
 // only move once or twice. The choice survives a refresh.
-var AROUND={ view:"games" };
+var AROUND={ view:"games", poll:null };
 
 function wireAroundPills(el){
-  var btns=el.querySelectorAll(".seg.pills button");
-  if(!btns.length) return;
-  btns.forEach(function(b){
+  var view=el.querySelectorAll('.seg.pills:not(.polls) button');
+  view.forEach(function(b){
     b.addEventListener("click", function(){
       AROUND.view=b.dataset.view;
-      btns.forEach(function(x){ x.setAttribute("aria-pressed", String(x===b)); });
+      view.forEach(function(x){ x.setAttribute("aria-pressed", String(x===b)); });
       var g=el.querySelector("#ar-games"), r=el.querySelector("#ar-rankings");
       if(g) g.hidden = AROUND.view!=="games";
       if(r) r.hidden = AROUND.view!=="rankings";
       say(AROUND.view==="games" ? "Showing ranked games." : "Showing rankings.");
+    });
+  });
+
+  var pollBtns=el.querySelectorAll(".seg.pills.polls button");
+  pollBtns.forEach(function(b){
+    b.addEventListener("click", function(){
+      AROUND.poll=b.dataset.poll;
+      pollBtns.forEach(function(x){ x.setAttribute("aria-pressed", String(x===b)); });
+      pollBtns.forEach(function(x){
+        var body=el.querySelector("#poll-"+x.dataset.poll);
+        if(body) body.hidden = x.dataset.poll!==AROUND.poll;
+      });
+      say("Showing the "+b.textContent.replace(/#\d+|NR/,"").trim()+" poll.");
     });
   });
 }
@@ -1405,10 +1424,18 @@ function loadAround(){
         seenLabel[k]=1; return true;
       });
       if(polls.length){
-        polls.forEach(function(r,i){ pollHtml+=renderPoll(r, i===0); });
+        var slugs=polls.map(pollSlug);
+        if(slugs.indexOf(AROUND.poll)===-1) AROUND.poll=slugs[0];
+        pollHtml+='<div class="seg pills polls" role="group" aria-label="Which poll">'+
+          polls.map(function(r){ return pollPill(r, pollSlug(r)===AROUND.poll); }).join("")+
+          "</div>";
+        polls.forEach(function(r){
+          pollHtml+='<div id="poll-'+pollSlug(r)+'"'+
+            (pollSlug(r)===AROUND.poll?"":" hidden")+">"+pollBody(r)+"</div>";
+        });
         if(!polls.some(function(r){ return pollOrder(r)===0; })){
           pollHtml+='<p class="pollnote">CFP rankings appear here automatically once the '+
-                'committee starts releasing them, and will sort above the polls.</p>';
+                'committee starts releasing them, and will sort to the front.</p>';
         }
       }
     }
