@@ -288,6 +288,11 @@
   .statrow .v{width:4.2rem;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem}
   .statrow .v.r{text-align:right}
   .statrow .v.win{color:var(--leaf)}
+  .statrow.head{border-bottom:2px solid var(--leaf);padding-bottom:.35rem;margin-top:.1rem}
+  .statrow.head .v{font-size:1rem;letter-spacing:.05em;color:var(--parch)}
+  .statrow.head .v.nd{color:var(--leaf)}
+  .statrow.head .lbl{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;
+    letter-spacing:.09em;color:var(--dim)}
   .linescore{width:100%;border-collapse:collapse;margin:.3rem 0 .2rem;font-variant-numeric:tabular-nums}
   .linescore th,.linescore td{padding:.35rem .3rem;text-align:center;border-bottom:1px solid var(--ink-3);
     font-size:.9rem}
@@ -295,11 +300,26 @@
     letter-spacing:.05em}
   .linescore td:first-child,.linescore th:first-child{text-align:left;font-weight:600}
   .linescore td.tot{font-weight:700;color:var(--leaf)}
-  .ldr{display:flex;gap:.6rem;padding:.4rem .15rem;border-bottom:1px solid var(--ink-3);font-size:.9rem}
-  .ldr .cat{width:4.6rem;flex:none;font-family:'Barlow Condensed',sans-serif;font-weight:600;
-    color:var(--dim);font-size:.8rem;letter-spacing:.04em}
+  .ldr{display:flex;gap:.7rem;padding:.5rem .15rem;border-bottom:1px solid var(--ink-3);font-size:.95rem}
+  .ldr .cat{width:5.2rem;flex:none;font-family:'Barlow Condensed',sans-serif;font-weight:600;
+    color:var(--dim);font-size:.8rem;letter-spacing:.05em;padding-top:.12rem}
   .ldr .who{flex:1;min-width:0}
-  .ldr .line{color:var(--dim);font-size:.85rem}
+  .ldr .nm{display:block;font-weight:600}
+  .ldr .line{display:block;color:var(--dim);font-size:.85rem;margin-top:.1rem}
+  /* away | home switch, so the team code does not repeat on every row */
+  .seg{display:flex;gap:0;margin:.1rem 0 .2rem;border:1px solid var(--ink-3);border-radius:4px;overflow:hidden}
+  .seg button{flex:1;min-height:2.6rem;background:none;border:none;cursor:pointer;
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.95rem;letter-spacing:.06em;
+    color:var(--dim);padding:.4rem .5rem}
+  .seg button+button{border-left:1px solid var(--ink-3)}
+  .seg button[aria-pressed="true"]{background:var(--leaf);color:#231A03}
+  .seg button:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
+  .seg .sub{display:block;font-family:'Barlow',sans-serif;font-weight:500;font-size:.68rem;
+    letter-spacing:.04em;opacity:.75}
+  /* single-line variant, for switching a whole section */
+  .seg.pills{margin:.7rem 0 .3rem}
+  .seg.pills button{min-height:2.5rem;font-size:.92rem;letter-spacing:.05em}
+  .seg.pills .n{font-weight:600;opacity:.7;margin-left:.35rem;font-size:.85em}
   .scorply{display:flex;gap:.6rem;padding:.4rem .15rem;border-bottom:1px solid var(--ink-3);font-size:.88rem}
   .scorply .qc{width:3.4rem;flex:none;color:var(--dim);font-size:.8rem}
   .scorply .tx{flex:1}
@@ -817,7 +837,8 @@
      reserve the inset ourselves. In normal Safari these all evaluate to 0. */
   .page{
     padding-top:env(safe-area-inset-top, 0px);
-    padding-bottom:calc(3rem + env(safe-area-inset-bottom, 0px));
+    /* clears the fixed bottom bar */
+    padding-bottom:calc(5.2rem + env(safe-area-inset-bottom, 0px));
   }
   .wrap{
     padding-left:calc(.85rem + env(safe-area-inset-left, 0px));
@@ -832,6 +853,65 @@
       .bar{padding-top:1.35rem}
     }
   }
+
+  /* ---- bottom tab bar ---- */
+  .tabbar{
+    position:fixed;left:0;right:0;bottom:0;z-index:60;
+    display:flex;gap:0;border-top:1px solid var(--ink-3);border-bottom:none;
+    background:rgba(7,25,47,.94);
+    -webkit-backdrop-filter:saturate(160%) blur(14px);
+    backdrop-filter:saturate(160%) blur(14px);
+    padding-bottom:env(safe-area-inset-bottom, 0px);
+    overflow:visible;
+  }
+  .tabbar button[role="tab"]{
+    flex:1 1 0;min-width:0;min-height:3.4rem;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.18rem;
+    background:none;border:none;border-bottom:none;cursor:pointer;
+    color:var(--dim);padding:.45rem .1rem .35rem;
+  }
+  .tabbar button[role="tab"] svg{
+    width:22px;height:22px;flex:none;fill:none;stroke:currentColor;
+    stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;
+  }
+  .tabbar button[role="tab"] span{
+    font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.7rem;
+    letter-spacing:.04em;line-height:1;white-space:nowrap;
+  }
+  .tabbar button[role="tab"][aria-selected="true"]{color:var(--leaf)}
+  .tabbar button[role="tab"][aria-selected="true"] svg{stroke-width:2.1}
+  .tabbar button[role="tab"]:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
+
+  /* ---- strip cells are buttons now ---- */
+  .strip{align-items:stretch}
+  .strip .cell{
+    flex:1;min-width:0;display:flex;flex-direction:column;justify-content:space-between;
+    gap:.3rem;text-align:left;background:none;border:none;
+    border-right:1px solid rgba(201,151,0,.16);padding:.8rem .9rem;
+    min-height:3.9rem;cursor:pointer;color:inherit;font:inherit;position:relative;
+  }
+  .strip .cell:last-child{border-right:none}
+  .strip .cell:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
+  .strip .cell .k{
+    font-family:'Barlow',system-ui,sans-serif;font-size:.64rem;letter-spacing:.11em;
+    text-transform:uppercase;color:#8FA2B8;font-weight:600;line-height:1.25;
+    padding-right:.9rem;
+  }
+  .strip .cell .v{
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.55rem;
+    line-height:1.1;font-variant-numeric:tabular-nums;color:var(--nd-gold-bright,var(--leaf));
+  }
+  .strip .cell .v em{font-style:normal;font-size:.6em;font-weight:600;margin-left:.3rem}
+  .strip .cell .v.pending{font-size:.95rem;font-weight:500;color:var(--dim);
+    font-family:'Barlow',system-ui,sans-serif}
+  .strip .cell::after{
+    content:"\25BE";position:absolute;top:.55rem;right:.6rem;
+    color:var(--leaf);font-size:.75rem;transition:transform .15s ease;
+  }
+  .strip .cell[aria-expanded="true"]::after{transform:rotate(180deg)}
+  @media (prefers-reduced-motion:reduce){.strip .cell::after{transition:none}}
+  .hint{margin:.35rem .15rem 0;font-size:.76rem;color:var(--dim);text-align:center}
+  #oddsboard{margin-top:.4rem}
 </style>
   <meta name="description" content="Irish Watch — a Notre Dame football game-day dashboard.">
 
@@ -894,26 +974,20 @@
       <p class="clock" id="heroClock" aria-live="off"></p>
     </section>
 
-    <dl class="strip">
-      <div>
-        <dt id="lblTitle">Odds to win the national title</dt>
-        <dd class="pending" id="mTitle" aria-labelledby="lblTitle">Loading…</dd>
-      </div>
-      <div>
-        <dt id="lblPlayoff">Odds to make the playoff</dt>
-        <dd class="pending" id="mPlayoff" aria-labelledby="lblPlayoff">Loading…</dd>
-      </div>
-    </dl>
+    <div class="strip">
+      <button type="button" class="cell" id="btnTitle" aria-expanded="false" aria-controls="oddsboard">
+        <span class="k">Odds to win the national title</span>
+        <span class="v pending" id="mTitle">Loading…</span>
+      </button>
+      <button type="button" class="cell" id="btnPlayoff" aria-expanded="false" aria-controls="oddsboard">
+        <span class="k">Odds to make the playoff</span>
+        <span class="v pending" id="mPlayoff">Loading…</span>
+      </button>
+    </div>
+    <p class="hint" id="oddsHint">Tap either card for the full board</p>
+    <div id="oddsboard" hidden></div>
 
     <h2 class="sr-only">Notre Dame and national football data</h2>
-    <div role="tablist" aria-label="Sections">
-      <button type="button" role="tab" id="tab-game"     aria-controls="panel-game"     aria-selected="false" tabindex="-1">Game</button>
-      <button type="button" role="tab" id="tab-schedule" aria-controls="panel-schedule" aria-selected="true"  tabindex="0">Schedule</button>
-      <button type="button" role="tab" id="tab-around"   aria-controls="panel-around"   aria-selected="false" tabindex="-1">Top 25</button>
-      <button type="button" role="tab" id="tab-odds"     aria-controls="panel-odds"     aria-selected="false" tabindex="-1">Odds</button>
-      <button type="button" role="tab" id="tab-depth"    aria-controls="panel-depth"    aria-selected="false" tabindex="-1">Depth</button>
-      <button type="button" role="tab" id="tab-news"     aria-controls="panel-news"     aria-selected="false" tabindex="-1">News</button>
-    </div>
 
     <div id="tabpanel" tabindex="-1">
       <div role="tabpanel" id="panel-game" aria-labelledby="tab-game" tabindex="0" hidden></div>
@@ -921,7 +995,6 @@
         <p class="loading">Loading the schedule…</p>
       </div>
       <div role="tabpanel" id="panel-around" aria-labelledby="tab-around" tabindex="0" hidden></div>
-      <div role="tabpanel" id="panel-odds"   aria-labelledby="tab-odds"   tabindex="0" hidden></div>
       <div role="tabpanel" id="panel-depth"  aria-labelledby="tab-depth"  tabindex="0" hidden></div>
       <div role="tabpanel" id="panel-news"   aria-labelledby="tab-news"   tabindex="0" hidden></div>
     </div>
@@ -930,6 +1003,13 @@
   <footer><p class="foot" id="foot">Loading…</p></footer>
 </div>
 </div>
+<nav class="tabbar" role="tablist" aria-label="Sections">
+  <button type="button" role="tab" id="tab-game" aria-controls="panel-game" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.17 16.69C11.80 21.21 19.75 16.99 20.83 7.31C12.20 2.79 4.25 7.01 3.17 16.69Z"/><path d="M8.47 13.88L15.53 10.12"/><path d="M8.41 10.78L11.00 15.66M10.70 9.56L13.30 14.44M13.00 8.34L15.59 13.22"/></svg><span>Game</span></button>
+  <button type="button" role="tab" id="tab-schedule" aria-controls="panel-schedule" aria-selected="true" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Schedule</span></button>
+  <button type="button" role="tab" id="tab-around" aria-controls="panel-around" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20v-6M10 20V8M16 20v-9M22 20V4"/></svg><span>Top 25</span></button>
+  <button type="button" role="tab" id="tab-depth" aria-controls="panel-depth" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-5 6-5s6 1.7 6 5"/><path d="M16 5.5a3 3 0 0 1 0 5.8M18 20c0-2.6-1-4.2-2.5-5"/></svg><span>Depth</span></button>
+  <button type="button" role="tab" id="tab-news" aria-controls="panel-news" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h13v14a2 2 0 0 0 2 2H6a2 2 0 0 1-2-2Z"/><path d="M17 9h3v10a2 2 0 0 1-2 2"/><path d="M7 9h7M7 13h7M7 17h4"/></svg><span>News</span></button>
+</nav>
 
 <script>
 (function(){
@@ -1283,6 +1363,25 @@ function renderPoll(r, isOpen){
   return html+"</ol></details>";
 }
 
+// Games is the default because that is the several-times-a-week view; the polls
+// only move once or twice. The choice survives a refresh.
+var AROUND={ view:"games" };
+
+function wireAroundPills(el){
+  var btns=el.querySelectorAll(".seg.pills button");
+  if(!btns.length) return;
+  btns.forEach(function(b){
+    b.addEventListener("click", function(){
+      AROUND.view=b.dataset.view;
+      btns.forEach(function(x){ x.setAttribute("aria-pressed", String(x===b)); });
+      var g=el.querySelector("#ar-games"), r=el.querySelector("#ar-rankings");
+      if(g) g.hidden = AROUND.view!=="games";
+      if(r) r.hidden = AROUND.view!=="rankings";
+      say(AROUND.view==="games" ? "Showing ranked games." : "Showing rankings.");
+    });
+  });
+}
+
 function loadAround(){
   var el=$("panel-around");
   if(el.dataset.loaded) return;
@@ -1292,9 +1391,9 @@ function loadAround(){
     get(ESPN+"/rankings").catch(function(){return null;}),
     get(ESPN+"/scoreboard?groups=80&limit=400").catch(function(){return null;})
   ]).then(function(res){
-    var rk=res[0], sb=res[1], html="";
+    var rk=res[0], sb=res[1], pollHtml="", gameHtml="", gameCount=0;
 
-    // ---- polls first, collapsed except the one that matters ----
+    // ---- rankings ----
     if(rk&&rk.rankings&&rk.rankings.length){
       var polls=rk.rankings.filter(function(r){ return (r.ranks||[]).length && isFBS(r); })
                            .sort(function(a,b){ return pollOrder(a)-pollOrder(b); });
@@ -1306,16 +1405,15 @@ function loadAround(){
         seenLabel[k]=1; return true;
       });
       if(polls.length){
-        html+='<h2 class="sec">Rankings</h2>';
-        polls.forEach(function(r,i){ html+=renderPoll(r, i===0); });
+        polls.forEach(function(r,i){ pollHtml+=renderPoll(r, i===0); });
         if(!polls.some(function(r){ return pollOrder(r)===0; })){
-          html+='<p class="pollnote">CFP rankings appear here automatically once the '+
+          pollHtml+='<p class="pollnote">CFP rankings appear here automatically once the '+
                 'committee starts releasing them, and will sort above the polls.</p>';
         }
       }
     }
 
-    // ---- then the games ----
+    // ---- ranked games ----
     if(sb&&sb.events){
       var ranked=sb.events.filter(function(ev){
         var c0=ev.competitions&&ev.competitions[0];
@@ -1323,9 +1421,9 @@ function loadAround(){
           return c.curatedRank&&c.curatedRank.current<26; });
       }).sort(function(a,b){ return new Date(a.date)-new Date(b.date); });
 
-      html+='<h2 class="sec">Ranked games this week</h2>';
-      if(!ranked.length) html+='<p class="msg">No ranked teams are playing in this window.</p>';
-      else html+='<ul class="plain">';
+      gameCount=ranked.length;
+      if(!ranked.length) gameHtml+='<p class="msg">No ranked teams are playing in this window.</p>';
+      else gameHtml+='<ul class="plain">';
 
       ranked.forEach(function(ev){
         var comp=ev.competitions[0], cs=comp.competitors||[];
@@ -1364,12 +1462,29 @@ function loadAround(){
             : (comp.venue?esc(comp.venue.fullName||""):""))
           +(o&&o.line?" \u00B7 line "+esc(o.line):"")
           +(o&&o.total!=null?" \u00B7 over-under "+o.total:"");
-        html+='<li class="row '+(isND?"nd":"")+'">'+dateChip(ev.date)+
+        gameHtml+='<li class="row '+(isND?"nd":"")+'">'+dateChip(ev.date)+
           '<span class="mid"><span class="team">'+nm(away)+' <span class="pre">at</span> '+nm(home)+
           '</span><span class="sub">'+sub+"</span>"+liveLine+"</span>"+
           '<span class="right">'+right+"</span></li>";
       });
-      if(ranked.length) html+="</ul>";
+      if(ranked.length) gameHtml+="</ul>";
+    }
+
+    // ---- pills: games by default, rankings on demand ----
+    var html="";
+    if(gameHtml||pollHtml){
+      var view=AROUND.view;
+      if(view==="rankings" && !pollHtml) view="games";
+      if(view==="games" && !gameHtml)    view="rankings";
+      html='<div class="seg pills" role="group" aria-label="Show">'+
+        '<button type="button" data-view="games" aria-pressed="'+(view==="games")+'">'+
+          'Games<span class="n">'+gameCount+"</span></button>"+
+        '<button type="button" data-view="rankings" aria-pressed="'+(view==="rankings")+'">'+
+          "Rankings</button>"+
+        "</div>"+
+        '<div id="ar-games"'+(view==="games"?"":" hidden")+">"+gameHtml+"</div>"+
+        '<div id="ar-rankings"'+(view==="rankings"?"":" hidden")+">"+pollHtml+"</div>";
+      AROUND.view=view;
     }
 
     if(!html){
@@ -1378,7 +1493,10 @@ function loadAround(){
       say("Top 25 failed to load."); return;
     }
     el.innerHTML=html; el.dataset.loaded="1";
-    say("Rankings and ranked games loaded.");
+    wireAroundPills(el);
+    say(AROUND.view==="games"
+        ? gameCount+" ranked games this week."
+        : "Rankings loaded.");
   }).catch(function(){
     el.innerHTML='<p class="msg"><strong>The national picture didn\u2019t load.</strong>'+
       'ESPN returned data this page couldn\u2019t read. Choose Refresh to try again.</p>';
@@ -1424,54 +1542,82 @@ function kalshiHelp(){
     'kalshi.com, national championship winner<span class="sr-only"> (opens in a new tab)</span></a>.</p>';
 }
 
-function loadOdds(){
-  var el=$("panel-odds");
-  if(el.dataset.loaded) return;
-  el.innerHTML='<p class="loading">Loading the Kalshi title board…</p>';
+// The odds board now lives under the persistent strip rather than in its own
+// tab, and covers both markets. One expander, so only one board is open.
+var BOARD={ open:null, seq:0 };
 
-  kalshi("/markets?event_ticker="+TITLE_EVENT+"&limit=200&status=open").then(function(d){
+function oddsBar(m, top, rank){
+  var isND=/notre dame|fighting irish/i.test(m.name)||/-ND$/.test(m.ticker);
+  return '<li class="obar '+(isND?"nd":"")+'">'+
+    '<span class="orank" aria-hidden="true">'+rank+"</span>"+
+    '<span class="nm">'+esc(m.name)+"</span>"+
+    '<span class="track" aria-hidden="true"><span class="fill" style="width:'+
+      Math.round(m.p/top*100)+'%"></span></span>'+
+    '<span class="pc">'+m.p.toFixed(0)+'<span aria-hidden="true">%</span>'+
+    '<span class="sr-only"> percent</span></span></li>';
+}
+
+function renderBoard(ms, heading){
+  ms.forEach(function(m,i){ m.rank=i+1; });
+  var top=ms[0].p||1;
+  function isND(m){ return /notre dame|fighting irish/i.test(m.name)||/-ND$/.test(m.ticker); }
+  var lead=ms.slice(0,10), tail=ms.slice(10);
+  if(!lead.some(isND)){
+    var mine=tail.filter(isND)[0];
+    if(mine){ lead.push(mine); tail=tail.filter(function(m){return m!==mine;}); }
+  }
+  var html='<h2 class="sec">'+esc(heading)+"</h2>"+
+    '<p class="foot" style="padding-top:.5rem">Midpoint of the current bid and ask on Kalshi, '+
+    'in cents, which reads directly as a probability. Traded prices, not a model.</p>'+
+    '<ol class="plain">'+lead.map(function(m){return oddsBar(m,top,m.rank);}).join("")+"</ol>";
+  if(tail.length){
+    html+='<details class="fold"><summary>The rest of the field '+
+      '<span class="count">'+tail.length+" teams</span></summary>"+
+      '<div class="foldbody"><ol class="plain">'+
+      tail.map(function(m){return oddsBar(m,top,m.rank);}).join("")+"</ol></div></details>";
+  }
+  return html;
+}
+
+function loadBoard(kind){
+  var el=$("oddsboard");
+  var ev  = kind==="playoff" ? PLAYOFF_EVENT : TITLE_EVENT;
+  var head= kind==="playoff" ? "Kalshi: who makes the playoff"
+                             : "Kalshi: who wins the national championship";
+  // Tag each request. A response only paints if it is still the one the user
+  // is waiting on, so a fast tap between the two cards cannot cross the wires.
+  var token=++BOARD.seq;
+  el.hidden=false;
+  el.innerHTML='<p class="loading">Loading the board\u2026</p>';
+  kalshi("/markets?event_ticker="+ev+"&limit=200&status=open").then(function(d){
+    if(token!==BOARD.seq || BOARD.open!==kind) return;
     var ms=(d.markets||[]).map(function(m){
       return { name:teamOf(m), ticker:m.ticker, p:price(m) };
-    }).filter(function(m){return m.p!=null;}).sort(function(a,b){return b.p-a.p;});
+    }).filter(function(m){ return m.p!=null; }).sort(function(a,b){ return b.p-a.p; });
     if(!ms.length) throw new Error("empty");
-
-    var top=ms[0].p||1;
-    function isND(m){ return /notre dame|fighting irish/i.test(m.name)||/-ND$/.test(m.ticker); }
-    function bar(m){
-      return '<li class="obar '+(isND(m)?"nd":"")+'">'+
-        '<span class="orank" aria-hidden="true">'+m.rank+"</span>"+
-        '<span class="nm">'+esc(m.name)+"</span>"+
-        '<span class="track" aria-hidden="true"><span class="fill" style="width:'+
-          Math.round(m.p/top*100)+'%"></span></span>'+
-        '<span class="pc">'+m.p.toFixed(0)+'<span aria-hidden="true">%</span>'+
-        '<span class="sr-only"> percent</span></span></li>';
-    }
-
-    // Fifty teams is a lot of scrolling for a board where ten of them matter.
-    // Notre Dame is always in the visible block even if the price says otherwise.
-    ms.forEach(function(m,i){ m.rank=i+1; });   // fix rank before any reordering
-    var lead=ms.slice(0,10), tail=ms.slice(10);
-    if(!lead.some(isND)){
-      var mine=tail.filter(isND)[0];
-      if(mine){ lead.push(mine); tail=tail.filter(function(m){ return m!==mine; }); }
-    }
-
-    var html='<h2 class="sec">Kalshi: who wins the national championship</h2>'+
-      '<p class="foot" style="padding-top:.6rem">Each price is the midpoint of the current bid and ask, '+
-      'in cents, which reads directly as a probability. These are traded prices, not a model.</p>'+
-      '<ol class="plain">'+lead.map(bar).join("")+"</ol>";
-    if(tail.length){
-      html+='<details class="fold"><summary>The rest of the field '+
-        '<span class="count">'+tail.length+" teams</span></summary>"+
-        '<div class="foldbody"><ol class="plain">'+tail.map(bar).join("")+"</ol></div></details>";
-    }
-    el.innerHTML=html;
-    el.dataset.loaded="1";
-    say("Title odds loaded. Notre Dame is on the board.");
+    el.innerHTML=renderBoard(ms, head);
+    say(head+" loaded, "+ms.length+" teams.");
   }).catch(function(){
+    if(token!==BOARD.seq || BOARD.open!==kind) return;
     el.innerHTML=kalshiHelp();
-    say("Kalshi odds could not be loaded.");
+    say("Odds board could not be loaded.");
   });
+}
+
+function closeBoard(){
+  BOARD.open=null; BOARD.seq++;      // invalidate anything still in flight
+  $("oddsboard").hidden=true;
+  $("oddsboard").innerHTML="";
+  ["btnTitle","btnPlayoff"].forEach(function(id){ $(id).setAttribute("aria-expanded","false"); });
+}
+
+function toggleBoard(kind){
+  if(BOARD.open===kind){ closeBoard(); return; }
+  BOARD.open=kind;
+  $("btnTitle").setAttribute("aria-expanded", String(kind==="title"));
+  $("btnPlayoff").setAttribute("aria-expanded", String(kind==="playoff"));
+  var hint=$("oddsHint"); if(hint) hint.hidden=true;
+  loadBoard(kind);
 }
 
 function loadStrip(){
@@ -1488,7 +1634,7 @@ function loadStrip(){
       var move = (mv==null||Math.abs(mv)<0.5) ? ""
         : mv>0 ? '<em class="up"><span class="sr-only">, up '+Math.abs(mv).toFixed(0)+'</span><span aria-hidden="true">\u25B2'+Math.abs(mv).toFixed(0)+"</span></em>"
                : '<em class="down"><span class="sr-only">, down '+Math.abs(mv).toFixed(0)+'</span><span aria-hidden="true">\u25BC'+Math.abs(mv).toFixed(0)+"</span></em>";
-      $(q.cell).className="";
+      $(q.cell).className="v";        // keep the class, just drop "pending"
       $(q.cell).innerHTML=p.toFixed(0)+'<span aria-hidden="true">%</span><span class="sr-only"> percent</span>'+move;
     }).catch(function(){
       $(q.cell).textContent="Unavailable";
@@ -1623,7 +1769,7 @@ function loadHistory(){
 // this is all client side. Field names vary by game state, so every read is
 // defensive — a missing section drops out rather than blanking the tab.
 
-var G = { poll:null, id:null };
+var G = { poll:null, id:null, side:null, pending:false };
 
 function pick(o, path, dflt){
   var cur=o;
@@ -1645,6 +1791,16 @@ function statVal(team, keys){
   return null;
 }
 function numOf(v){ var n=parseFloat(String(v).replace(/[^0-9.\-]/g,"")); return isNaN(n)?null:n; }
+// "5-13" is a made/attempted pair, not the number 5. Compare the rate.
+// "28:24" is a clock, not 2824. Compare the seconds.
+function cmpVal(v){
+  var s=String(v==null?"":v).trim();
+  var m=s.match(/^(\d+)\s*[-/]\s*(\d+)$/);
+  if(m) return parseInt(m[2],10)===0 ? 0 : parseInt(m[1],10)/parseInt(m[2],10);
+  var t=s.match(/^(\d+):(\d{2})$/);
+  if(t) return parseInt(t[1],10)*60+parseInt(t[2],10);
+  return numOf(s);
+}
 
 // Which game to show: one in progress, else the most recent finished, else next up.
 function gameToShow(){
@@ -1659,12 +1815,21 @@ function gameToShow(){
 function loadGame(force){
   var el=$("panel-game");
   var g=gameToShow();
-  if(!g){ el.innerHTML='<p class="loading">Waiting on the schedule…</p>'; return; }
+  if(!g){
+    // The schedule has not landed yet. Mark it so the schedule handler can
+    // come back and fill this in, instead of leaving the tab stuck forever.
+    el.innerHTML='<p class="loading">Waiting on the schedule…</p>';
+    G.pending=true;
+    return;
+  }
+  G.pending=false;
+  if(g.id!==G.id){ G.id=g.id; G.side=null; }   // new game, forget the last toggle
   if(el.dataset.loaded===g.id && !force) return;
   if(!el.dataset.loaded) el.innerHTML='<p class="loading">Loading the game…</p>';
 
   get(ESPN+"/summary?event="+g.id).then(function(d){
     el.innerHTML=renderGame(d);
+    wireLeaderSwitch(el);
     el.dataset.loaded=g.id;
     schedulePoll(d);
   }).catch(function(){
@@ -1688,6 +1853,20 @@ function schedulePoll(d){
 document.addEventListener("visibilitychange", function(){
   if(!document.hidden && !$("panel-game").hidden) loadGame(true);
 });
+
+function wireLeaderSwitch(el){
+  var btns=el.querySelectorAll(".seg button");
+  if(!btns.length) return;
+  btns.forEach(function(b){
+    b.addEventListener("click", function(){
+      G.side=b.dataset.side;
+      btns.forEach(function(x){ x.setAttribute("aria-pressed", String(x===b)); });
+      var a=el.querySelector("#ldr-away"), hm=el.querySelector("#ldr-home");
+      if(a)  a.hidden  = G.side!=="away";
+      if(hm) hm.hidden = G.side!=="home";
+    });
+  });
+}
 
 function renderGame(d){
   var comp=pick(d,["header","competitions",0],{}) || {};
@@ -1775,8 +1954,13 @@ function renderGame(d){
   // ---- team stats, away on the left to match the score line ----
   var bt=pick(d,["boxscore","teams"],[])||[];
   if(bt.length>=2){
-    var bh=bt.filter(function(t){return String(pick(t,["team","id"],""))===String(pick(home,["team","id"],""));})[0]||bt[1];
-    var ba=bt.filter(function(t){return t!==bh;})[0]||bt[0];
+    // Home always on the right, matched by team id. If ESPN ever omits the id,
+    // fall back to its own ordering rather than guessing.
+    var homeId=String(pick(home,["team","id"],""));
+    var awayId=String(pick(away,["team","id"],""));
+    var bh=bt.filter(function(t){return String(pick(t,["team","id"],""))===homeId;})[0];
+    var ba=bt.filter(function(t){return String(pick(t,["team","id"],""))===awayId;})[0];
+    if(!bh||!ba){ ba=bt[0]; bh=bt[1]; }
     var rows=[
       ["Total yards",["totalYards"]],
       ["Passing",["netPassingYards","passingYards"]],
@@ -1791,10 +1975,11 @@ function renderGame(d){
     rows.forEach(function(r){
       var av=statVal(ba,r[1]), hv=statVal(bh,r[1]);
       if(av==null&&hv==null) return;
-      var an=numOf(av), hn=numOf(hv);
+      var an=cmpVal(av), hn=cmpVal(hv);
       var aw="", hw="";
       if(an!=null&&hn!=null&&an!==hn){
         var lowerWins = r[0]==="Turnovers"||r[0]==="Penalties";
+        if(r[0]==="Penalties"){ an=numOf(av); hn=numOf(hv); }   // count, not a rate
         var awin = lowerWins ? an<hn : an>hn;
         aw=awin?" win":""; hw=awin?"":" win";
       }
@@ -1803,28 +1988,67 @@ function renderGame(d){
         '<span class="v r'+hw+'">'+esc(String(hv==null?"–":hv))+"</span></div>";
     });
     if(body){
-      html+='<h2 class="sec">Team stats <span class="count" style="font-weight:500;color:var(--dim)">'+
-        esc(pick(ba,["team","abbreviation"],"")||"")+" vs "+esc(pick(bh,["team","abbreviation"],"")||"")+
-        "</span></h2>"+body;
+      var head=function(t,right){
+        var ab=pick(t,["team","abbreviation"],null)||pick(t,["team","shortDisplayName"],"")||"";
+        var isND=String(pick(t,["team","id"],""))===TEAM;
+        return '<span class="v'+(right?" r":"")+(isND?" nd":"")+'">'+esc(ab)+"</span>";
+      };
+      html+='<h2 class="sec">Team stats</h2>'+
+        '<div class="statrow head">'+head(ba,false)+
+        '<span class="lbl">AWAY \u00B7 HOME</span>'+head(bh,true)+"</div>"+
+        body;
     }
   }
 
-  // ---- leaders ----
+  // ---- leaders, one team at a time ----
   var lead=d.leaders||[];
-  var lbody="";
-  lead.forEach(function(tl){
-    var abbr=pick(tl,["team","abbreviation"],"")||"";
+  function catLabel(cat){
+    var n=String(cat.name||"").toLowerCase();
+    if(n.indexOf("passing")===0)   return "Passing";
+    if(n.indexOf("rushing")===0)   return "Rushing";
+    if(n.indexOf("receiving")===0) return "Receiving";
+    if(n.indexOf("sack")>-1)       return "Sacks";
+    if(n.indexOf("tackle")>-1)     return "Tackles";
+    if(n.indexOf("intercept")>-1)  return "Int";
+    return cat.shortDisplayName||cat.displayName||"";
+  }
+  function leaderRows(tl){
+    var out="";
     (tl.leaders||[]).forEach(function(cat){
       var top=(cat.leaders||[])[0];
       if(!top) return;
       var nm=pick(top,["athlete","shortName"],null)||pick(top,["athlete","displayName"],"");
       if(!nm) return;
-      lbody+='<div class="ldr"><span class="cat">'+esc((cat.shortDisplayName||cat.displayName||"").slice(0,9))+"</span>"+
-        '<span class="who">'+esc(nm)+' <span style="color:var(--dim)">'+esc(abbr)+"</span>"+
+      out+='<div class="ldr"><span class="cat">'+esc(catLabel(cat))+"</span>"+
+        '<span class="who"><span class="nm">'+esc(nm)+"</span>"+
         '<span class="line">'+esc(top.displayValue||"")+"</span></span></div>";
     });
-  });
-  if(lbody) html+='<h2 class="sec">Leaders</h2>'+lbody;
+    return out;
+  }
+  var la=lead.filter(function(t){return String(pick(t,["team","id"],""))===String(pick(away,["team","id"],""));})[0];
+  var lh=lead.filter(function(t){return String(pick(t,["team","id"],""))===String(pick(home,["team","id"],""));})[0];
+  if(!la||!lh){ la=lead[0]; lh=lead[1]; }
+  if(la&&lh){
+    var ra=leaderRows(la), rh=leaderRows(lh);
+    if(ra||rh){
+      // default to whichever side is Notre Dame, and remember the choice
+      // across the 25-second refresh
+      if(!G.side) G.side = String(pick(lh,["team","id"],""))===TEAM ? "home" : "away";
+      var tag=function(tl){
+        var ab=pick(tl,["team","abbreviation"],null)||pick(tl,["team","shortDisplayName"],"")||"";
+        return esc(ab);
+      };
+      html+='<h2 class="sec">Leaders</h2>'+
+        '<div class="seg" role="group" aria-label="Show leaders for">'+
+          '<button type="button" data-side="away" aria-pressed="'+(G.side==="away")+'">'+
+            tag(la)+'<span class="sub">away</span></button>'+
+          '<button type="button" data-side="home" aria-pressed="'+(G.side==="home")+'">'+
+            tag(lh)+'<span class="sub">home</span></button>'+
+        "</div>"+
+        '<div id="ldr-away"'+(G.side==="away"?"":" hidden")+">"+ra+"</div>"+
+        '<div id="ldr-home"'+(G.side==="home"?"":" hidden")+">"+rh+"</div>";
+    }
+  }
 
   // ---- scoring summary ----
   var sp=d.scoringPlays||[];
@@ -1937,8 +2161,8 @@ function selectTab(tab, focusIt){
   if(focusIt) tab.focus();
   var name=tab.id.replace("tab-","");
   if(name==="game")   loadGame();
+  else if(G.poll){ clearInterval(G.poll); G.poll=null; }   // left the tab, stop polling
   if(name==="around") loadAround();
-  if(name==="odds")   loadOdds();
   if(name==="depth")  loadDepth();
   if(name==="news")   loadNews();
 }
@@ -1977,6 +2201,7 @@ function load(){
     S.next=live||up||null;
     if(S.next) paintHero(S.next); else $("hero").hidden=true;
     paintSchedule(games);
+    if(G.pending) loadGame(true);        // the Game tab was waiting on this
     say("Schedule loaded, "+games.length+" games."+(S.next?" Next game is "+(S.next.home?"versus ":"at ")+S.next.oppName+".":""));
 
     if(S.next&&!S.next.odds){
@@ -2001,8 +2226,12 @@ function load(){
   loadStrip();
 }
 
+$("btnTitle").addEventListener("click", function(){ toggleBoard("title"); });
+$("btnPlayoff").addEventListener("click", function(){ toggleBoard("playoff"); });
+
 $("refresh").addEventListener("click",function(){
-  ["around","odds","depth","news"].forEach(function(n){ $("panel-"+n).dataset.loaded=""; });
+  ["around","depth","news"].forEach(function(n){ $("panel-"+n).dataset.loaded=""; });
+  if(BOARD.open) loadBoard(BOARD.open);
   $("panel-game").dataset.loaded="";
   say("Refreshing…");
   load();
@@ -2010,7 +2239,6 @@ $("refresh").addEventListener("click",function(){
   var name=cur.id.replace("tab-","");
   if(name==="game")   loadGame(true);
   if(name==="around") loadAround();
-  if(name==="odds")   loadOdds();
   if(name==="depth")  loadDepth();
   if(name==="news")   loadNews();
 });
