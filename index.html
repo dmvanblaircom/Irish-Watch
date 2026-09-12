@@ -873,8 +873,9 @@
      view starts at y=0, so the header sits under the status bar unless we
      reserve the inset ourselves. In normal Safari these all evaluate to 0. */
   .page{
-    padding-top:env(safe-area-inset-top, 0px);
-    /* clears the fixed bottom bar */
+    /* the safe-area inset moved onto .bar so the sticky header can paint
+       behind the status bar instead of leaving a transparent strip */
+    padding-top:0;
     padding-bottom:calc(5.2rem + env(safe-area-inset-bottom, 0px));
   }
   .wrap{
@@ -882,14 +883,27 @@
     padding-right:calc(.85rem + env(safe-area-inset-right, 0px));
   }
   /* A little air between the status bar and the wordmark in standalone mode. */
-  @media (display-mode: standalone){
-    .bar{padding-top:1.35rem}
+  /* header stays put so Refresh is always a thumb away */
+  .bar{
+    position:sticky;top:0;z-index:55;
+    padding-top:calc(.7rem + env(safe-area-inset-top, 0px));
+    padding-bottom:.55rem;
+    margin-left:calc(-1 * (.85rem + env(safe-area-inset-left, 0px)));
+    margin-right:calc(-1 * (.85rem + env(safe-area-inset-right, 0px)));
+    padding-left:calc(.85rem + env(safe-area-inset-left, 0px));
+    padding-right:calc(.85rem + env(safe-area-inset-right, 0px));
+    background:rgba(7,25,47,.94);
+    -webkit-backdrop-filter:saturate(160%) blur(14px);
+    backdrop-filter:saturate(160%) blur(14px);
+    border-bottom:1px solid var(--ink-3);
   }
-  @supports (-webkit-touch-callout: none){
-    @media (display-mode: standalone){
-      .bar{padding-top:1.35rem}
-    }
+  /* a dot on Refresh while something is actually live and polling */
+  #refresh.polling::before{
+    content:"";display:inline-block;width:.42rem;height:.42rem;border-radius:50%;
+    background:var(--live);margin-right:.4rem;vertical-align:.06em;
+    animation:pulse 1.6s ease-in-out infinite;
   }
+  @media (prefers-reduced-motion:reduce){#refresh.polling::before{animation:none}}
 
   /* ---- bottom tab bar ---- */
   .tabbar{
@@ -1485,6 +1499,11 @@ function loadAround(){
       }).sort(function(a,b){ return new Date(a.date)-new Date(b.date); });
 
       gameCount=ranked.length;
+      AUTO.liveElsewhere = sb.events.some(function(ev){
+        var c0=ev.competitions&&ev.competitions[0];
+        return c0 && c0.status && c0.status.type && c0.status.type.state==="in";
+      });
+      startAuto();
       if(!ranked.length) gameHtml+='<p class="msg">No ranked teams are playing in this window.</p>';
       else gameHtml+='<ul class="plain">';
 
@@ -2413,6 +2432,49 @@ tabs.forEach(function(tab,i){
 });
 
 /* ---------- boot ---------- */
+/* ---------- automatic refresh ---------- */
+// Polls only while a game is actually in progress, only when the page is
+// visible, and only the things that change during a game. Odds, depth, roster
+// and news are left alone.
+var AUTO={ timer:null, every:30000, liveElsewhere:false };
+
+function somethingLive(){
+  if(S.games && S.games.some(function(g){ return g.state==="in"; })) return true;
+  return AUTO.liveElsewhere;
+}
+
+function startAuto(){
+  var on=somethingLive();
+  var btn=$("refresh");
+  if(btn) btn.classList.toggle("polling", on);
+  if(!on){
+    if(AUTO.timer){ clearInterval(AUTO.timer); AUTO.timer=null; }
+    return;
+  }
+  if(AUTO.timer) return;
+  AUTO.timer=setInterval(autoTick, AUTO.every);
+}
+
+function autoTick(){
+  if(document.hidden) return;
+  if(!somethingLive()){ startAuto(); return; }   // everything finished, stand down
+  refreshSchedule(false);
+  // The Top 25 list is only worth re-fetching while you are looking at it.
+  if(!$("panel-around").hidden){
+    var y=window.scrollY;
+    $("panel-around").dataset.loaded="";
+    loadAround();
+    // loadAround paints asynchronously; put the scroll back once it has
+    setTimeout(function(){ window.scrollTo(0,y); }, 60);
+  }
+}
+
+// Coming back to the app should feel current immediately, not in 30 seconds.
+document.addEventListener("visibilitychange", function(){
+  if(document.hidden) return;
+  if(somethingLive()) autoTick();
+});
+
 function load(){
   $("panel-schedule").innerHTML='<p class="loading">Loading the schedule…</p>';
 
@@ -2427,7 +2489,14 @@ function load(){
     if(r) $("rec").innerHTML='<span class="sr-only">Record </span>'+esc(r.summary);
   }).catch(function(){});
 
-  get(ESPN+"/teams/"+TEAM+"/schedule").then(function(d){
+  refreshSchedule(true);
+  loadStrip();
+}
+
+// Pulled out of load() so the auto-refresh can reuse it without re-fetching
+// team info, odds or anything else that does not change during a game.
+function refreshSchedule(first){
+  return get(ESPN+"/teams/"+TEAM+"/schedule").then(function(d){
     var games=(d.events||[]).map(normalize).sort(function(a,b){return new Date(a.date)-new Date(b.date);});
     S.games=games;
     var live=games.filter(function(g){return g.state==="in";})[0];
@@ -2436,7 +2505,9 @@ function load(){
     if(S.next) paintHero(S.next); else $("hero").hidden=true;
     paintSchedule(games);
     if(G.pending) loadGame(true);        // the Game tab was waiting on this
-    say("Schedule loaded, "+games.length+" games."+(S.next?" Next game is "+(S.next.home?"versus ":"at ")+S.next.oppName+".":""));
+    if(first) say("Schedule loaded, "+games.length+" games."+
+      (S.next?" Next game is "+(S.next.home?"versus ":"at ")+S.next.oppName+".":""));
+    startAuto();
 
     if(S.next&&!S.next.odds){
       get(ESPN+"/summary?event="+S.next.id).then(function(sm){
@@ -2447,17 +2518,16 @@ function load(){
     }
 
     $("foot").textContent="Schedule, scores, betting lines and news come from ESPN\u2019s public feed. "+
-      "Championship odds come from Kalshi. Everything reloads when you open the page. Last loaded "+
+      "Championship odds come from Kalshi. Last updated "+
       new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})+".";
   }).catch(function(){
+    if(!first) return;                 // a failed background poll keeps the old data
     $("panel-schedule").innerHTML='<p class="msg"><strong>The schedule didn\u2019t load.</strong>'+
       'If you are viewing this inside another app\u2019s file preview, that preview is most likely '+
       'blocking outside requests. Open the file in Safari or Chrome directly and it should fill in. '+
       'Otherwise, check your connection and choose Refresh.</p>';
     say("Schedule failed to load.");
   });
-
-  loadStrip();
 }
 
 $("btnTitle").addEventListener("click", function(){ toggleBoard("title"); });
