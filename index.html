@@ -1472,6 +1472,86 @@ function wireAroundPills(el){
   });
 }
 
+// Everything about a ranked row that can change while the game is on. Shared by
+// the initial render and the in-place refresh so the two can never drift.
+function rankedParts(ev){
+  var comp=ev.competitions[0], cs=comp.competitors||[];
+  var home=cs.filter(function(c){return c.homeAway==="home";})[0]||cs[0];
+  var away=cs.filter(function(c){return c.homeAway==="away";})[0]||cs[1];
+  var st=(comp.status&&comp.status.type)||{};
+  var isND=cs.some(function(c){ return String(c.id)===TEAM; });
+  var o=oddsOf(comp), net=network(comp);
+  function nm(c){
+    if(!c||!c.team) return "opponent to be announced";
+    var r=c.curatedRank&&c.curatedRank.current<26
+      ? '<span class="rk"><span class="sr-only">number </span><span aria-hidden="true">#</span>'+c.curatedRank.current+"</span> " : "";
+    return r+esc(c.team.shortDisplayName||c.team.displayName);
+  }
+  var right;
+  if(st.state==="post"||st.state==="in"){
+    right='<span class="sr-only">Score: '+((away&&away.score)||0)+" to "+((home&&home.score)||0)+". "+esc(st.shortDetail||"")+"</span>"+
+      '<span aria-hidden="true"><span class="score">'+((away&&away.score)||0)+"\u2013"+((home&&home.score)||0)+"</span>"+
+      '<span class="status">'+esc(st.shortDetail||"")+"</span></span>";
+  } else {
+    right = net ? '<span class="net"><span class="sr-only">Watch on </span>'+esc(net)+"</span>"
+                : '<span class="net tbd">Network <abbr title="to be determined">TBD</abbr></span>';
+  }
+  // The scoreboard payload already carries live down/distance and the last play.
+  var sit=comp.situation||{}, liveLine="";
+  if(st.state==="in"){
+    var lp=(sit.lastPlay&&sit.lastPlay.text)||"";
+    var dd=sit.downDistanceText||sit.shortDownDistanceText||"";
+    var bits=[dd, lp].filter(Boolean).join(" \u00B7 ");
+    if(bits) liveLine='<span class="live"><span class="lbl">LIVE</span>'+esc(bits.slice(0,150))+"</span>";
+  }
+  var sub=(st.state==="pre"
+      ? (timeIsSet(ev.date)?fmtTime(ev.date)+" "+tzAbbr():"Kickoff time not announced")
+      : (comp.venue?esc(comp.venue.fullName||""):""))
+    +(st.state!=="pre"&&net?" \u00B7 "+esc(net):"")
+    +(o&&o.line?" \u00B7 line "+esc(o.line):"")
+    +(o&&o.total!=null?" \u00B7 over-under "+o.total:"");
+  return { isND:isND, teams:nm(away)+' <span class="pre">at</span> '+nm(home),
+           sub:sub, liveLine:liveLine, right:right };
+}
+
+// Patch the rows that changed instead of rebuilding the tab. Returns false if
+// the set of games itself changed, in which case the caller does a full render.
+function patchRanked(sb){
+  var list=$("panel-around").querySelector("#ar-games ul.plain");
+  if(!list) return false;
+  var rows=list.querySelectorAll("li.row[data-ev]");
+  if(!rows.length) return false;
+
+  var byId={};
+  (sb&&sb.events?sb.events:[]).forEach(function(ev){ byId[String(ev.id)]=ev; });
+
+  var seen=0;
+  for(var i=0;i<rows.length;i++){
+    var li=rows[i], ev=byId[li.dataset.ev];
+    if(!ev) return false;                       // window shifted, rebuild
+    seen++;
+    var pr=rankedParts(ev);
+
+    var right=li.querySelector(".right");
+    if(right && right.innerHTML!==pr.right) right.innerHTML=pr.right;
+
+    var sub=li.querySelector(".sub");
+    if(sub && sub.innerHTML!==pr.sub) sub.innerHTML=pr.sub;
+
+    var live=li.querySelector(".live");
+    if(pr.liveLine){
+      if(!live){
+        li.querySelector(".mid").insertAdjacentHTML("beforeend", pr.liveLine);
+      } else if(live.outerHTML!==pr.liveLine){
+        live.outerHTML=pr.liveLine;
+      }
+    } else if(live){
+      live.remove();
+    }
+  }
+  return seen===rows.length;
+}
+
 function loadAround(){
   var el=$("panel-around");
   if(el.dataset.loaded) return;
@@ -1524,50 +1604,12 @@ function loadAround(){
       else gameHtml+='<ul class="plain">';
 
       ranked.forEach(function(ev){
-        var comp=ev.competitions[0], cs=comp.competitors||[];
-        var home=cs.filter(function(c){return c.homeAway==="home";})[0]||cs[0];
-        var away=cs.filter(function(c){return c.homeAway==="away";})[0]||cs[1];
-        var st=(comp.status&&comp.status.type)||{};
-        var isND=cs.some(function(c){ return String(c.id)===TEAM; });
-        var o=oddsOf(comp), net=network(comp);
-        function nm(c){
-          if(!c||!c.team) return "opponent to be announced";
-          var r=c.curatedRank&&c.curatedRank.current<26
-            ? '<span class="rk"><span class="sr-only">number </span><span aria-hidden="true">#</span>'+c.curatedRank.current+"</span> " : "";
-          return r+esc(c.team.shortDisplayName||c.team.displayName);
-        }
-        var right;
-        if(st.state==="post"||st.state==="in"){
-          right='<span class="sr-only">Score: '+((away&&away.score)||0)+" to "+((home&&home.score)||0)+". "+esc(st.shortDetail||"")+"</span>"+
-            '<span aria-hidden="true"><span class="score">'+((away&&away.score)||0)+"\u2013"+((home&&home.score)||0)+"</span>"+
-            '<span class="status">'+esc(st.shortDetail||"")+"</span></span>";
-        } else {
-          right = net ? '<span class="net"><span class="sr-only">Watch on </span>'+esc(net)+"</span>"
-                      : '<span class="net tbd">Network <abbr title="to be determined">TBD</abbr></span>';
-        }
-        // The scoreboard payload already carries live down/distance and the last
-        // play for in-progress games. No extra request needed.
-        var sit=comp.situation||{};
-        var liveLine="";
-        if(st.state==="in"){
-          var lp=(sit.lastPlay&&sit.lastPlay.text)||"";
-          var dd=sit.downDistanceText||sit.shortDownDistanceText||"";
-          var bits=[dd, lp].filter(Boolean).join(" \u00B7 ");
-          if(bits) liveLine='<span class="live"><span class="lbl">LIVE</span>'+
-            esc(bits.slice(0,150))+"</span>";
-        }
-        var sub=(st.state==="pre"
-            ? (timeIsSet(ev.date)?fmtTime(ev.date)+" "+tzAbbr():"Kickoff time not announced")
-            : (comp.venue?esc(comp.venue.fullName||""):""))
-          // once the score takes over the right column the network chip vanishes,
-          // so carry it in the subtitle for live and finished games
-          +(st.state!=="pre"&&net?" \u00B7 "+esc(net):"")
-          +(o&&o.line?" \u00B7 line "+esc(o.line):"")
-          +(o&&o.total!=null?" \u00B7 over-under "+o.total:"");
-        gameHtml+='<li class="row '+(isND?"nd":"")+'">'+dateChip(ev.date)+
-          '<span class="mid"><span class="team">'+nm(away)+' <span class="pre">at</span> '+nm(home)+
-          '</span><span class="sub">'+sub+"</span>"+liveLine+"</span>"+
-          '<span class="right">'+right+"</span></li>";
+        var pr=rankedParts(ev);
+        gameHtml+='<li class="row '+(pr.isND?"nd":"")+'" data-ev="'+esc(String(ev.id))+'">'+
+          dateChip(ev.date)+
+          '<span class="mid"><span class="team">'+pr.teams+"</span>"+
+          '<span class="sub">'+pr.sub+"</span>"+pr.liveLine+"</span>"+
+          '<span class="right">'+pr.right+"</span></li>";
       });
       if(ranked.length) gameHtml+="</ul>";
     }
@@ -1938,8 +1980,14 @@ function loadGame(force){
   if(!el.dataset.loaded) el.innerHTML='<p class="loading">Loading the game…</p>';
 
   get(ESPN+"/summary?event="+g.id).then(function(d){
-    el.innerHTML=renderGame(d);
-    wireLeaderSwitch(el);
+    var shape=gameShape(d);
+    if(el.dataset.loaded===g.id && el.dataset.shape===shape){
+      patchGame(d);                     // scores, clock and last play only
+    } else {
+      el.innerHTML=renderGame(d);
+      wireLeaderSwitch(el);
+      el.dataset.shape=shape;
+    }
     el.dataset.loaded=g.id;
     schedulePoll(d);
   }).catch(function(){
@@ -1978,6 +2026,108 @@ function wireLeaderSwitch(el){
   });
 }
 
+// If none of these change, nothing structural moved and the view can be patched
+// in place. A new score, a new quarter or a stat appearing forces a rebuild.
+function gameShape(d){
+  var comp=pick(d,["header","competitions",0],{})||{};
+  var cs=comp.competitors||[];
+  return [ (d.scoringPlays||[]).length,
+           (cs[0]&&cs[0].linescores?cs[0].linescores.length:0),
+           (pick(d,["boxscore","teams"],[])||[]).length,
+           (d.leaders||[]).length,
+           pick(comp,["status","type","state"],"") ].join("|");
+}
+
+function patchGame(d){
+  var el=$("panel-game");
+  var comp=pick(d,["header","competitions",0],{})||{};
+  var cs=comp.competitors||[];
+  var home=cs.filter(function(c){return c.homeAway==="home";})[0]||cs[0]||{};
+  var away=cs.filter(function(c){return c.homeAway==="away";})[0]||cs[1]||{};
+  var st=pick(comp,["status","type"],{})||{};
+  function put(node, html){ if(node && node.innerHTML!==html) node.innerHTML=html; }
+
+  [["away",away,home],["home",home,away]].forEach(function(t){
+    var box=el.querySelector('.gscore[data-side="'+t[0]+'"]');
+    if(!box) return;
+    var pts=t[1].score!=null?t[1].score:"";
+    put(box.querySelector(".pts"), esc(String(pts)));
+    box.classList.toggle("lead", numOf(pts)>numOf(t[2].score));
+  });
+
+  var statusEl=el.querySelector("#gStatus span:not(.dot)");
+  put(statusEl, esc(st.detail||st.shortDetail||st.description||""));
+
+  var sit=d.situation||comp.situation||{};
+  var lastText=pick(sit,["lastPlay","text"],null);
+  if(!lastText){
+    var cur=pick(d,["drives","current","plays"],null);
+    if(cur&&cur.length) lastText=cur[cur.length-1].text;
+  }
+  var lpEl=el.querySelector("#gLastPlay");
+  if(lpEl && lastText){
+    put(lpEl.querySelector(".t"), esc(lastText));
+    var dd=sit.downDistanceText||sit.shortDownDistanceText||"";
+    var poss=pick(sit,["lastPlay","team","abbreviation"],"")||"";
+    var meta=esc([poss,dd].filter(Boolean).join(" \u00B7 "));
+    var ddEl=lpEl.querySelector(".dd");
+    if(meta && !ddEl) lpEl.insertAdjacentHTML("beforeend",'<div class="dd">'+meta+"</div>");
+    else if(meta) put(ddEl, meta);
+    else if(ddEl) ddEl.remove();
+  }
+
+  var wp=d.winprobability, wpEl=el.querySelector("#gWinProb");
+  if(wpEl && wp && wp.length){
+    var hp=wp[wp.length-1].homeWinPercentage;
+    if(typeof hp==="number"){
+      var favHome=hp>=0.5, spans=wpEl.querySelectorAll(".v");
+      if(spans.length>1){
+        put(spans[0], Math.round((favHome?hp:1-hp)*100)+"%");
+        put(spans[1], esc(pick(favHome?home:away,["team","abbreviation"],"")||""));
+      }
+    }
+  }
+
+  var bt=pick(d,["boxscore","teams"],[])||[];
+  if(bt.length>=2){
+    var homeId=String(pick(home,["team","id"],"")), awayId=String(pick(away,["team","id"],""));
+    var bh=bt.filter(function(t){return String(pick(t,["team","id"],""))===homeId;})[0];
+    var ba=bt.filter(function(t){return String(pick(t,["team","id"],""))===awayId;})[0];
+    if(bh&&ba){
+      var keys={ "Total yards":["totalYards"], "Passing":["netPassingYards","passingYards"],
+        "Rushing":["rushingYards"], "First downs":["firstDowns"], "3rd down":["thirdDownEff"],
+        "Turnovers":["turnovers"], "Penalties":["totalPenaltiesYards"],
+        "Possession":["possessionTime"] };
+      el.querySelectorAll(".statrow[data-stat]").forEach(function(row){
+        var k=row.getAttribute("data-stat"), ks=keys[k]; if(!ks) return;
+        var av=statVal(ba,ks), hv=statVal(bh,ks);
+        var spans=row.querySelectorAll(".v"); if(spans.length<2) return;
+        put(spans[0], esc(String(av==null?"–":av)));
+        put(spans[1], esc(String(hv==null?"–":hv)));
+        var an=cmpVal(av), hn=cmpVal(hv);
+        if(k==="Penalties"){ an=numOf(av); hn=numOf(hv); }
+        var lower=(k==="Turnovers"||k==="Penalties");
+        var awin=(an!=null&&hn!=null&&an!==hn) ? (lower?an<hn:an>hn) : null;
+        spans[0].classList.toggle("win", awin===true);
+        spans[1].classList.toggle("win", awin===false);
+      });
+    }
+  }
+
+  var al=away.linescores||[], hl=home.linescores||[];
+  var trs=el.querySelectorAll(".linescore tbody tr");
+  if(trs.length===2){
+    [[al,away],[hl,home]].forEach(function(pair,ri){
+      var tds=trs[ri].querySelectorAll("td");
+      for(var q=0;q<pair[0].length && q+1<tds.length-1;q++){
+        var v=pair[0][q];
+        put(tds[q+1], esc(String(v.displayValue!=null?v.displayValue:v.value)));
+      }
+      if(tds.length) put(tds[tds.length-1], esc(String(pair[1].score!=null?pair[1].score:"")));
+    });
+  }
+}
+
 function renderGame(d){
   var comp=pick(d,["header","competitions",0],{}) || {};
   var cs=comp.competitors||[];
@@ -1995,14 +2145,15 @@ function renderGame(d){
     var rec=(c.records&&c.records[0]&&c.records[0].summary)||"";
     var pts=c.score!=null?c.score:"";
     var lead = done||live ? (numOf(pts)>numOf((c===home?away:home).score) ? " lead":"") : "";
-    return '<div class="gscore'+lead+'">'+
+    var sideKey=(c===home)?"home":"away";
+    return '<div class="gscore'+lead+'" data-side="'+sideKey+'">'+
       '<div class="side"><div class="nm">'+(isND?'<span class="rk">ND</span> ':"")+esc(nm)+"</div>"+
       (rec?'<div class="rec">'+esc(rec)+"</div>":"")+"</div>"+
       '<div class="pts">'+esc(String(pts))+"</div></div>";
   }
   html+=side(away)+side(home);
 
-  html+='<div class="gstatus">'+(live?'<span class="dot" aria-hidden="true"></span>':"")+
+  html+='<div class="gstatus" id="gStatus">'+(live?'<span class="dot" aria-hidden="true"></span>':"")+
     "<span>"+esc(st.detail||st.shortDetail||st.description||"")+"</span></div>";
 
   // ---- last play and down/distance ----
@@ -2022,7 +2173,7 @@ function renderGame(d){
   if(lastText && (live||done)){
     var dd=sit.downDistanceText||sit.shortDownDistanceText||"";
     var poss=pick(sit,["lastPlay","team","abbreviation"],"")||"";
-    html+='<div class="lastplay"><div class="k">'+(live?"LAST PLAY":"FINAL PLAY")+"</div>"+
+    html+='<div class="lastplay" id="gLastPlay"><div class="k">'+(live?"LAST PLAY":"FINAL PLAY")+"</div>"+
       '<div class="t">'+esc(lastText)+"</div>"+
       ((dd||poss)?'<div class="dd">'+esc([poss,dd].filter(Boolean).join(" · "))+"</div>":"")+
       "</div>";
@@ -2037,7 +2188,7 @@ function renderGame(d){
       var favIsHome=hp>=0.5;
       var fav=favIsHome?home:away;
       var pct=Math.round((favIsHome?hp:1-hp)*100);
-      html+='<div class="statrow"><span class="v">'+pct+'%</span>'+
+      html+='<div class="statrow" id="gWinProb"><span class="v">'+pct+'%</span>'+
         '<span class="lbl">win probability</span>'+
         '<span class="v r">'+esc(pick(fav,["team","abbreviation"],"")||"")+"</span></div>";
     }
@@ -2093,7 +2244,7 @@ function renderGame(d){
         var awin = lowerWins ? an<hn : an>hn;
         aw=awin?" win":""; hw=awin?"":" win";
       }
-      body+='<div class="statrow"><span class="v'+aw+'">'+esc(String(av==null?"–":av))+"</span>"+
+      body+='<div class="statrow" data-stat="'+esc(r[0])+'"><span class="v'+aw+'">'+esc(String(av==null?"–":av))+"</span>"+
         '<span class="lbl">'+r[0]+"</span>"+
         '<span class="v r'+hw+'">'+esc(String(hv==null?"–":hv))+"</span></div>";
     });
@@ -2519,17 +2670,18 @@ function autoTick(){
   if(!somethingLive()){ startAuto(); return; }   // everything finished, stand down
   refreshSchedule(false);
   if(!$("panel-around").hidden){
-    // looking at the list, so pull fresh and repaint
-    getScoreboard(0).then(function(){
-      var y=window.scrollY;
-      $("panel-around").dataset.loaded="";
-      loadAround();
-      setTimeout(function(){
-        // only if the user is still on this tab and has not scrolled since
-        if($("panel-around").hidden) return;
-        if(Math.abs(window.scrollY-0)>2 && window.scrollY!==0 && window.scrollY!==y) return;
-        window.scrollTo(0,y);
-      }, 60);
+    // Looking at the list. Patch the rows that moved rather than rebuilding the
+    // tab, so scroll position, open folds and the pill selection all survive.
+    getScoreboard(0).then(function(sb){
+      if($("panel-around").hidden) return;
+      if(!patchRanked(sb)){
+        var y=window.scrollY;
+        $("panel-around").dataset.loaded="";
+        loadAround();
+        setTimeout(function(){
+          if(!$("panel-around").hidden) window.scrollTo(0,y);
+        }, 60);
+      }
     }).catch(function(){});
   } else if(Date.now()-SB.at > 300000){
     // not looking, but re-check every five minutes so polling stands down
