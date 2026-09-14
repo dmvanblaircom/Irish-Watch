@@ -1328,6 +1328,23 @@
     a.art{transition:none;}
     .tabbar button#tab-game{transform:translateY(-.2rem);}
   }
+
+  /* ---- fixes applied after the visual pass ---- */
+
+  /* A later `padding:` shorthand on .bar dropped the safe-area inset. Since
+     .page's padding-top is 0, that puts the sticky header under the status bar
+     in standalone. Restore it, and put the side insets back for landscape. */
+  .bar{
+    padding-top:calc(.75rem + env(safe-area-inset-top, 0px));
+    margin-left:calc(-1 * (.8rem + env(safe-area-inset-left, 0px)));
+    margin-right:calc(-1 * (.8rem + env(safe-area-inset-right, 0px)));
+    padding-left:calc(.8rem + env(safe-area-inset-left, 0px));
+    padding-right:calc(.8rem + env(safe-area-inset-right, 0px));
+  }
+  .wrap{
+    padding-left:calc(.8rem + env(safe-area-inset-left, 0px));
+    padding-right:calc(.8rem + env(safe-area-inset-right, 0px));
+  }
 </style>
   <meta name="description" content="Irish Watch — a Notre Dame football game-day dashboard.">
 
@@ -1409,8 +1426,8 @@
       <div role="tabpanel" id="panel-schedule" aria-labelledby="tab-schedule" tabindex="0">
         <p class="loading">Loading the schedule…</p>
       </div>
-      <div role="tabpanel" id="panel-game" aria-labelledby="tab-game" tabindex="0" hidden></div>
       <div role="tabpanel" id="panel-around" aria-labelledby="tab-around" tabindex="0" hidden></div>
+      <div role="tabpanel" id="panel-game" aria-labelledby="tab-game" tabindex="0" hidden></div>
       <div role="tabpanel" id="panel-depth"  aria-labelledby="tab-depth"  tabindex="0" hidden></div>
       <div role="tabpanel" id="panel-news"   aria-labelledby="tab-news"   tabindex="0" hidden></div>
     </div>
@@ -3001,6 +3018,10 @@ function startAuto(){
   var on=somethingLive();
   var btn=$("refresh");
   if(btn) btn.classList.toggle("polling", on);
+  // the raised Game button carries a green dot styled as #tab-game.live:after,
+  // which nothing was switching on
+  var gt=$("tab-game");
+  if(gt) gt.classList.toggle("live", on);
   if(!on){
     if(AUTO.timer){ clearInterval(AUTO.timer); AUTO.timer=null; }
     return;
