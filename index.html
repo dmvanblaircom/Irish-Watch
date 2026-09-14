@@ -1146,6 +1146,188 @@
     .tabbar button#tab-game::before{transition:none}
   }
 
+
+
+  /* ================================================================
+     IRISH WATCH V2 — FULL PRODUCT PASS
+     Presentation only. Existing data, APIs, polling and interactions stay intact.
+     ================================================================ */
+  :root{
+    --v2-navy:#0C2340;
+    --v2-deep:#061525;
+    --v2-gold:#C99700;
+    --v2-gold-bright:#FFCD00;
+    --v2-paper:#F8F4EC;
+    --v2-muted:#9AA9BA;
+    --v2-line:rgba(154,169,186,.18);
+    --v2-gold-line:rgba(201,151,0,.30);
+  }
+
+  /* App shell */
+  body{background:linear-gradient(180deg,#061525 0%,#0C2340 45%,#061525 100%) !important;}
+  .page{background:transparent !important;}
+  .wrap{max-width:54rem;padding-left:1rem;padding-right:1rem;}
+  .bar{position:sticky;top:0;z-index:60;margin:0 -1rem;padding:.75rem 1rem .7rem;
+    background:rgba(6,21,37,.97);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--v2-line);box-shadow:0 8px 28px rgba(0,0,0,.16);}
+  .brand-lockup{position:relative;padding-left:.85rem;}
+  .brand-lockup:before{content:"ND";position:absolute;left:0;top:.02rem;
+    font-family:'Grenze Gotisch',serif;font-weight:700;font-size:.58rem;color:var(--v2-gold-bright);}
+  .brand-kicker{font-size:.61rem;line-height:1;letter-spacing:.2em;color:#9AA9BA;}
+  .bar h1{font-size:1.55rem;letter-spacing:.075em;color:var(--v2-paper);line-height:1.05;}
+  .bar .rank{background:var(--v2-gold-bright);color:#07192F;border-radius:999px;padding:.16rem .5rem;}
+  .refresh{border-color:var(--v2-line);border-radius:999px;}
+
+  .motto{margin:.95rem 0 1rem;padding:.2rem 0 .9rem;border-bottom:1px solid var(--v2-line);
+    color:var(--v2-gold-bright);font-size:clamp(2.1rem,8vw,4rem);letter-spacing:.015em;}
+
+  /* Hero: broadcast hierarchy */
+  .hero{border:1px solid var(--v2-gold-line);border-radius:12px;min-height:13rem;
+    margin-top:.85rem;padding:1.35rem 1.4rem 1.25rem;
+    background:radial-gradient(circle at 86% 18%,rgba(255,205,0,.13),transparent 14rem),
+      linear-gradient(135deg,#12345A 0%,#0C2340 50%,#061525 100%);
+    box-shadow:0 18px 45px rgba(0,0,0,.22);}
+  .hero:after{content:"";position:absolute;inset:auto 0 0 0;height:3px;background:linear-gradient(90deg,transparent,var(--v2-gold),transparent);}
+  .hero .when{color:#D8B84F;text-transform:uppercase;letter-spacing:.13em;font-size:.68rem;}
+  .hero .opp{font-size:clamp(2rem,7vw,3.15rem);letter-spacing:-.025em;}
+  .hero .opp .vs{color:var(--v2-gold-bright);}
+  .hero .line{color:#E8EEF5;font-size:1rem;}
+  .hero .venue{color:#9FB0C4;}
+  .hero .spread{font-family:'Barlow Condensed',sans-serif;font-size:1rem;color:#E8EEF5;}
+  .hero .spread b{color:var(--v2-gold-bright);}
+  .hero .clock{font-size:1.9rem;color:var(--v2-paper);}
+  .hero.live{background:radial-gradient(circle at 86% 18%,rgba(255,110,100,.13),transparent 14rem),
+    linear-gradient(135deg,#7E2925 0%,#471817 62%,#241214 100%);border-color:rgba(255,122,112,.38);}
+
+  /* Market = football intelligence, not sportsbook UI */
+  .strip{gap:.55rem;background:transparent;border:0;margin:.7rem 0 0;}
+  .strip>.cell{flex:1;min-height:5rem;padding:.8rem 1rem;border:1px solid var(--v2-line);
+    border-radius:10px;background:rgba(12,35,64,.72);color:var(--v2-paper);text-align:left;
+    box-shadow:0 8px 24px rgba(0,0,0,.12);}
+  .strip>.cell:first-child{border-top:2px solid var(--v2-gold);}
+  .strip>.cell:last-child{border-right:1px solid var(--v2-line);border-top:2px solid rgba(154,169,186,.55);}
+  .strip .k{display:block;text-transform:uppercase;letter-spacing:.11em;font-size:.61rem;color:#91A2B6;}
+  .strip .v{display:block;margin-top:.25rem;font-family:'Barlow Condensed',sans-serif;font-size:1.75rem;font-weight:700;color:var(--v2-paper);}
+  .strip .v.pending{font-family:'Barlow',sans-serif;font-size:.9rem;color:var(--v2-muted);}
+  .hint{text-transform:uppercase;letter-spacing:.1em;font-size:.58rem;color:#71849A;text-align:right;margin:.4rem .2rem .8rem;}
+
+  /* Section headers make every tab feel like a product surface. */
+  #panel-schedule:before,#panel-around:before,#panel-game:before,#panel-depth:before,#panel-news:before{
+    display:block;margin:.9rem 0 .35rem;font-family:'Barlow Condensed',sans-serif;font-size:.72rem;
+    font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#8093A8;}
+  #panel-schedule:before{content:"THE SEASON";}
+  #panel-around:before{content:"AROUND THE IRISH";}
+  #panel-game:before{content:"GAME CENTER";}
+  #panel-depth:before{content:"DEPTH CHART";}
+  #panel-news:before{content:"LATEST FROM SOUTH BEND";}
+
+  /* Schedule */
+  .row{min-height:4.5rem;padding:.85rem .6rem;border-bottom:1px solid var(--v2-line);}
+  .row:hover{background:rgba(255,255,255,.025);}
+  .row .date{width:3.8rem;}
+  .row .date .d{font-size:1.5rem;}
+  .row .team{font-size:1.03rem;font-weight:600;}
+  .row .sub{color:#8295A9;}
+  .row.next{margin:0;border-left:4px solid var(--v2-gold-bright);border-radius:9px;
+    background:linear-gradient(90deg,rgba(201,151,0,.14),rgba(201,151,0,.035));
+    box-shadow:inset 0 0 0 1px rgba(201,151,0,.1);}
+  .row.next .team{color:#FFF7D6;}
+  .row .net{border-radius:999px;color:var(--v2-gold-bright);border-color:rgba(255,205,0,.5);}
+  .row .tag.h{background:var(--v2-gold-bright);border-color:var(--v2-gold-bright);}
+  .trophy{color:#D9B94F;}
+  details.fold{border:1px solid var(--v2-line);border-radius:9px;overflow:hidden;margin:.5rem 0;}
+  details.fold>summary{padding:.75rem .9rem;background:rgba(12,35,64,.5);font-weight:600;}
+
+  /* Rankings / around the Irish */
+  .pills{margin:.4rem 0 .65rem;}
+  .seg{border:1px solid var(--v2-line);border-radius:999px;overflow:hidden;background:rgba(12,35,64,.5);}
+  .seg button{min-height:2.55rem;color:#AAB8C7;}
+  .seg button[aria-pressed="true"],.seg button[aria-selected="true"]{background:var(--v2-gold-bright) !important;color:#07192F !important;}
+  .obar{min-height:3.2rem;border-bottom:1px solid var(--v2-line);}
+  .obar.nd{border-left:4px solid var(--v2-gold-bright);border-radius:8px;background:rgba(201,151,0,.13);}
+  .obar.nd .nm{color:#FFE38A;}
+  .obar .fill{background:var(--v2-gold-bright);}
+
+  /* Game Center */
+  .gscore{min-height:5rem;padding:1rem 1.1rem;border:1px solid var(--v2-gold-line);}
+  .gscore .side .nm{font-size:1.15rem;}
+  .gscore .pts{font-size:2.8rem;line-height:1;}
+  .gscore.lead .pts{color:var(--v2-gold-bright);}
+  .gstatus{min-height:2.7rem;background:rgba(12,35,64,.58);border:1px solid var(--v2-line);border-top:0;}
+  .gstatus .dot{background:#55C98A;box-shadow:0 0 0 .28rem rgba(85,201,138,.12);}
+  .lastplay{padding:.8rem .9rem;border:1px solid var(--v2-line);border-left:4px solid #55C98A;border-radius:8px;background:rgba(12,35,64,.62);}
+  .lastplay .k{color:var(--v2-gold-bright);letter-spacing:.1em;}
+  #gWinProb{margin:.7rem 0;border:1px solid var(--v2-line);border-radius:8px;padding:.8rem 1rem;background:rgba(12,35,64,.5);}
+  .statrow{min-height:2.7rem;border-bottom:1px solid var(--v2-line);}
+  .statrow.head{border-bottom:2px solid var(--v2-gold);}
+  .linescore{border:1px solid var(--v2-line);border-radius:8px;overflow:hidden;background:rgba(12,35,64,.4);}
+  .linescore th{color:#899BAD;font-size:.7rem;letter-spacing:.08em;}
+  .linescore td,.linescore th{padding:.55rem .4rem;border-bottom:1px solid var(--v2-line);}
+  .ldr{border-bottom:1px solid var(--v2-line);padding:.75rem .25rem;}
+
+  /* Depth */
+  .depth-pos{margin:1rem 0 .25rem;padding-bottom:.3rem;border-bottom:1px solid var(--v2-gold-line);}
+  .depth-pos b{color:var(--v2-gold-bright);letter-spacing:.08em;}
+  ul.ladder li{padding:.42rem .25rem;}
+  ul.ladder li.d1{background:rgba(12,35,64,.4);border-radius:5px;}
+  ul.ladder .jersey{color:#71859A;}
+  .avail li{padding:.55rem .25rem;}
+
+  /* News */
+  #panel-news>ul.plain{display:grid;grid-template-columns:1fr;gap:.45rem;}
+  a.art{display:flex;gap:.9rem;align-items:center;padding:.8rem .75rem;border:1px solid var(--v2-line);
+    border-radius:9px;background:rgba(12,35,64,.5);transition:background .16s,border-color .16s,transform .16s;}
+  a.art:hover{background:rgba(18,52,90,.72);border-color:var(--v2-gold-line);transform:translateY(-1px);}
+  a.art img{width:5.4rem;height:3.7rem;object-fit:cover;border-radius:6px;flex:none;}
+  a.art .hl{display:block;font-size:.98rem;line-height:1.3;color:#F2F5F8;}
+  a.art .meta{display:block;margin-top:.3rem;color:#7F92A6;font-size:.67rem;letter-spacing:.07em;text-transform:uppercase;}
+  a.art.beat{border-left:3px solid rgba(201,151,0,.65);}
+
+  /* Persistent bottom nav: five destinations, GAME is the center action. */
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:80;display:grid;grid-template-columns:repeat(5,1fr);
+    gap:0;padding:.35rem max(.45rem,env(safe-area-inset-left)) max(.35rem,env(safe-area-inset-bottom));
+    background:rgba(4,15,27,.96);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    border-top:1px solid rgba(154,169,186,.18);box-shadow:0 -12px 32px rgba(0,0,0,.28);}
+  .tabbar button[role="tab"]{position:relative;min-width:0;min-height:3.55rem;border:0;border-radius:10px;
+    color:#72869A;padding:.4rem .2rem .25rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.13rem;
+    font-family:'Barlow',sans-serif;font-size:.62rem;font-weight:600;letter-spacing:.02em;}
+  .tabbar button[role="tab"] svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.7;}
+  .tabbar button[role="tab"][aria-selected="true"]{color:var(--v2-gold-bright);background:rgba(201,151,0,.09);}
+  .tabbar button#tab-game{z-index:2;transform:translateY(-.32rem);min-height:4.15rem;border:1px solid rgba(255,205,0,.32);
+    border-radius:50%;width:4.15rem;justify-self:center;align-self:end;background:linear-gradient(145deg,#12345A,#081A2E);
+    box-shadow:0 8px 22px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,205,0,.08);}
+  .tabbar button#tab-game svg{width:25px;height:25px;}
+  .tabbar button#tab-game span{font-size:.61rem;}
+  .tabbar button#tab-game[aria-selected="true"]{color:#07192F;background:var(--v2-gold-bright);border-color:var(--v2-gold-bright);
+    box-shadow:0 10px 25px rgba(201,151,0,.28);}
+  .tabbar button#tab-game:after{content:"";position:absolute;top:-.5rem;left:50%;width:.45rem;height:.45rem;border-radius:50%;
+    transform:translateX(-50%);background:#55C98A;box-shadow:0 0 0 .2rem rgba(85,201,138,.12);opacity:0;}
+  .tabbar button#tab-game.live:after{opacity:1;}
+
+  /* Desktop nav remains centered and unobtrusive while preserving the same five-item order. */
+  @media (min-width:48rem){
+    .wrap{max-width:58rem;padding-left:1.25rem;padding-right:1.25rem;}
+    .bar{margin:0 -1.25rem;padding-left:1.25rem;padding-right:1.25rem;}
+    .tabbar{left:50%;right:auto;width:min(42rem,calc(100% - 2rem));transform:translateX(-50%);border:1px solid var(--v2-line);border-bottom:0;border-radius:16px 16px 0 0;}
+    .hero{padding:1.55rem 1.6rem 1.35rem;}
+    #panel-news>ul.plain{grid-template-columns:repeat(2,minmax(0,1fr));}
+  }
+
+  @media (max-width:32rem){
+    .wrap{padding-left:.8rem;padding-right:.8rem;}
+    .bar{margin:0 -.8rem;padding-left:.8rem;padding-right:.8rem;}
+    .hero{border-radius:10px;padding:1.2rem 1rem 1.05rem;}
+    .hero .opp{font-size:2rem;}
+    .strip{gap:.4rem;}
+    .strip>.cell{padding:.7rem .65rem;min-height:4.6rem;}
+    .strip .v{font-size:1.5rem;}
+    a.art img{width:4.6rem;height:3.25rem;}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    a.art{transition:none;}
+    .tabbar button#tab-game{transform:translateY(-.2rem);}
+  }
 </style>
   <meta name="description" content="Irish Watch — a Notre Dame football game-day dashboard.">
 
@@ -1239,8 +1421,8 @@
 </div>
 <nav class="tabbar" role="tablist" aria-label="Sections">
   <button type="button" role="tab" id="tab-schedule" aria-controls="panel-schedule" aria-selected="true" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Schedule</span></button>
-  <button type="button" role="tab" id="tab-game" aria-controls="panel-game" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.17 16.69C11.80 21.21 19.75 16.99 20.83 7.31C12.20 2.79 4.25 7.01 3.17 16.69Z"/><path d="M8.47 13.88L15.53 10.12"/><path d="M8.41 10.78L11.00 15.66M10.70 9.56L13.30 14.44M13.00 8.34L15.59 13.22"/></svg><span>Game</span></button>
   <button type="button" role="tab" id="tab-around" aria-controls="panel-around" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20v-6M10 20V8M16 20v-9M22 20V4"/></svg><span>Rankings</span></button>
+  <button type="button" role="tab" id="tab-game" aria-controls="panel-game" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.17 16.69C11.80 21.21 19.75 16.99 20.83 7.31C12.20 2.79 4.25 7.01 3.17 16.69Z"/><path d="M8.47 13.88L15.53 10.12"/><path d="M8.41 10.78L11.00 15.66M10.70 9.56L13.30 14.44M13.00 8.34L15.59 13.22"/></svg><span>Game</span></button>
   <button type="button" role="tab" id="tab-depth" aria-controls="panel-depth" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-5 6-5s6 1.7 6 5"/><path d="M16 5.5a3 3 0 0 1 0 5.8M18 20c0-2.6-1-4.2-2.5-5"/></svg><span>Depth</span></button>
   <button type="button" role="tab" id="tab-news" aria-controls="panel-news" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h13v14a2 2 0 0 0 2 2H6a2 2 0 0 1-2-2Z"/><path d="M17 9h3v10a2 2 0 0 1-2 2"/><path d="M7 9h7M7 13h7M7 17h4"/></svg><span>News</span></button>
 </nav>
