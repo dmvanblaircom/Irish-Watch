@@ -851,6 +851,10 @@
     color:#73879E;
   }
 
+  /* Clean navigation baseline: let the Game circle rise subtly above the tab surface. */
+  .tabbar{padding-top:.42rem;}
+  .tabbar:before{top:.42rem;}
+
   @media (max-width:32rem){
     .wrap{padding-left:.85rem;padding-right:.85rem}
     .bar{min-height:4.15rem}
@@ -1007,13 +1011,6 @@
   main{position:relative}
 
   /* Brand feels like a product mark rather than a generic site header. */
-  .brand-lockup{position:relative;padding-left:.85rem}
-  .brand-lockup::before{
-    content:"ND";
-    position:absolute;left:0;top:.05rem;transform:translateX(-.05rem);
-    font-family:'Grenze Gotisch',serif;font-size:.58rem;font-weight:700;
-    line-height:1;color:var(--v2-gold-bright);opacity:.9;
-  }
   .brand-kicker{letter-spacing:.22em;color:#91A2B6}
   .bar h1{letter-spacing:.075em}
 
@@ -1080,9 +1077,11 @@
 
   /* Phone layout: keep the hero punchy and prevent the market metrics from
      becoming cramped. */
+  /* Clean navigation baseline: let the Game circle rise subtly above the tab surface. */
+  .tabbar{padding-top:.42rem;}
+  .tabbar:before{top:.42rem;}
+
   @media (max-width:32rem){
-    .brand-lockup{padding-left:.72rem}
-    .brand-lockup::before{font-size:.5rem}
     .motto{max-width:14ch;font-size:clamp(2rem,10vw,2.8rem)}
     .hero{
       min-height:0;
@@ -1170,9 +1169,6 @@
   .bar{position:sticky;top:0;z-index:60;margin:0 -1rem;padding:.75rem 1rem .7rem;
     background:rgba(6,21,37,.97);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
     border-bottom:1px solid var(--v2-line);box-shadow:0 8px 28px rgba(0,0,0,.16);}
-  .brand-lockup{position:relative;padding-left:.85rem;}
-  .brand-lockup:before{content:"ND";position:absolute;left:0;top:.02rem;
-    font-family:'Grenze Gotisch',serif;font-weight:700;font-size:.58rem;color:var(--v2-gold-bright);}
   .brand-kicker{font-size:.61rem;line-height:1;letter-spacing:.2em;color:#9AA9BA;}
   .bar h1{font-size:1.55rem;letter-spacing:.075em;color:var(--v2-paper);line-height:1.05;}
   .bar .rank{background:var(--v2-gold-bright);color:#07192F;border-radius:999px;padding:.16rem .5rem;}
@@ -1313,6 +1309,10 @@
     #panel-news>ul.plain{grid-template-columns:repeat(2,minmax(0,1fr));}
   }
 
+  /* Clean navigation baseline: let the Game circle rise subtly above the tab surface. */
+  .tabbar{padding-top:.42rem;}
+  .tabbar:before{top:.42rem;}
+
   @media (max-width:32rem){
     .wrap{padding-left:.8rem;padding-right:.8rem;}
     .bar{margin:0 -.8rem;padding-left:.8rem;padding-right:.8rem;}
@@ -1332,11 +1332,9 @@
   /* Final header + navigation refinement */
   .brand-group{display:flex;align-items:center;gap:.65rem;min-width:0;}
   .brand-lockup{padding-left:0!important;}
-  .brand-lockup:before{display:none!important;}
   .nd-helmet{width:2.15rem;height:1.55rem;flex:none;overflow:visible;filter:drop-shadow(0 2px 7px rgba(255,205,0,.12));}
-  .nd-helmet .helmet-shell{fill:var(--v2-gold-bright);stroke:var(--v2-gold);stroke-width:1;}
-  .nd-helmet .helmet-ear,.nd-helmet .helmet-facemask{fill:none;stroke:var(--v2-gold-bright);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
-  .nd-helmet text{font-family:'Barlow Condensed',sans-serif;font-size:8.5px;font-weight:800;letter-spacing:-.35px;fill:#07192F;}
+  .nd-helmet .helmet-shell{fill:var(--v2-gold-bright);stroke:var(--v2-gold);stroke-width:1.05;}
+  .nd-helmet .helmet-ear,.nd-helmet .helmet-facemask{fill:none;stroke:var(--v2-gold-bright);stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round;}
   .brand-group .brand-kicker,.brand-group h1{white-space:nowrap;}
 
   .tabbar button[role="tab"] svg{width:21px;height:21px;stroke-width:1.85;filter:drop-shadow(0 1px 3px rgba(0,0,0,.18));}
@@ -1345,22 +1343,61 @@
   .tabbar button[role="tab"][aria-selected="true"] svg{stroke-width:2.15;}
 
   /* Scoreboard is the product's primary Game icon, not a generic football symbol. */
-  .tabbar button#tab-game{width:4.2rem;height:4.2rem;min-height:4.2rem;border-radius:1.15rem;transform:translateY(-.38rem);}
+  .tabbar button#tab-game{width:4.2rem;height:4.2rem;min-height:4.2rem;border-radius:50%;transform:translateY(-.55rem);}
   .tabbar button#tab-game svg{width:28px;height:28px;stroke-width:1.7;}
   .tabbar button#tab-game[aria-selected="true"] svg{stroke-width:2;}
   .tabbar button#tab-game span{font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;}
-  .tabbar button#tab-game:before{content:"";position:absolute;inset:.42rem;border:1px solid rgba(255,205,0,.14);border-radius:.82rem;pointer-events:none;}
   .tabbar button#tab-game:after{top:-.48rem;}
+  /* Clean navigation baseline: let the Game circle rise subtly above the tab surface. */
+  .tabbar{padding-top:.42rem;}
+  .tabbar:before{top:.42rem;}
+
   @media (max-width:32rem){
     .nd-helmet{width:1.95rem;height:1.42rem;}
     .brand-group{gap:.55rem;}
-    .tabbar button#tab-game{width:4rem;height:4rem;min-height:4rem;transform:translateY(-.28rem);}
+    .tabbar button#tab-game{width:4rem;height:4rem;min-height:4rem;border-radius:50%;transform:translateY(-.42rem);}
     .tabbar button#tab-game svg{width:27px;height:27px;}
   }
   @media (prefers-reduced-motion:reduce){
     .tabbar button[role="tab"] svg{transition:none;}
     .tabbar button#tab-game{transform:translateY(-.2rem);}
   }
+
+  /* Final icon system: precise, quiet, and consistent. */
+  .tabbar button[role="tab"] svg{
+    width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.75;
+    stroke-linecap:round;stroke-linejoin:round;filter:none;transition:none;
+  }
+  .tabbar button[role="tab"]:not(#tab-game):hover svg{transform:none;}
+  .tabbar button[role="tab"][aria-selected="true"] svg{stroke-width:1.9;}
+  .tabbar button#tab-game{
+    width:4.2rem;height:4.2rem;min-height:4.2rem;padding:0;
+    border-radius:50%;transform:translateY(-.38rem);
+    background:rgba(6,21,37,.96);border:1px solid rgba(255,205,0,.42);
+    box-shadow:0 8px 20px rgba(0,0,0,.28),0 0 0 4px rgba(12,35,64,.9);
+  }
+  .tabbar button#tab-game[aria-selected="true"]{
+    color:#07192F;background:var(--v2-gold-bright);border-color:var(--v2-gold-bright);
+    box-shadow:0 8px 20px rgba(0,0,0,.28),0 0 0 4px rgba(12,35,64,.92);
+  }
+  .tabbar button#tab-game svg{width:27px;height:27px;stroke-width:1.7;}
+  .tabbar button#tab-game[aria-selected="true"] svg{stroke-width:1.8;}
+  .tabbar button#tab-game span{font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;}
+  .tabbar button#tab-game:before{content:none!important;display:none!important;}
+  .tabbar button#tab-game:after{top:-.48rem;}
+  @media (max-width:760px){
+    .tabbar button#tab-game{width:4rem;height:4rem;min-height:4rem;border-radius:50%;transform:translateY(-.42rem);}
+    .tabbar button#tab-game svg{width:26px;height:26px;}
+  }
+
+  /* Subtle Game lift: lower the nav rule so roughly the top third of the Game circle clears it. */
+  .tabbar{border-top:0;}
+  .tabbar:before{content:"";position:absolute;top:.42rem;left:0;right:0;height:1px;background:rgba(154,169,186,.18);pointer-events:none;}
+  .tabbar button#tab-game{transform:translateY(-.9rem);}
+  @media (max-width:760px){
+    .tabbar button#tab-game{transform:translateY(-.72rem);}
+  }
+
 </style>
   <meta name="description" content="Irish Watch — a Notre Dame football game-day dashboard.">
 
@@ -1396,10 +1433,9 @@
   <header class="bar">
     <div class="brand-group">
       <svg class="nd-helmet" viewBox="0 0 48 34" aria-hidden="true">
-        <path class="helmet-shell" d="M6 17C6 9.2 12.5 4 22.5 4H30c6.9 0 11.8 4.8 12 11.7l.1 1.8c.2 5.4-3.6 9.7-8.9 10.6l-5.7 1H16.4C10.5 29.1 6 24.3 6 17Z"/>
-        <path class="helmet-ear" d="M30.5 14.2h8.1c2.2 0 3.7 1.4 3.7 3.4s-1.5 3.5-3.7 3.5h-8.1"/>
-        <path class="helmet-facemask" d="M35.7 21.1c2.1 1.4 3.4 3.2 3.4 5.4M28.6 20.9h7.1"/>
-        <text x="20.2" y="21.3" text-anchor="middle">ND</text>
+        <path class="helmet-shell" d="M7 17.2C7 9.5 13.1 4.5 22.3 4.5h7.1c6.7 0 11.4 4.7 11.6 11.1l.1 1.8c.2 4.9-3.3 8.9-8 10.1l-6.1 1.5H17.2C11.2 29 7 24.6 7 17.2Z"/>
+        <path class="helmet-ear" d="M28.2 13.8c3.1 0 5.1 1.7 5.1 4s-2 4.1-5.1 4.1"/>
+        <path class="helmet-facemask" d="M34.3 21.1h5.2c2.4 0 3.8 1.1 3.8 3.1v1.2M39.5 24.2h-6.1"/>
       </svg>
       <div class="brand-lockup">
         <div class="brand-kicker">NOTRE DAME FOOTBALL</div>
@@ -1461,11 +1497,11 @@
 </div>
 </div>
 <nav class="tabbar" role="tablist" aria-label="Sections">
-  <button type="button" role="tab" id="tab-schedule" aria-controls="panel-schedule" aria-selected="true" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M7 14h3M14 14h3M7 17h3"/></svg><span>Schedule</span></button>
-  <button type="button" role="tab" id="tab-around" aria-controls="panel-around" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16"/><path d="M6 16v-4h4v4M12 16V8h4v8M18 16v-11h2v11"/><path d="M6 10h4M12 6h4"/></svg><span>Rankings</span></button>
-  <button type="button" role="tab" id="tab-game" aria-controls="panel-game" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.2"/><path d="M2.5 9h19M12 5v14"/><path d="M6.5 12h2M15.5 12h2M6.5 15h2M15.5 15h2"/><path d="M9.5 12h.01M14.5 12h.01"/></svg><span>Game</span></button>
-  <button type="button" role="tab" id="tab-depth" aria-controls="panel-depth" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="7.5" r="2.8"/><circle cx="17.2" cy="8.8" r="2.2"/><path d="M3 20c0-3.5 2.5-5.5 6-5.5s6 2 6 5.5"/><path d="M14.5 15.3c1-.7 2-1 3-1 2.3 0 3.8 1.4 3.8 3.7"/><path d="M12 11.5h3.2"/></svg><span>Depth</span></button>
-  <button type="button" role="tab" id="tab-news" aria-controls="panel-news" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h13v13a2 2 0 0 0 2 2H6a2 2 0 0 1-2-2Z"/><path d="M17 9h3v9.5a2 2 0 0 1-2 2"/><path d="M7.5 9.5h6M7.5 13h6M7.5 16.5h3.5"/></svg><span>News</span></button>
+  <button type="button" role="tab" id="tab-schedule" aria-controls="panel-schedule" aria-selected="true" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="15" rx="2"/><path d="M8 3.5v4M16 3.5v4M4 9.5h16"/><path d="M8 13h.01M12 13h.01M16 13h.01M8 17h.01M12 17h.01"/></svg><span>Schedule</span></button>
+  <button type="button" role="tab" id="tab-around" aria-controls="panel-around" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19.5h14"/><path d="M7 17V12h3v5M11 17V8h3v9M15 17V5h3v12"/></svg><span>Rankings</span></button>
+  <button type="button" role="tab" id="tab-game" aria-controls="panel-game" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="6" width="17" height="12" rx="1.5"/><path d="M8 10h2M14 10h2M8 14h2M14 14h2M12 6v12"/></svg><span>Game</span></button>
+  <button type="button" role="tab" id="tab-depth" aria-controls="panel-depth" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8.5" cy="8" r="2.5"/><path d="M4 19c0-3 1.8-5 4.5-5s4.5 2 4.5 5M15.5 11.5a2.5 2.5 0 1 0 0-5M15 14c2.7 0 4.5 1.8 4.5 5"/></svg><span>Depth</span></button>
+  <button type="button" role="tab" id="tab-news" aria-controls="panel-news" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h13v15H6.5A1.5 1.5 0 0 1 5 18Z"/><path d="M8 8h7M8 11.5h7M8 15h4"/></svg><span>News</span></button>
 </nav>
 
 <script>
