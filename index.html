@@ -984,6 +984,168 @@
   @media (prefers-reduced-motion:reduce){.strip .cell::after{transition:none}}
   .hint{margin:.35rem .15rem 0;font-size:.76rem;color:var(--dim);text-align:center}
   #oddsboard{margin-top:.4rem}
+
+
+  /* ================================================================
+     IRISH WATCH V2 — PRODUCT POLISH LAYER
+     Presentation only. Existing data/JS behavior remains unchanged.
+     ================================================================ */
+  :root{
+    --v2-navy:#0C2340;
+    --v2-deep:#061525;
+    --v2-navy-2:#102C4C;
+    --v2-gold:#C99700;
+    --v2-gold-bright:#FFCD00;
+    --v2-cream:#F8F4EC;
+    --v2-muted:#9AA9BA;
+    --v2-line:rgba(154,169,186,.14);
+    --v2-gold-line:rgba(201,151,0,.28);
+  }
+
+  /* Wider desktop canvas, still deliberately compact on phones. */
+  .wrap{max-width:58rem}
+  main{position:relative}
+
+  /* Brand feels like a product mark rather than a generic site header. */
+  .brand-lockup{position:relative;padding-left:.85rem}
+  .brand-lockup::before{
+    content:"ND";
+    position:absolute;left:0;top:.05rem;transform:translateX(-.05rem);
+    font-family:'Grenze Gotisch',serif;font-size:.58rem;font-weight:700;
+    line-height:1;color:var(--v2-gold-bright);opacity:.9;
+  }
+  .brand-kicker{letter-spacing:.22em;color:#91A2B6}
+  .bar h1{letter-spacing:.075em}
+
+  /* The motto is a brand signature, not the page's loudest data element. */
+  .motto{
+    font-size:clamp(2rem,7.4vw,3.65rem);
+    margin:.75rem 0 1rem;
+    padding:.55rem 0 .9rem;
+    max-width:17ch;
+  }
+  .motto::after{width:4.25rem;height:2px}
+
+  /* Hero: clearer broadcast hierarchy. */
+  .hero{
+    min-height:11.5rem;
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    grid-template-rows:auto auto auto 1fr;
+    column-gap:1.25rem;
+    padding:1.55rem 1.55rem 1.35rem;
+    background:
+      radial-gradient(circle at 82% 18%,rgba(201,151,0,.12),transparent 15rem),
+      linear-gradient(135deg,#12345A 0%,#0C2340 46%,#07192F 100%);
+  }
+  .hero .when{grid-column:1;grid-row:1}
+  .hero .opp{grid-column:1;grid-row:2;margin:.3rem 0 .45rem}
+  .hero .line{grid-column:1;grid-row:3}
+  .hero .venue{grid-column:1;grid-row:4;align-self:end}
+  .hero .series{grid-column:1;grid-row:4;align-self:end;margin-left:0;margin-top:0}
+  .hero .spread{
+    grid-column:2;grid-row:1 / span 2;position:static;
+    min-width:6rem;padding:.35rem 0 0 .9rem;
+    border-left:1px solid rgba(201,151,0,.24);
+    font-family:'Barlow Condensed',sans-serif;font-size:1rem;
+  }
+  .hero .clock{
+    grid-column:2;grid-row:3 / span 2;
+    align-self:end;margin:0;padding:.7rem 0 0 .9rem;
+    border-top:0;border-left:1px solid rgba(201,151,0,.24);
+    font-size:1.75rem;
+  }
+  .hero.live{
+    background:
+      radial-gradient(circle at 82% 18%,rgba(255,255,255,.08),transparent 14rem),
+      linear-gradient(135deg,#8A2B24 0%,#4B1918 65%,#281314 100%);
+  }
+
+  /* Market cards are now unmistakably secondary intelligence. */
+  .strip{margin-bottom:.45rem}
+  .strip .cell{min-height:4.15rem;padding:.85rem 1rem}
+  .strip .cell .v{font-size:1.7rem}
+  .hint{text-transform:uppercase;letter-spacing:.1em;font-size:.62rem;color:#6F8298}
+
+  /* Desktop: content gets a little more breathing room without turning into
+     a sprawling dashboard. */
+  @media (min-width:48rem){
+    .wrap{padding-left:1.5rem;padding-right:1.5rem}
+    .bar{min-height:4.9rem}
+    .motto{margin-top:1rem}
+    [role="tabpanel"]{padding-top:.35rem}
+    .row,.obar,a.art{padding-left:.9rem;padding-right:.9rem}
+    h2.sec{margin-top:1.9rem}
+  }
+
+  /* Phone layout: keep the hero punchy and prevent the market metrics from
+     becoming cramped. */
+  @media (max-width:32rem){
+    .brand-lockup{padding-left:.72rem}
+    .brand-lockup::before{font-size:.5rem}
+    .motto{max-width:14ch;font-size:clamp(2rem,10vw,2.8rem)}
+    .hero{
+      min-height:0;
+      display:block;
+      padding:1.25rem 1rem 1.05rem;
+    }
+    .hero .spread{
+      position:absolute;top:1.1rem;right:1rem;
+      min-width:0;padding:0;border-left:0;
+      font-family:'Barlow',system-ui,sans-serif;font-size:.82rem;
+    }
+    .hero .clock{
+      margin-top:.8rem;padding:.7rem 0 0;
+      border-top:1px solid rgba(201,151,0,.28);border-left:0;
+    }
+    .strip .cell{padding:.75rem .7rem}
+    .strip .cell .k{font-size:.58rem}
+    .strip .cell .v{font-size:1.45rem}
+  }
+
+  /* Give the live state a stronger, app-like signal. */
+  .hero.live .when::before{
+    content:"";display:inline-block;width:.42rem;height:.42rem;
+    margin-right:.42rem;vertical-align:.08em;border-radius:50%;
+    background:#FF7A70;box-shadow:0 0 0 .22rem rgba(255,122,112,.12);
+  }
+
+  /* Make the central Game destination feel intentional in the bottom nav. */
+  .tabbar button#tab-game{position:relative}
+  .tabbar button#tab-game::before{
+    content:"";position:absolute;top:-.35rem;width:2.7rem;height:2px;
+    background:var(--v2-gold);opacity:.0;transition:opacity .18s ease;
+  }
+  .tabbar button#tab-game[aria-selected="true"]::before{opacity:1}
+  .tabbar button#tab-game svg{width:24px;height:24px}
+
+  /* Cleaner active controls throughout the data views. */
+  .seg{border-color:rgba(201,151,0,.16)!important}
+  .seg button[aria-selected="true"]{
+    background:var(--v2-gold)!important;color:#101A28!important;
+  }
+  .seg button:hover:not([aria-selected="true"]){background:rgba(201,151,0,.08)}
+
+  /* Game Center: make score + state read before the statistical detail. */
+  .gscore{padding:1rem .9rem;border:1px solid var(--v2-gold-line);border-radius:7px 7px 0 0;
+    background:linear-gradient(135deg,rgba(20,56,101,.45),rgba(6,21,37,.3))}
+  .gscore .pts{font-size:2.35rem}
+  .gstatus{padding:.65rem .9rem;background:rgba(20,56,101,.2);border-left:1px solid var(--v2-line);border-right:1px solid var(--v2-line)}
+  .lastplay{margin:.65rem 0;border:1px solid var(--v2-line);border-left:3px solid #4FAE78}
+  .statrow{padding:.5rem .25rem}
+  .statrow.head{padding:.5rem .25rem;border-top:1px solid var(--v2-line);border-bottom:2px solid var(--v2-gold)}
+
+  /* News should read like an editorial feed. */
+  a.art .hl{font-weight:600;line-height:1.25}
+  a.art .meta{color:#74879D;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em}
+
+  /* Footer is intentionally quiet. */
+  footer{opacity:.92}
+
+  @media (prefers-reduced-motion:reduce){
+    .tabbar button#tab-game::before{transition:none}
+  }
+
 </style>
   <meta name="description" content="Irish Watch — a Notre Dame football game-day dashboard.">
 
@@ -1048,11 +1210,11 @@
 
     <div class="strip">
       <button type="button" class="cell" id="btnTitle" aria-expanded="false" aria-controls="oddsboard">
-        <span class="k">Odds to win the national title</span>
+        <span class="k">National title</span>
         <span class="v pending" id="mTitle">Loading…</span>
       </button>
       <button type="button" class="cell" id="btnPlayoff" aria-expanded="false" aria-controls="oddsboard">
-        <span class="k">Odds to make the playoff</span>
+        <span class="k">Playoff</span>
         <span class="v pending" id="mPlayoff">Loading…</span>
       </button>
     </div>
@@ -1078,7 +1240,7 @@
 <nav class="tabbar" role="tablist" aria-label="Sections">
   <button type="button" role="tab" id="tab-schedule" aria-controls="panel-schedule" aria-selected="true" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Schedule</span></button>
   <button type="button" role="tab" id="tab-game" aria-controls="panel-game" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.17 16.69C11.80 21.21 19.75 16.99 20.83 7.31C12.20 2.79 4.25 7.01 3.17 16.69Z"/><path d="M8.47 13.88L15.53 10.12"/><path d="M8.41 10.78L11.00 15.66M10.70 9.56L13.30 14.44M13.00 8.34L15.59 13.22"/></svg><span>Game</span></button>
-  <button type="button" role="tab" id="tab-around" aria-controls="panel-around" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20v-6M10 20V8M16 20v-9M22 20V4"/></svg><span>Top 25</span></button>
+  <button type="button" role="tab" id="tab-around" aria-controls="panel-around" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20v-6M10 20V8M16 20v-9M22 20V4"/></svg><span>Rankings</span></button>
   <button type="button" role="tab" id="tab-depth" aria-controls="panel-depth" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-5 6-5s6 1.7 6 5"/><path d="M16 5.5a3 3 0 0 1 0 5.8M18 20c0-2.6-1-4.2-2.5-5"/></svg><span>Depth</span></button>
   <button type="button" role="tab" id="tab-news" aria-controls="panel-news" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h13v14a2 2 0 0 0 2 2H6a2 2 0 0 1-2-2Z"/><path d="M17 9h3v10a2 2 0 0 1-2 2"/><path d="M7 9h7M7 13h7M7 17h4"/></svg><span>News</span></button>
 </nav>
