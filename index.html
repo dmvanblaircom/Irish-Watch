@@ -1687,6 +1687,20 @@ function seriesFor(name){
   for(var i=0;i<SERIES.length;i++){ if(SERIES[i][0].test(name||"")) return SERIES[i][1]; }
   return null;
 }
+// ESPN publishes kickoff times and broadcasts separately, and is slow on
+// streaming-only games because Peacock is not a TV network in their data model.
+// These are consulted ONLY when ESPN returns nothing for that game, so they can
+// never contradict the feed and they disappear on their own once it catches up.
+var NETWORK_FALLBACK = [
+  [/purdue/i, "Peacock"]          // 2026-09-26, announced 9/14, absent from ESPN
+];
+function fallbackNetwork(oppName){
+  for(var i=0;i<NETWORK_FALLBACK.length;i++){
+    if(NETWORK_FALLBACK[i][0].test(oppName||"")) return NETWORK_FALLBACK[i][1];
+  }
+  return "";
+}
+
 function normalize(ev){
   var comp=(ev.competitions&&ev.competitions[0])||{}, cs=comp.competitors||[];
   var us=null,them=null;
@@ -1701,7 +1715,9 @@ function normalize(ev){
     oppRank: them&&them.curatedRank&&them.curatedRank.current<26?them.curatedRank.current:null,
     venue: comp.venue?(comp.venue.fullName||""):"",
     city: comp.venue&&comp.venue.address?comp.venue.address.city:"",
-    net: network(comp), odds: oddsOf(comp),
+    net: network(comp) || fallbackNetwork(
+           them&&them.team ? (them.team.displayName||them.team.shortDisplayName) : ""),
+    odds: oddsOf(comp),
     series: seriesFor(them&&them.team?(them.team.displayName||them.team.shortDisplayName):""),
     state: st.state||"pre", detail: st.shortDetail||"",
     us: us&&us.score?(us.score.displayValue||us.score.value||us.score):null,
