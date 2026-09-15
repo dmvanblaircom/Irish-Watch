@@ -26,7 +26,8 @@
    the data views need. Two of these are deliberately not the official colours:
    --inplay is ND's #0A843D lifted to 5.8:1 on the page navy (the original is
    only 3.3:1), and --dim is tuned to 7.3:1 so secondary text still passes. */
-:root{--ink-2:#102844;--ink-3:#294A6E;--leaf:#C5A24A;--parch:#F2EFE6;--dim:#9DAABC;--win:#6FD69B;--loss:#F5A79C;--live-fg:#FFFFFF;--live-fg-2:#FFD9D3;--neutral:#7FC8E8;--live:#FF5A4E;--inplay:#4FAE78;--focus:#FFD966;color-scheme:dark;--navy:#0C2340;--navy-deep:#07192F;--gold:#C99700;--gold-bright:#FFCD00;--paper:#F8F4EC;--muted:#9AA9BA;--line:rgba(154,169,186,.18);--gold-line:rgba(201,151,0,.30)}
+:root{
+    --gutter:.8rem;   /* page side padding; the sticky header mirrors it */--ink-2:#102844;--ink-3:#294A6E;--leaf:#C5A24A;--parch:#F2EFE6;--dim:#9DAABC;--win:#6FD69B;--loss:#F5A79C;--live-fg:#FFFFFF;--live-fg-2:#FFD9D3;--neutral:#7FC8E8;--live:#FF5A4E;--inplay:#4FAE78;--focus:#FFD966;color-scheme:dark;--navy:#0C2340;--navy-deep:#07192F;--gold:#C99700;--gold-bright:#FFCD00;--paper:#F8F4EC;--muted:#9AA9BA;--line:rgba(154,169,186,.18);--gold-line:rgba(201,151,0,.30)}
 
 /* ====================================================================
    BASE
@@ -44,7 +45,16 @@ body{font-family:'Barlow',system-ui,-apple-system,sans-serif;font-size:1rem;line
 /* Gutters carry the responsive step AND the iOS notch inset together. Keeping
    them in one calc() is what stops a later rule from dropping one or the other;
    the @media blocks at the foot of this file restate both. */
-.wrap{margin:0 auto;padding:0 1rem 3rem;max-width:54rem;padding-left:calc(1rem + env(safe-area-inset-left, 0px));padding-right:calc(1rem + env(safe-area-inset-right, 0px))}
+.wrap{
+    margin:0 auto;
+    max-width:58rem;
+    padding:0 0 3rem;
+    /* One gutter value, consumed here and by the sticky header's negative
+       margins below. They must match or the header leaves transparent strips
+       at the screen edges, so they read from the same variable. */
+    padding-left:calc(var(--gutter) + env(safe-area-inset-left, 0px));
+    padding-right:calc(var(--gutter) + env(safe-area-inset-right, 0px));
+  }
 
 /* ====================================================================
    ACCESSIBILITY PRIMITIVES
@@ -61,7 +71,28 @@ body{font-family:'Barlow',system-ui,-apple-system,sans-serif;font-size:1rem;line
 /* Sticky so Refresh is always a thumb away. Promoted to its own layer up front
    so Safari does not re-composite it at the moment it becomes stuck, and opaque
    enough that nothing ghosts through as content scrolls underneath. */
-.bar{display:flex;align-items:center;flex-wrap:wrap;gap:.7rem;min-height:4.6rem;position:sticky;top:0;z-index:60;background:rgba(6,21,37,.97);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line);box-shadow:0 8px 28px rgba(0,0,0,.16);transform:translateZ(0);-webkit-transform:translateZ(0);will-change:transform;padding:calc(.75rem + env(safe-area-inset-top, 0px)) 1rem .7rem;margin-left:calc(-1 * (1rem + env(safe-area-inset-left, 0px)));margin-right:calc(-1 * (1rem + env(safe-area-inset-right, 0px)));padding-left:calc(1rem + env(safe-area-inset-left, 0px));padding-right:calc(1rem + env(safe-area-inset-right, 0px))}
+.bar{
+    display:flex;align-items:center;flex-wrap:wrap;gap:.7rem;
+    min-height:4.15rem;
+    position:sticky;top:0;z-index:60;
+    background:rgba(6,21,37,.97);
+    -webkit-backdrop-filter:blur(14px);
+    backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--line);
+    box-shadow:0 8px 28px rgba(0,0,0,.16);
+    /* promoted up front so Safari does not re-composite it when it sticks */
+    transform:translateZ(0);
+    -webkit-transform:translateZ(0);
+    will-change:transform;
+    /* the status-bar inset lives here, not on .page, so the header paints
+       behind the clock instead of leaving a transparent strip */
+    padding-top:calc(.75rem + env(safe-area-inset-top, 0px));
+    padding-bottom:.7rem;
+    margin-left:calc(-1 * (var(--gutter) + env(safe-area-inset-left, 0px)));
+    margin-right:calc(-1 * (var(--gutter) + env(safe-area-inset-right, 0px)));
+    padding-left:calc(var(--gutter) + env(safe-area-inset-left, 0px));
+    padding-right:calc(var(--gutter) + env(safe-area-inset-right, 0px));
+  }
 .bar h1{font-weight:700;margin:0;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;text-shadow:0 1px 18px rgba(201,151,0,.16);font-size:1.55rem;letter-spacing:.075em;color:var(--paper);line-height:1.05}
 .bar .rank{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.72rem;letter-spacing:.06em;background:var(--gold-bright);color:#07192F;border-radius:999px;padding:.16rem .5rem}
 .bar .rec{font-variant-numeric:tabular-nums;color:#BAC6D5;font-family:'Barlow Condensed',sans-serif;font-size:.86rem;letter-spacing:.04em}
@@ -380,8 +411,8 @@ details.fold>summary{padding:.75rem .9rem;background:rgba(12,35,64,.5);font-weig
    RESPONSIVE - widest first, so a narrower block always wins
    ==================================================================== */
 @media (min-width:48rem){
-  .wrap{max-width:58rem;padding-left:calc(1.25rem + env(safe-area-inset-left, 0px));padding-right:calc(1.25rem + env(safe-area-inset-right, 0px))}
-  .bar{min-height:4.9rem;margin-left:calc(-1 * (1.25rem + env(safe-area-inset-left, 0px)));margin-right:calc(-1 * (1.25rem + env(safe-area-inset-right, 0px)));padding-left:calc(1.25rem + env(safe-area-inset-left, 0px));padding-right:calc(1.25rem + env(safe-area-inset-right, 0px))}
+  
+  
   .motto{margin-top:1rem}
   [role="tabpanel"]{padding-top:.35rem}
   .row,.obar,a.art{padding-left:.9rem;padding-right:.9rem}
@@ -395,8 +426,8 @@ details.fold>summary{padding:.75rem .9rem;background:rgba(12,35,64,.5);font-weig
   .tabbar button#tab-game svg{width:26px;height:26px}
 }
 @media (max-width:32rem){
-  .wrap{padding-left:calc(.8rem + env(safe-area-inset-left, 0px));padding-right:calc(.8rem + env(safe-area-inset-right, 0px))}
-  .bar{min-height:4.15rem;margin-left:calc(-1 * (.8rem + env(safe-area-inset-left, 0px)));margin-right:calc(-1 * (.8rem + env(safe-area-inset-right, 0px)));padding-left:calc(.8rem + env(safe-area-inset-left, 0px));padding-right:calc(.8rem + env(safe-area-inset-right, 0px))}
+  
+  
   .brand-kicker{font-size:.57rem;letter-spacing:.14em}
   .bar h1{font-size:1.5rem}
   .refresh{padding:0 .75rem;font-size:.78rem}
@@ -432,6 +463,49 @@ details.fold>summary{padding:.75rem .9rem;background:rgba(12,35,64,.5);font-weig
   .tabbar button#tab-game{transform:translateY(-.2rem)}
   .tabbar button[role="tab"] svg{transition:none}
 }
+
+  /* tappable schedule rows */
+  .row.tappable{cursor:pointer}
+  .row.tappable:hover{background:rgba(201,151,0,.07)}
+  .row.tappable:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
+  .row.tappable .mid::after{
+    content:"\203A";float:right;color:var(--dim);font-size:1.1rem;line-height:1;
+    margin-left:.4rem;opacity:.7;
+  }
+
+  /* back link when the game view is pinned to a past game */
+  .unpin{
+    display:inline-block;margin:.1rem 0 .5rem;min-height:2.5rem;
+    background:none;border:1px solid var(--ink-3);border-radius:4px;
+    color:var(--parch);font-family:'Barlow Condensed',sans-serif;font-weight:600;
+    font-size:.9rem;letter-spacing:.04em;padding:.35rem .7rem;cursor:pointer;
+  }
+  .unpin:hover{border-color:var(--leaf);color:var(--leaf)}
+
+  /* full box score: wide, so it scrolls inside its own box rather than
+     pushing the page sideways */
+  .boxcat{
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.9rem;
+    letter-spacing:.06em;color:var(--leaf);margin:.9rem 0 .3rem;
+  }
+  .boxwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;
+    border:1px solid var(--ink-3);border-radius:4px}
+  .boxtable{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;
+    font-size:.84rem;white-space:nowrap}
+  .boxtable th,.boxtable td{padding:.4rem .55rem;text-align:right;
+    border-bottom:1px solid var(--ink-3)}
+  .boxtable thead th{
+    font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.74rem;
+    letter-spacing:.05em;color:var(--dim);text-align:right;
+    position:sticky;top:0;background:var(--ink-2);
+  }
+  .boxtable tbody th[scope="row"]{
+    text-align:left;font-weight:500;position:sticky;left:0;
+    background:var(--ink-2);min-width:8.5rem;
+  }
+  .boxtable thead th:first-child{left:0;z-index:2;text-align:left}
+  .boxtable .jn{color:var(--dim);font-family:'Barlow Condensed',sans-serif;font-weight:700}
+  .boxtable tbody tr:last-child th,.boxtable tbody tr:last-child td{border-bottom:none}
 </style>
   <meta name="description" content="Irish Watch — a Notre Dame football game-day dashboard.">
 
@@ -845,7 +919,9 @@ function paintSchedule(games){
       : (timeIsSet(g.date)?fmtTime(g.date)+" "+tzAbbr():"Kickoff time not announced")
         + (g.odds&&g.odds.line?" \u00B7 line "+esc(g.odds.line):"")
         + (g.venue?" \u00B7 "+esc(g.venue):"");
-    html+='<li class="row '+(isDone?"past":"")+" "+(g.id===nextId?"next":"")+'">'+
+    html+='<li class="row tappable '+(isDone?"past":"")+" "+(g.id===nextId?"next":"")+
+      '" data-ev="'+esc(String(g.id))+'" role="button" tabindex="0" '+
+      'aria-label="Open the game view for '+esc(g.oppName)+'">'+
       dateChip(g.date)+
       '<span class="mid"><span class="team">'+ venueTag(g) +
         (g.oppRank?'<span class="rk"><span class="sr-only">number </span>'+
@@ -1400,7 +1476,7 @@ function loadHistory(){
 // this is all client side. Field names vary by game state, so every read is
 // defensive — a missing section drops out rather than blanking the tab.
 
-var G = { poll:null, id:null, side:null, pending:false };
+var G = { poll:null, id:null, side:null, pending:false, pinned:null };
 
 function pick(o, path, dflt){
   var cur=o;
@@ -1436,6 +1512,11 @@ function cmpVal(v){
 // Which game to show: one in progress, else the most recent finished, else next up.
 function gameToShow(){
   if(!S.games||!S.games.length) return null;
+  // a game tapped on the Schedule tab wins until it is cleared
+  if(G.pinned){
+    var p=S.games.filter(function(g){ return g.id===G.pinned; })[0];
+    if(p) return p;
+  }
   var live=S.games.filter(function(g){return g.state==="in";})[0];
   if(live) return live;
   var done=S.games.filter(function(g){return g.state==="post";});
@@ -1465,6 +1546,7 @@ function loadGame(force){
     } else {
       el.innerHTML=renderGame(d);
       wireLeaderSwitch(el);
+      wireUnpin(el);
       el.dataset.shape=shape;
     }
     el.dataset.loaded=g.id;
@@ -1490,6 +1572,16 @@ function schedulePoll(d){
 document.addEventListener("visibilitychange", function(){
   if(!document.hidden && !$("panel-game").hidden) loadGame(true);
 });
+
+function wireUnpin(el){
+  var b=el.querySelector("#gUnpin");
+  if(!b) return;
+  b.addEventListener("click", function(){
+    G.pinned=null; G.side=null;
+    el.dataset.loaded="";
+    loadGame(true);
+  });
+}
 
 function wireLeaderSwitch(el){
   var btns=el.querySelectorAll(".seg button");
@@ -1632,6 +1724,10 @@ function renderGame(d){
   }
   html+=side(away)+side(home);
 
+  if(G.pinned){
+    html+='<button type="button" class="unpin" id="gUnpin">'+
+      "\u2190 Back to the current game</button>";
+  }
   html+='<div class="gstatus" id="gStatus">'+(live?'<span class="dot" aria-hidden="true"></span>':"")+
     "<span>"+esc(st.detail||st.shortDetail||st.description||"")+"</span></div>";
 
@@ -1778,15 +1874,23 @@ function renderGame(d){
         var ab=pick(tl,["team","abbreviation"],null)||pick(tl,["team","shortDisplayName"],"")||"";
         return esc(ab);
       };
-      html+='<h2 class="sec">Leaders</h2>'+
+      var boxA=boxTables(d, pick(away,["team","id"],"")),
+          boxH=boxTables(d, pick(home,["team","id"],""));
+      html+='<h2 class="sec">Leaders and box score</h2>'+
         '<div class="seg" role="group" aria-label="Show leaders for">'+
           '<button type="button" data-side="away" aria-pressed="'+(G.side==="away")+'">'+
             tag(la)+'<span class="sub">away</span></button>'+
           '<button type="button" data-side="home" aria-pressed="'+(G.side==="home")+'">'+
             tag(lh)+'<span class="sub">home</span></button>'+
         "</div>"+
-        '<div id="ldr-away"'+(G.side==="away"?"":" hidden")+">"+ra+"</div>"+
-        '<div id="ldr-home"'+(G.side==="home"?"":" hidden")+">"+rh+"</div>";
+        '<div id="ldr-away"'+(G.side==="away"?"":" hidden")+">"+ra+
+          (boxA?'<details class="fold"><summary>Full box score<span class="count">'+
+            esc(pick(away,["team","abbreviation"],"")||"")+'</span></summary>'+
+            '<div class="foldbody">'+boxA+"</div></details>":"")+"</div>"+
+        '<div id="ldr-home"'+(G.side==="home"?"":" hidden")+">"+rh+
+          (boxH?'<details class="fold"><summary>Full box score<span class="count">'+
+            esc(pick(home,["team","abbreviation"],"")||"")+'</span></summary>'+
+            '<div class="foldbody">'+boxH+"</div></details>":"")+"</div>";
     }
   }
 
@@ -1968,6 +2072,38 @@ function loadRoster(box){
       '<a href="https://fightingirish.com/sports/football/roster" target="_blank" '+
       'rel="noopener">fightingirish.com</a>.</p>';
   });
+}
+
+// ESPN's boxscore.players holds the complete per-player lines that `leaders`
+// only samples. Each category carries its own labels, so the table headers come
+// from the payload rather than being hardcoded.
+function boxTables(d, teamId){
+  var groups=pick(d,["boxscore","players"],[])||[];
+  var tm=groups.filter(function(g){
+    return String(pick(g,["team","id"],""))===String(teamId); })[0];
+  if(!tm) return "";
+  var html="";
+  (tm.statistics||[]).forEach(function(cat){
+    var labels=cat.labels||cat.keys||[];
+    var rows=cat.athletes||[];
+    if(!labels.length||!rows.length) return;
+    var title=cat.text||cat.name||"";
+    title=title.charAt(0).toUpperCase()+title.slice(1);
+    html+='<h3 class="boxcat">'+esc(title)+"</h3>"+
+      '<div class="boxwrap"><table class="boxtable"><thead><tr><th scope="col">Player</th>'+
+      labels.map(function(l){ return '<th scope="col">'+esc(l)+"</th>"; }).join("")+
+      "</tr></thead><tbody>";
+    rows.forEach(function(a){
+      var nm=pick(a,["athlete","shortName"],null)||pick(a,["athlete","displayName"],"")||"";
+      var jersey=pick(a,["athlete","jersey"],"");
+      html+='<tr><th scope="row">'+(jersey?'<span class="jn">'+esc(String(jersey))+"</span> ":"")+
+        esc(nm)+"</th>"+
+        (a.stats||[]).map(function(s){ return "<td>"+esc(String(s))+"</td>"; }).join("")+
+        "</tr>";
+    });
+    html+="</tbody></table></div>";
+  });
+  return html;
 }
 
 /* ---------- news ---------- */
@@ -2238,6 +2374,27 @@ function refreshSchedule(first){
     say("Schedule failed to load.");
   });
 }
+
+// Tapping a game on the Schedule tab opens it in the game view.
+function openGame(id){
+  if(!id) return;
+  G.pinned=id;
+  G.side=null;                       // let it default to Notre Dame again
+  $("panel-game").dataset.loaded="";
+  var tab=$("tab-game");
+  if(tab) selectTab(tab,false); else loadGame(true);
+}
+$("panel-schedule").addEventListener("click", function(e){
+  var li=e.target.closest(".row.tappable[data-ev]");
+  if(li) openGame(li.getAttribute("data-ev"));
+});
+$("panel-schedule").addEventListener("keydown", function(e){
+  if(e.key!=="Enter" && e.key!==" ") return;
+  var li=e.target.closest(".row.tappable[data-ev]");
+  if(!li) return;
+  e.preventDefault();
+  openGame(li.getAttribute("data-ev"));
+});
 
 $("btnTitle").addEventListener("click", function(){ toggleBoard("title"); });
 $("btnPlayoff").addEventListener("click", function(){ toggleBoard("playoff"); });
