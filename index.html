@@ -506,6 +506,24 @@ details.fold>summary{padding:.75rem .9rem;background:rgba(12,35,64,.5);font-weig
   .boxtable thead th:first-child{left:0;z-index:2;text-align:left}
   .boxtable .jn{color:var(--dim);font-family:'Barlow Condensed',sans-serif;font-weight:700}
   .boxtable tbody tr:last-child th,.boxtable tbody tr:last-child td{border-bottom:none}
+
+  .pinbar{display:flex;align-items:center;gap:.6rem;margin:.1rem 0 .6rem}
+  .pinlbl{
+    font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.74rem;
+    letter-spacing:.09em;text-transform:uppercase;color:var(--dim);
+  }
+  .pinbar .unpin{margin:0;margin-left:auto}
+
+  /* matchup preview: same two-column grid as the in-game team stats, with the
+     national rank tucked under each value */
+  .statrow.prev{align-items:flex-start;padding:.5rem .15rem}
+  .statrow.prev .v{line-height:1.15}
+  .statrow .rk2{
+    display:block;font-family:'Barlow',system-ui,-apple-system,sans-serif;
+    font-weight:600;font-size:.7rem;letter-spacing:.03em;color:var(--dim);
+    margin-top:.1rem;
+  }
+  .statrow.prev .v.win .rk2{color:var(--leaf)}
 </style>
   <meta name="description" content="Irish Watch — a Notre Dame football game-day dashboard.">
 
@@ -1510,6 +1528,27 @@ function cmpVal(v){
 }
 
 // Which game to show: one in progress, else the most recent finished, else next up.
+// How long the Game tab keeps showing a finished game before swapping to the
+// next one. ESPN gives kickoff, not the final whistle, so add four hours for
+// regulation plus overtime and a long review.
+//
+// Roll over at 3am local rather than midnight: that keeps the box score up for
+// the whole evening without leaving Saturday's game sitting there all Sunday.
+// The six-hour floor covers a late West Coast kickoff that ends after 2am,
+// where the next 3am would otherwise be twenty minutes away.
+var FINAL_ROLLOVER_HOUR = 3;
+var FINAL_MIN_HOLD_MS   = 6*60*60*1000;
+
+function justFinished(g){
+  var end=new Date(g.date).getTime() + 4*60*60*1000;
+  if(isNaN(end)) return false;
+  var cutoff=new Date(end);
+  cutoff.setHours(FINAL_ROLLOVER_HOUR,0,0,0);
+  if(cutoff.getTime() <= end) cutoff.setDate(cutoff.getDate()+1);   // next 3am
+  var floor=end + FINAL_MIN_HOLD_MS;
+  return Date.now() < Math.max(cutoff.getTime(), floor);
+}
+
 function gameToShow(){
   if(!S.games||!S.games.length) return null;
   // a game tapped on the Schedule tab wins until it is cleared
@@ -1517,11 +1556,26 @@ function gameToShow(){
     var p=S.games.filter(function(g){ return g.id===G.pinned; })[0];
     if(p) return p;
   }
+  // A game in progress always wins. Otherwise show the NEXT one, so the moment
+  // Saturday's game goes final the tab swaps to next week. Past games are read
+  // from the Schedule tab. Only with nothing upcoming does it fall back to the
+  // last result.
   var live=S.games.filter(function(g){return g.state==="in";})[0];
   if(live) return live;
+
   var done=S.games.filter(function(g){return g.state==="post";});
-  if(done.length) return done[done.length-1];
-  return S.games[0];
+  var last=done.length ? done[done.length-1] : null;
+
+  // Hold a finished game until the midnight AFTER it ended. The half hour after
+  // the whistle is when the box score matters most, so swapping the instant
+  // ESPN marks it final takes it away at the worst moment. Computed from the
+  // game's own end rather than its date, so a late kickoff that runs past
+  // midnight still gets its full evening.
+  if(last && justFinished(last)) return last;
+
+  var next=S.games.filter(function(g){return g.state==="pre";})[0];
+  if(next) return next;
+  return last || S.games[0];
 }
 
 function loadGame(force){
@@ -1547,6 +1601,11 @@ function loadGame(force){
       el.innerHTML=renderGame(d);
       wireLeaderSwitch(el);
       wireUnpin(el);
+      var hc=pick(d,["header","competitions",0],{})||{};
+      var hcs=hc.competitors||[];
+      var hHome=hcs.filter(function(c){return c.homeAway==="home";})[0]||hcs[0]||{};
+      var hAway=hcs.filter(function(c){return c.homeAway==="away";})[0]||hcs[1]||{};
+      if(pick(hc,["status","type","state"],"")==="pre") loadPreview(hAway,hHome);
       el.dataset.shape=shape;
     }
     el.dataset.loaded=g.id;
@@ -1725,9 +1784,12 @@ function renderGame(d){
   html+=side(away)+side(home);
 
   if(G.pinned){
-    html+='<button type="button" class="unpin" id="gUnpin">'+
-      "\u2190 Back to the current game</button>";
+    html+='<div class="pinbar">'+
+      '<span class="pinlbl">From the schedule</span>'+
+      '<button type="button" class="unpin" id="gUnpin">Next game \u2192</button>'+
+      "</div>";
   }
+  if(!live && !done) html+='<div id="gPreview"></div>';
   html+='<div class="gstatus" id="gStatus">'+(live?'<span class="dot" aria-hidden="true"></span>':"")+
     "<span>"+esc(st.detail||st.shortDetail||st.description||"")+"</span></div>";
 
@@ -2106,6 +2168,103 @@ function boxTables(d, teamId){
   return html;
 }
 
+/* ---------- matchup preview ---------- */
+// National ranks are not in the site API we use everywhere else — they live in
+// ESPN's core API, where each stat carries `rank` and `rankDisplayValue`.
+var CORE="https://sports.core.api.espn.com/v2/sports/football/leagues/college-football";
+var SEASON_STATS={};              // teamId -> flattened stat map, cached per session
+
+function seasonYear(){
+  var d=new Date();
+  return d.getMonth()<6 ? d.getFullYear()-1 : d.getFullYear();   // Jan-Jun = last season
+}
+
+// Flatten every category into one map so lookups do not care where ESPN filed
+// a stat this year.
+function flattenStats(d){
+  var out={};
+  var cats=pick(d,["splits","categories"],[])||[];
+  cats.forEach(function(c){
+    (c.stats||[]).forEach(function(s){
+      if(!s||!s.name) return;
+      out[String(s.name).toLowerCase()]={
+        display: s.displayValue!=null?s.displayValue:s.value,
+        rank: typeof s.rank==="number" ? s.rank : null,
+        rankText: s.rankDisplayValue||null
+      };
+    });
+  });
+  return out;
+}
+
+function teamSeasonStats(teamId){
+  if(!teamId) return Promise.reject(new Error("no team"));
+  if(SEASON_STATS[teamId]) return Promise.resolve(SEASON_STATS[teamId]);
+  return get(CORE+"/seasons/"+seasonYear()+"/types/2/teams/"+teamId+"/statistics")
+    .then(function(d){
+      var m=flattenStats(d);
+      SEASON_STATS[teamId]=m;
+      return m;
+    });
+}
+
+// Label, the stat names ESPN might use for it. Whichever is present wins.
+var PREVIEW_ROWS=[
+  ["Scoring offense",  ["totalpointspergame","pointspergame","avgpointsfor"]],
+  ["Total offense",    ["totalyardspergame","netttotalyardspergame","yardspergame","totalyards"]],
+  ["Rushing offense",  ["rushingyardspergame","netrushingyardspergame"]],
+  ["Passing offense",  ["netpassingyardspergame","passingyardspergame"]],
+  ["Scoring defense",  ["avgpointsagainst","opponenttotalpointspergame","pointsagainstpergame"]],
+  ["Total defense",    ["opponenttotalyardspergame","yardsallowedpergame"]],
+  ["Turnover margin",  ["turnoverdifferential","turnovermargin","totalturnoverdifferential"]],
+  ["Third down",       ["thirddownconvpct","thirddownconversionpct","thirddownpct"]]
+];
+
+function statPick(map, names){
+  for(var i=0;i<names.length;i++){ if(map[names[i]]) return map[names[i]]; }
+  return null;
+}
+
+function renderPreview(awayStats, homeStats, awayAb, homeAb){
+  var body="";
+  PREVIEW_ROWS.forEach(function(r){
+    var a=statPick(awayStats,r[1]), b=statPick(homeStats,r[1]);
+    if(!a&&!b) return;
+    // A lower rank number is better whatever the stat measures, so ranks can be
+    // compared directly without knowing which direction is good.
+    var aw = (a&&a.rank&&b&&b.rank) ? (a.rank<b.rank) : null;
+    function cell(s,right){
+      if(!s) return '<span class="v'+(right?" r":"")+'">–</span>';
+      var rk=s.rankText||(s.rank?"#"+s.rank:"");
+      return '<span class="v'+(right?" r":"")+
+        ((aw===null)?"":((right?!aw:aw)?" win":""))+'">'+esc(String(s.display))+
+        (rk?'<span class="rk2">'+esc(rk)+"</span>":"")+"</span>";
+    }
+    body+='<div class="statrow prev">'+cell(a,false)+
+      '<span class="lbl">'+esc(r[0])+"</span>"+cell(b,true)+"</div>";
+  });
+  if(!body) return "";
+  return '<h2 class="sec">Matchup</h2>'+
+    '<div class="statrow head"><span class="v">'+esc(awayAb)+"</span>"+
+    '<span class="lbl">SEASON \u00B7 NATIONAL RANK</span>'+
+    '<span class="v r">'+esc(homeAb)+"</span></div>"+body+
+    '<p class="stamp">Per-game figures and national ranks for the season to date.</p>';
+}
+
+// Pre-game only: once there is a box score, that is the more useful thing.
+function loadPreview(away, home){
+  var slot=$("panel-game").querySelector("#gPreview");
+  if(!slot) return;
+  var aId=pick(away,["team","id"],""), hId=pick(home,["team","id"],"");
+  Promise.all([teamSeasonStats(aId), teamSeasonStats(hId)]).then(function(r){
+    var html=renderPreview(r[0], r[1],
+      pick(away,["team","abbreviation"],"")||"", pick(home,["team","abbreviation"],"")||"");
+    slot.innerHTML=html;
+  }).catch(function(){
+    slot.innerHTML="";            // no ranks available, show nothing rather than a broken block
+  });
+}
+
 /* ---------- news ---------- */
 // Two sources merged: ESPN's own feed, and the beat-writer RSS that the
 // GitHub Action fetches server-side and commits as news.json. RSS sites send
@@ -2186,7 +2345,13 @@ function loadNews(){
 
 /* ---------- tabs: full keyboard support per ARIA practices ---------- */
 var tabs=[].slice.call(document.querySelectorAll('[role="tab"]'));
-function selectTab(tab, focusIt){
+function selectTab(tab, focusIt, fromNav){
+  // Tapping GAME in the nav should mean "take me to the current game". Only a
+  // tap on the Schedule pins a specific one.
+  if(fromNav && tab.id==="tab-game" && G.pinned){
+    G.pinned=null; G.side=null;
+    $("panel-game").dataset.loaded="";
+  }
   tabs.forEach(function(t){
     var on = t===tab;
     t.setAttribute("aria-selected",String(on));
@@ -2207,14 +2372,14 @@ function selectTab(tab, focusIt){
   if(name==="news")   loadNews();
 }
 tabs.forEach(function(tab,i){
-  tab.addEventListener("click",function(){ selectTab(tab,false); });
+  tab.addEventListener("click",function(){ selectTab(tab,false,true); });
   tab.addEventListener("keydown",function(e){
     var n=null;
     if(e.key==="ArrowRight") n=tabs[(i+1)%tabs.length];
     else if(e.key==="ArrowLeft") n=tabs[(i-1+tabs.length)%tabs.length];
     else if(e.key==="Home") n=tabs[0];
     else if(e.key==="End") n=tabs[tabs.length-1];
-    if(n){ e.preventDefault(); selectTab(n,true); }
+    if(n){ e.preventDefault(); selectTab(n,true,true); }
   });
 });
 
@@ -2382,7 +2547,7 @@ function openGame(id){
   G.side=null;                       // let it default to Notre Dame again
   $("panel-game").dataset.loaded="";
   var tab=$("tab-game");
-  if(tab) selectTab(tab,false); else loadGame(true);
+  if(tab) selectTab(tab,false,false); else loadGame(true);
 }
 $("panel-schedule").addEventListener("click", function(e){
   var li=e.target.closest(".row.tappable[data-ev]");
