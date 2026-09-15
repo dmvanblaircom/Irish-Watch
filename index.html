@@ -132,7 +132,7 @@
   .strip dd{margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:700;
     font-size:1.4rem;line-height:1.1;font-variant-numeric:tabular-nums}
   .strip dd.pending{font-size:.95rem;font-weight:500;color:var(--dim);
-    font-family:'Barlow',system-ui,sans-serif}
+    font-family:'Barlow',system-ui,-apple-system,sans-serif}
   .strip dd em{font-style:normal;font-size:.6em;font-weight:600;margin-left:.3rem}
   .up{color:var(--win)} .down{color:var(--loss)}
 
@@ -315,7 +315,7 @@
   .seg button+button{border-left:1px solid var(--ink-3)}
   .seg button[aria-pressed="true"]{background:var(--leaf);color:#231A03}
   .seg button:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
-  .seg .sub{display:block;font-family:'Barlow',sans-serif;font-weight:500;font-size:.68rem;
+  .seg .sub{display:block;font-family:'Barlow',system-ui,-apple-system,sans-serif;font-weight:500;font-size:.68rem;
     letter-spacing:.04em;opacity:.75}
   /* single-line variant, for switching a whole section */
   .seg.pills{margin:.7rem 0 .3rem}
@@ -969,7 +969,7 @@
   .strip .cell:last-child{border-right:none}
   .strip .cell:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
   .strip .cell .k{
-    font-family:'Barlow',system-ui,sans-serif;font-size:.64rem;letter-spacing:.11em;
+    font-family:'Barlow',system-ui,-apple-system,sans-serif;font-size:.64rem;letter-spacing:.11em;
     text-transform:uppercase;color:#8FA2B8;font-weight:600;line-height:1.25;
     padding-right:.9rem;
   }
@@ -979,7 +979,7 @@
   }
   .strip .cell .v em{font-style:normal;font-size:.6em;font-weight:600;margin-left:.3rem}
   .strip .cell .v.pending{font-size:.95rem;font-weight:500;color:var(--dim);
-    font-family:'Barlow',system-ui,sans-serif}
+    font-family:'Barlow',system-ui,-apple-system,sans-serif}
   .strip .cell::after{
     content:"\25BE";position:absolute;top:.55rem;right:.6rem;
     color:var(--leaf);font-size:.75rem;transition:transform .15s ease;
@@ -1091,7 +1091,7 @@
     .hero .spread{
       position:absolute;top:1.1rem;right:1rem;
       min-width:0;padding:0;border-left:0;
-      font-family:'Barlow',system-ui,sans-serif;font-size:.82rem;
+      font-family:'Barlow',system-ui,-apple-system,sans-serif;font-size:.82rem;
     }
     .hero .clock{
       margin-top:.8rem;padding:.7rem 0 0;
@@ -1204,7 +1204,7 @@
   .strip>.cell:last-child{border-right:1px solid var(--v2-line);border-top:2px solid rgba(154,169,186,.55);}
   .strip .k{display:block;text-transform:uppercase;letter-spacing:.11em;font-size:.61rem;color:#91A2B6;}
   .strip .v{display:block;margin-top:.25rem;font-family:'Barlow Condensed',sans-serif;font-size:1.75rem;font-weight:700;color:var(--v2-paper);}
-  .strip .v.pending{font-family:'Barlow',sans-serif;font-size:.9rem;color:var(--v2-muted);}
+  .strip .v.pending{font-family:'Barlow',system-ui,-apple-system,sans-serif;font-size:.9rem;color:var(--v2-muted);}
   .hint{text-transform:uppercase;letter-spacing:.1em;font-size:.58rem;color:#71849A;text-align:right;margin:.4rem .2rem .8rem;}
 
   /* Section headers make every tab feel like a product surface. */
@@ -1286,7 +1286,7 @@
     border-top:1px solid rgba(154,169,186,.18);box-shadow:0 -12px 32px rgba(0,0,0,.28);}
   .tabbar button[role="tab"]{position:relative;min-width:0;min-height:3.55rem;border:0;border-radius:10px;
     color:#72869A;padding:.4rem .2rem .25rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.13rem;
-    font-family:'Barlow',sans-serif;font-size:.62rem;font-weight:600;letter-spacing:.02em;}
+    font-family:'Barlow',system-ui,-apple-system,sans-serif;font-size:.62rem;font-weight:600;letter-spacing:.02em;}
   .tabbar button[role="tab"] svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.7;}
   .tabbar button[role="tab"][aria-selected="true"]{color:var(--v2-gold-bright);background:rgba(201,151,0,.09);}
   .tabbar button#tab-game{z-index:2;transform:translateY(-.32rem);min-height:4.15rem;border:1px solid rgba(255,205,0,.32);
@@ -1332,9 +1332,6 @@
   /* Final header + navigation refinement */
   .brand-group{display:flex;align-items:center;gap:.65rem;min-width:0;}
   .brand-lockup{padding-left:0!important;}
-  .nd-helmet{width:2.15rem;height:1.55rem;flex:none;overflow:visible;filter:drop-shadow(0 2px 7px rgba(255,205,0,.12));}
-  .nd-helmet .helmet-shell{fill:var(--v2-gold-bright);stroke:var(--v2-gold);stroke-width:1.05;}
-  .nd-helmet .helmet-ear,.nd-helmet .helmet-facemask{fill:none;stroke:var(--v2-gold-bright);stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round;}
   .brand-group .brand-kicker,.brand-group h1{white-space:nowrap;}
 
   .tabbar button[role="tab"] svg{width:21px;height:21px;stroke-width:1.85;filter:drop-shadow(0 1px 3px rgba(0,0,0,.18));}
@@ -1353,7 +1350,6 @@
   .tabbar:before{top:.42rem;}
 
   @media (max-width:32rem){
-    .nd-helmet{width:1.95rem;height:1.42rem;}
     .brand-group{gap:.55rem;}
     .tabbar button#tab-game{width:4rem;height:4rem;min-height:4rem;border-radius:50%;transform:translateY(-.42rem);}
     .tabbar button#tab-game svg{width:27px;height:27px;}
@@ -1397,21 +1393,6 @@
   @media (max-width:760px){
     .tabbar button#tab-game{transform:translateY(-.72rem);}
   }
-
-
-  /* ---- helmet ----
-     The previous version stroked the facemask and ear in the same colour as the
-     shell fill, so both vanished into it and the mark rendered as a gold blob.
-     The shell is now a plain silhouette, the ear hole is cut out in navy, and
-     the facemask is gold sitting in front of the shell where the page shows
-     through between the bars. */
-  .nd-helmet .helmet-shell{fill:var(--v2-gold-bright,#FFCD00);stroke:none}
-  .nd-helmet .helmet-ear{fill:#07192F;stroke:none}
-  .nd-helmet .helmet-facemask{
-    fill:none;stroke:var(--v2-gold-bright,#FFCD00);
-    stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round;
-  }
-  .nd-helmet .helmet-facemask.thin{stroke-width:1.9}
 
   /* ---- re-applied after the visual pass ---- */
   /* A later `padding:` shorthand on .bar drops the safe-area inset. .page's
@@ -1462,13 +1443,6 @@
 
   <header class="bar">
     <div class="brand-group">
-      <svg class="nd-helmet" viewBox="0 0 48 34" aria-hidden="true">
-        <path class="helmet-shell" d="M5.6 22C5.6 11.4 12.2 4.6 23 4.6C32.6 4.6 38.2 10.4 38.2 18.4V21C38.2 23.2 36.8 24.4 34.6 24.4H10C7.2 24.4 5.6 23.4 5.6 22Z"/>
-        <circle class="helmet-ear" cx="16.2" cy="17" r="3.3"/>
-        <path class="helmet-facemask" d="M38.4 18.6H42.8C45 18.6 46.2 20 46.2 22.2C46.2 24.6 44.5 26.1 42 26.1H35"/>
-        <path class="helmet-facemask" d="M38.4 22.2H45.2"/>
-        <path class="helmet-facemask thin" d="M42.9 19V25.6"/>
-      </svg>
       <div class="brand-lockup">
         <div class="brand-kicker">NOTRE DAME FOOTBALL</div>
         <h1>Irish Watch</h1>
@@ -1639,17 +1613,30 @@ function dateChip(iso){
     '<span class="d" aria-hidden="true">'+d.getDate()+"</span></time>";
 }
 
+// ESPN files broadcasts inconsistently: TV networks usually land in
+// competition.broadcasts, but streaming-only outlets such as Peacock often
+// appear only in geoBroadcasts, or as a bare `broadcast` string. Read every
+// shape and merge them, rather than treating geoBroadcasts as a fallback —
+// a Peacock-exclusive game has nothing in broadcasts at all.
 function network(comp){
-  var out=[], b=comp.broadcasts||[];
-  b.forEach(function(x){
-    if(x.media&&x.media.shortName) out.push(x.media.shortName);
-    else if(Array.isArray(x.names)) out=out.concat(x.names);
-    else if(x.shortName) out.push(x.shortName);
-    else if(x.name) out.push(x.name);
-  });
-  if(!out.length&&comp.geoBroadcasts) comp.geoBroadcasts.forEach(function(g){
-    if(g.media&&g.media.shortName) out.push(g.media.shortName); });
-  return out.filter(function(v,i){return out.indexOf(v)===i;}).join(", ");
+  var out=[];
+  function add(v){
+    if(!v) return;
+    v=String(v).trim();
+    if(v && out.indexOf(v)===-1) out.push(v);
+  }
+  function scan(x){
+    if(!x) return;
+    if(x.media){ add(x.media.shortName); add(x.media.callLetters); add(x.media.name); }
+    if(Array.isArray(x.names)) x.names.forEach(add);
+    add(x.shortName); add(x.callLetters); add(x.station); add(x.name);
+  }
+  (comp.broadcasts||[]).forEach(scan);
+  (comp.geoBroadcasts||[]).forEach(scan);
+  if(typeof comp.broadcast==="string") add(comp.broadcast);
+  // a couple of feeds hang it off the event's status block instead
+  if(comp.status && typeof comp.status.broadcast==="string") add(comp.status.broadcast);
+  return out.join(", ");
 }
 function oddsOf(comp){
   var o=(comp.odds&&comp.odds[0])||(comp.pickcenter&&comp.pickcenter[0]);
