@@ -473,15 +473,6 @@ details.fold>summary{padding:.75rem .9rem;background:rgba(12,35,64,.5);font-weig
     margin-left:.4rem;opacity:.7;
   }
 
-  /* back link when the game view is pinned to a past game */
-  .unpin{
-    display:inline-block;margin:.1rem 0 .5rem;min-height:2.5rem;
-    background:none;border:1px solid var(--ink-3);border-radius:4px;
-    color:var(--parch);font-family:'Barlow Condensed',sans-serif;font-weight:600;
-    font-size:.9rem;letter-spacing:.04em;padding:.35rem .7rem;cursor:pointer;
-  }
-  .unpin:hover{border-color:var(--leaf);color:var(--leaf)}
-
   /* full box score: wide, so it scrolls inside its own box rather than
      pushing the page sideways */
   .boxcat{
@@ -507,13 +498,6 @@ details.fold>summary{padding:.75rem .9rem;background:rgba(12,35,64,.5);font-weig
   .boxtable .jn{color:var(--dim);font-family:'Barlow Condensed',sans-serif;font-weight:700}
   .boxtable tbody tr:last-child th,.boxtable tbody tr:last-child td{border-bottom:none}
 
-  .pinbar{display:flex;align-items:center;gap:.6rem;margin:.1rem 0 .6rem}
-  .pinlbl{
-    font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.74rem;
-    letter-spacing:.09em;text-transform:uppercase;color:var(--dim);
-  }
-  .pinbar .unpin{margin:0;margin-left:auto}
-
   /* matchup preview: same two-column grid as the in-game team stats, with the
      national rank tucked under each value */
   .statrow.prev{align-items:flex-start;padding:.5rem .15rem}
@@ -524,6 +508,23 @@ details.fold>summary{padding:.75rem .9rem;background:rgba(12,35,64,.5);font-weig
     margin-top:.1rem;
   }
   .statrow.prev .v.win .rk2{color:var(--leaf)}
+
+  /* expanded game detail under a schedule row */
+  li.gamedetail{
+    list-style:none;
+    margin:0 -.55rem .4rem;
+    padding:.6rem .7rem .8rem;
+    background:rgba(255,255,255,.025);
+    border-left:3px solid var(--leaf);
+    border-bottom:1px solid var(--ink-3);
+    border-radius:0 4px 4px 0;
+  }
+  li.gamedetail .sec{margin-top:.7rem}
+  li.gamedetail .gscore{padding:.5rem .1rem}
+  li.gamedetail .gscore .pts{font-size:1.6rem}
+  .row.tappable .mid::after{transition:transform .15s ease}
+  .row.tappable[aria-expanded="true"] .mid::after{transform:rotate(90deg)}
+  @media (prefers-reduced-motion:reduce){.row.tappable .mid::after{transition:none}}
 </style>
   <meta name="description" content="Irish Watch — a Notre Dame football game-day dashboard.">
 
@@ -906,6 +907,7 @@ function paintSchedule(games){
 
   // This runs a second time once the betting line arrives. Remember whether the
   // user had opened the fold, or the repaint snaps it shut under their thumb.
+  if(DETAIL.open){ DETAIL.open=null; DETAIL.seq++; }   // repaint drops the expansion
   var prev=el.querySelector("details.fold");
   var wasOpen=!!(prev&&prev.open);
 
@@ -939,7 +941,8 @@ function paintSchedule(games){
         + (g.venue?" \u00B7 "+esc(g.venue):"");
     html+='<li class="row tappable '+(isDone?"past":"")+" "+(g.id===nextId?"next":"")+
       '" data-ev="'+esc(String(g.id))+'" role="button" tabindex="0" '+
-      'aria-label="Open the game view for '+esc(g.oppName)+'">'+
+      'aria-expanded="false" '+
+      'aria-label="Show the box score for '+esc(g.oppName)+'">'+
       dateChip(g.date)+
       '<span class="mid"><span class="team">'+ venueTag(g) +
         (g.oppRank?'<span class="rk"><span class="sr-only">number </span>'+
@@ -1494,7 +1497,7 @@ function loadHistory(){
 // this is all client side. Field names vary by game state, so every read is
 // defensive — a missing section drops out rather than blanking the tab.
 
-var G = { poll:null, id:null, side:null, pending:false, pinned:null };
+var G = { poll:null, id:null, side:null, pending:false };
 
 function pick(o, path, dflt){
   var cur=o;
@@ -1551,11 +1554,6 @@ function justFinished(g){
 
 function gameToShow(){
   if(!S.games||!S.games.length) return null;
-  // a game tapped on the Schedule tab wins until it is cleared
-  if(G.pinned){
-    var p=S.games.filter(function(g){ return g.id===G.pinned; })[0];
-    if(p) return p;
-  }
   // A game in progress always wins. Otherwise show the NEXT one, so the moment
   // Saturday's game goes final the tab swaps to next week. Past games are read
   // from the Schedule tab. Only with nothing upcoming does it fall back to the
@@ -1600,7 +1598,6 @@ function loadGame(force){
     } else {
       el.innerHTML=renderGame(d);
       wireLeaderSwitch(el);
-      wireUnpin(el);
       var hc=pick(d,["header","competitions",0],{})||{};
       var hcs=hc.competitors||[];
       var hHome=hcs.filter(function(c){return c.homeAway==="home";})[0]||hcs[0]||{};
@@ -1632,15 +1629,6 @@ document.addEventListener("visibilitychange", function(){
   if(!document.hidden && !$("panel-game").hidden) loadGame(true);
 });
 
-function wireUnpin(el){
-  var b=el.querySelector("#gUnpin");
-  if(!b) return;
-  b.addEventListener("click", function(){
-    G.pinned=null; G.side=null;
-    el.dataset.loaded="";
-    loadGame(true);
-  });
-}
 
 function wireLeaderSwitch(el){
   var btns=el.querySelectorAll(".seg button");
@@ -1649,7 +1637,7 @@ function wireLeaderSwitch(el){
     b.addEventListener("click", function(){
       G.side=b.dataset.side;
       btns.forEach(function(x){ x.setAttribute("aria-pressed", String(x===b)); });
-      var a=el.querySelector("#ldr-away"), hm=el.querySelector("#ldr-home");
+      var a=el.querySelector(".ldr-away"), hm=el.querySelector(".ldr-home");
       if(a)  a.hidden  = G.side!=="away";
       if(hm) hm.hidden = G.side!=="home";
     });
@@ -1758,7 +1746,10 @@ function patchGame(d){
   }
 }
 
-function renderGame(d){
+// inline=true renders the same view for an expanded Schedule row: identical
+// markup minus the element ids, which exist only so the live poller can patch
+// the Game tab in place. Duplicating them would break that.
+function renderGame(d, inline){
   var comp=pick(d,["header","competitions",0],{}) || {};
   var cs=comp.competitors||[];
   var home=cs.filter(function(c){return c.homeAway==="home";})[0]||cs[0]||{};
@@ -1783,14 +1774,8 @@ function renderGame(d){
   }
   html+=side(away)+side(home);
 
-  if(G.pinned){
-    html+='<div class="pinbar">'+
-      '<span class="pinlbl">From the schedule</span>'+
-      '<button type="button" class="unpin" id="gUnpin">Next game \u2192</button>'+
-      "</div>";
-  }
-  if(!live && !done) html+='<div id="gPreview"></div>';
-  html+='<div class="gstatus" id="gStatus">'+(live?'<span class="dot" aria-hidden="true"></span>':"")+
+  if(!live && !done && !inline) html+='<div id="gPreview"></div>';
+  html+='<div class="gstatus"'+(inline?"":' id="gStatus"')+">"+(live?'<span class="dot" aria-hidden="true"></span>':"")+
     "<span>"+esc(st.detail||st.shortDetail||st.description||"")+"</span></div>";
 
   // ---- last play and down/distance ----
@@ -1810,7 +1795,7 @@ function renderGame(d){
   if(lastText && (live||done)){
     var dd=sit.downDistanceText||sit.shortDownDistanceText||"";
     var poss=pick(sit,["lastPlay","team","abbreviation"],"")||"";
-    html+='<div class="lastplay" id="gLastPlay"><div class="k">'+(live?"LAST PLAY":"FINAL PLAY")+"</div>"+
+    html+='<div class="lastplay"'+(inline?"":' id="gLastPlay"')+'><div class="k">'+(live?"LAST PLAY":"FINAL PLAY")+"</div>"+
       '<div class="t">'+esc(lastText)+"</div>"+
       ((dd||poss)?'<div class="dd">'+esc([poss,dd].filter(Boolean).join(" · "))+"</div>":"")+
       "</div>";
@@ -1825,7 +1810,7 @@ function renderGame(d){
       var favIsHome=hp>=0.5;
       var fav=favIsHome?home:away;
       var pct=Math.round((favIsHome?hp:1-hp)*100);
-      html+='<div class="statrow" id="gWinProb"><span class="v">'+pct+'%</span>'+
+      html+='<div class="statrow"'+(inline?"":' id="gWinProb"')+'><span class="v">'+pct+'%</span>'+
         '<span class="lbl">win probability</span>'+
         '<span class="v r">'+esc(pick(fav,["team","abbreviation"],"")||"")+"</span></div>";
     }
@@ -1945,11 +1930,11 @@ function renderGame(d){
           '<button type="button" data-side="home" aria-pressed="'+(G.side==="home")+'">'+
             tag(lh)+'<span class="sub">home</span></button>'+
         "</div>"+
-        '<div id="ldr-away"'+(G.side==="away"?"":" hidden")+">"+ra+
+        '<div class="ldr-away"'+(inline?"":' id="ldr-away"')+(G.side==="away"?"":" hidden")+">"+ra+
           (boxA?'<details class="fold"><summary>Full box score<span class="count">'+
             esc(pick(away,["team","abbreviation"],"")||"")+'</span></summary>'+
             '<div class="foldbody">'+boxA+"</div></details>":"")+"</div>"+
-        '<div id="ldr-home"'+(G.side==="home"?"":" hidden")+">"+rh+
+        '<div class="ldr-home"'+(inline?"":' id="ldr-home"')+(G.side==="home"?"":" hidden")+">"+rh+
           (boxH?'<details class="fold"><summary>Full box score<span class="count">'+
             esc(pick(home,["team","abbreviation"],"")||"")+'</span></summary>'+
             '<div class="foldbody">'+boxH+"</div></details>":"")+"</div>";
@@ -2345,13 +2330,7 @@ function loadNews(){
 
 /* ---------- tabs: full keyboard support per ARIA practices ---------- */
 var tabs=[].slice.call(document.querySelectorAll('[role="tab"]'));
-function selectTab(tab, focusIt, fromNav){
-  // Tapping GAME in the nav should mean "take me to the current game". Only a
-  // tap on the Schedule pins a specific one.
-  if(fromNav && tab.id==="tab-game" && G.pinned){
-    G.pinned=null; G.side=null;
-    $("panel-game").dataset.loaded="";
-  }
+function selectTab(tab, focusIt){
   tabs.forEach(function(t){
     var on = t===tab;
     t.setAttribute("aria-selected",String(on));
@@ -2372,14 +2351,14 @@ function selectTab(tab, focusIt, fromNav){
   if(name==="news")   loadNews();
 }
 tabs.forEach(function(tab,i){
-  tab.addEventListener("click",function(){ selectTab(tab,false,true); });
+  tab.addEventListener("click",function(){ selectTab(tab,false); });
   tab.addEventListener("keydown",function(e){
     var n=null;
     if(e.key==="ArrowRight") n=tabs[(i+1)%tabs.length];
     else if(e.key==="ArrowLeft") n=tabs[(i-1+tabs.length)%tabs.length];
     else if(e.key==="Home") n=tabs[0];
     else if(e.key==="End") n=tabs[tabs.length-1];
-    if(n){ e.preventDefault(); selectTab(n,true,true); }
+    if(n){ e.preventDefault(); selectTab(n,true); }
   });
 });
 
@@ -2540,14 +2519,46 @@ function refreshSchedule(first){
   });
 }
 
-// Tapping a game on the Schedule tab opens it in the game view.
+// Tapping a game on the Schedule expands it in place. It does not navigate —
+// the Game tab is for the upcoming game, past results belong here.
+var DETAIL={ open:null, seq:0 };
+
+function closeDetail(){
+  var d=$("panel-schedule").querySelector("li.gamedetail");
+  if(d) d.remove();
+  $("panel-schedule").querySelectorAll('.row.tappable[aria-expanded="true"]')
+    .forEach(function(r){ r.setAttribute("aria-expanded","false"); });
+  DETAIL.open=null;
+  DETAIL.seq++;                       // invalidate anything still in flight
+}
+
 function openGame(id){
   if(!id) return;
-  G.pinned=id;
-  G.side=null;                       // let it default to Notre Dame again
-  $("panel-game").dataset.loaded="";
-  var tab=$("tab-game");
-  if(tab) selectTab(tab,false,false); else loadGame(true);
+  var panel=$("panel-schedule");
+  var li=panel.querySelector('.row.tappable[data-ev="'+id+'"]');
+  if(!li) return;
+  if(DETAIL.open===id){ closeDetail(); return; }   // second tap closes
+  closeDetail();
+  DETAIL.open=id;
+  li.setAttribute("aria-expanded","true");
+
+  var slot=document.createElement("li");
+  slot.className="gamedetail";
+  slot.innerHTML='<p class="loading">Loading the game\u2026</p>';
+  li.parentNode.insertBefore(slot, li.nextSibling);
+
+  var token=++DETAIL.seq;
+  G.side=null;                        // default the leaders toggle to Notre Dame
+  get(ESPN+"/summary?event="+id).then(function(d){
+    if(token!==DETAIL.seq || DETAIL.open!==id) return;
+    slot.innerHTML=renderGame(d, true);
+    wireLeaderSwitch(slot);
+    slot.scrollIntoView({block:"nearest"});
+  }).catch(function(){
+    if(token!==DETAIL.seq || DETAIL.open!==id) return;
+    slot.innerHTML='<p class="msg"><strong>Couldn\u2019t load that game.</strong>'+
+      "ESPN didn\u2019t return a summary for it.</p>";
+  });
 }
 $("panel-schedule").addEventListener("click", function(e){
   var li=e.target.closest(".row.tappable[data-ev]");
