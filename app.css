@@ -464,7 +464,7 @@ footer{opacity:.92}
 .strip .cell:first-child{border-top:2px solid var(--gold)}
 #panel-schedule:before,#panel-around:before,#panel-game:before,#panel-depth:before,#panel-news:before{display:block;margin:.9rem 0 .35rem;font-family:'Barlow Condensed',sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#8093A8}
 #panel-schedule:before{content:"THE SEASON"}
-#panel-around:before{content:"AROUND THE IRISH"}
+#panel-around:before{content:"TOP 25 THIS WEEK"}
 #panel-game:before{content:"GAME CENTER"}
 #panel-depth:before{content:"DEPTH CHART"}
 #panel-news:before{content:"LATEST FROM SOUTH BEND"}

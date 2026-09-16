@@ -646,7 +646,7 @@ function patchRanked(sb){
 function loadAround(){
   var el=$("panel-around");
   if(el.dataset.loaded) return;
-  if(!LAST_HTML[el.id]) el.innerHTML='<p class="loading">Loading rankings and ranked games\u2026</p>';
+  if(!LAST_HTML[el.id]) el.innerHTML='<p class="loading">Loading this week\u2019s Top 25 games\u2026</p>';
   var gameCount=0;
 
   cachedThenFresh(el,
@@ -2112,7 +2112,8 @@ document.addEventListener("visibilitychange", function(){
 });
 
 function load(){
-  $("panel-schedule").innerHTML='<p class="loading">Loading the schedule…</p>';
+  // only an empty page shows the placeholder; a refresh keeps what is there
+  if(!S.games) $("panel-schedule").innerHTML='<p class="loading">Loading the schedule…</p>';
   S.stale=null;                        // a fresh load starts optimistic
 
   get(ESPN+"/teams/"+TEAM).then(function(d){
@@ -2175,6 +2176,7 @@ function cachedThenFresh(el, urls, fresh, build, wire){
 // team info, odds or anything else that does not change during a game.
 function refreshSchedule(first){
   var url=ESPN+"/teams/"+TEAM+"/schedule";
+  var announce=first && !S.games;      // only the very first paint is news
 
   // Everything that turns a schedule payload into pixels. Runs twice on a
   // repeat visit: once from the worker's cache the instant the page opens,
@@ -2200,7 +2202,7 @@ function refreshSchedule(first){
   return get(url).then(function(d){
     var games=apply(d);
     if(G.pending) loadGame(true);        // the Game tab was waiting on this
-    if(first) say("Schedule loaded, "+games.length+" games."+
+    if(announce) say("Schedule loaded, "+games.length+" games."+
       (S.next?" Next game is "+(S.next.home?"versus ":"at ")+S.next.oppName+".":""));
     startAuto();
     if(first){
@@ -2355,11 +2357,15 @@ $("panel-schedule").addEventListener("keydown", function(e){
 $("btnTitle").addEventListener("click", function(){ toggleBoard("title"); });
 $("btnPlayoff").addEventListener("click", function(){ toggleBoard("playoff"); });
 
-$("refresh").addEventListener("click",function(){
+// Everything the Refresh button does. Also run on its own when the page has
+// been out of sight for a while, so a tab left open all afternoon is current
+// the moment it is looked at again. Tabs skip identical repaints, so a
+// silent refresh that finds nothing new changes nothing on screen.
+function refreshAll(silent){
   ["around","depth","news"].forEach(function(n){ $("panel-"+n).dataset.loaded=""; });
   if(BOARD.open) loadBoard(BOARD.open);
   $("panel-game").dataset.loaded="";
-  say("Refreshing…");
+  if(!silent) say("Refreshing…");
   load();
   var cur=tabs.filter(function(t){return t.getAttribute("aria-selected")==="true";})[0];
   var name=cur.id.replace("tab-","");
@@ -2367,7 +2373,23 @@ $("refresh").addEventListener("click",function(){
   if(name==="around") loadAround();
   if(name==="depth")  loadDepth();
   if(name==="news")   loadNews();
+  FRESH.at=Date.now();
+}
+$("refresh").addEventListener("click", function(){ refreshAll(false); });
+
+// How long data may sit before a silent refresh: on return to a tab that was
+// hidden this long, and on a timer while it stays visible.
+var FRESH={ at:Date.now(), hiddenAt:null, afterHidden:10*60e3, whileVisible:30*60e3 };
+document.addEventListener("visibilitychange", function(){
+  if(document.hidden){ FRESH.hiddenAt=Date.now(); return; }
+  var away=FRESH.hiddenAt ? Date.now()-FRESH.hiddenAt : 0;
+  FRESH.hiddenAt=null;
+  if(away>FRESH.afterHidden || Date.now()-FRESH.at>FRESH.whileVisible) refreshAll(true);
 });
+setInterval(function(){
+  if(document.hidden || somethingLive()) return;   // the live poller is already refreshing
+  if(Date.now()-FRESH.at>FRESH.whileVisible) refreshAll(true);
+}, 60e3);
 
 load();
 })();
