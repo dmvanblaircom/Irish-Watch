@@ -36,7 +36,7 @@ body{font-family:'Barlow',system-ui,-apple-system,sans-serif;font-size:1rem;line
 /* .page once used overflow:hidden to clip its decorative circle, but that makes
    it a scroll container and position:sticky then has nothing to stick to.
    overflow:clip clips without creating one. */
-.page{position:relative;isolation:isolate;min-height:100dvh;padding-top:0;padding-bottom:calc(5.2rem + env(safe-area-inset-bottom, 0px));overflow:visible;overflow-x:clip;background:transparent !important}
+.page{position:relative;isolation:isolate;min-height:100dvh;padding-top:0;padding-bottom:calc(8rem + env(safe-area-inset-bottom, 0px));overflow:visible;overflow-x:clip;background:transparent !important}
 /* Gutters carry the responsive step AND the iOS notch inset together, in one
    calc(), so no later rule can drop one without the other. */
 .wrap{
@@ -455,8 +455,10 @@ a.art:hover{background:rgba(18,52,90,.72);border-color:var(--gold-line);transfor
 #oddsboard{margin-top:.4rem}
 main{position:relative}
 .hero.live .when::before{content:"";display:inline-block;width:.42rem;height:.42rem;margin-right:.42rem;vertical-align:.08em;border-radius:50%;background:#FF7A70;box-shadow:0 0 0 .22rem rgba(255,122,112,.12)}
-.tabbar button#tab-game{position:relative;z-index:2;justify-self:center;align-self:end;width:4.2rem;height:4.2rem;min-height:4.2rem;padding:0;border-radius:50%;background:rgba(6,21,37,.96);border:1px solid rgba(255,205,0,.42);box-shadow:0 8px 20px rgba(0,0,0,.28),0 0 0 4px rgba(12,35,64,.9);transform:translateY(-.9rem)}
-.tabbar button#tab-game svg{width:27px;height:27px;stroke-width:1.7}
+/* The Game circle is the focal point of the whole app: half again the size of
+   a normal tab, rising well clear of the bar. .page reserves room for it. */
+.tabbar button#tab-game{position:relative;z-index:2;justify-self:center;align-self:end;width:6.3rem;height:6.3rem;min-height:6.3rem;padding:0;border-radius:50%;background:rgba(6,21,37,.96);border:1.5px solid rgba(255,205,0,.5);box-shadow:0 10px 26px rgba(0,0,0,.34),0 0 0 5px rgba(12,35,64,.92);transform:translateY(-1.5rem)}
+.tabbar button#tab-game svg{width:40px;height:40px;stroke-width:1.6}
 .seg button:hover:not([aria-selected="true"]){background:rgba(201,151,0,.08)}
 footer{opacity:.92}
 .hero:after{content:"";position:absolute;inset:auto 0 0 0;height:3px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
@@ -476,14 +478,14 @@ details.fold>summary{padding:.75rem .9rem;background:rgba(12,35,64,.5);font-weig
 .seg button[aria-pressed="true"],.seg button[aria-selected="true"]{background:var(--gold-bright) !important;color:#07192F !important}
 #gWinProb{margin:.7rem 0;border:1px solid var(--line);border-radius:8px;padding:.8rem 1rem;background:rgba(12,35,64,.5)}
 #panel-news>ul.plain{display:grid;grid-template-columns:1fr;gap:.45rem}
-.tabbar button#tab-game span{font-size:.62rem;letter-spacing:.06em;text-transform:uppercase}
-.tabbar button#tab-game[aria-selected="true"]{color:#07192F;background:var(--gold-bright);border-color:var(--gold-bright);box-shadow:0 8px 20px rgba(0,0,0,.28),0 0 0 4px rgba(12,35,64,.92)}
-.tabbar button#tab-game:after{content:"";position:absolute;left:50%;width:.45rem;height:.45rem;border-radius:50%;transform:translateX(-50%);background:#55C98A;box-shadow:0 0 0 .2rem rgba(85,201,138,.12);opacity:0;top:-.48rem}
+.tabbar button#tab-game span{font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;margin-top:.1rem}
+.tabbar button#tab-game[aria-selected="true"]{color:#07192F;background:var(--gold-bright);border-color:var(--gold-bright);box-shadow:0 10px 26px rgba(0,0,0,.34),0 0 0 5px rgba(12,35,64,.92)}
+.tabbar button#tab-game:after{content:"";position:absolute;left:50%;width:.45rem;height:.45rem;border-radius:50%;transform:translateX(-50%);background:#55C98A;box-shadow:0 0 0 .2rem rgba(85,201,138,.12);opacity:0;top:-.55rem}
 .tabbar button#tab-game.live:after{opacity:1}
 .brand-group{display:flex;align-items:center;gap:.65rem;min-width:0}
 .brand-group .brand-kicker,.brand-group h1{white-space:nowrap}
 .tabbar button[role="tab"]:not(#tab-game):hover svg{transform:none}
-.tabbar button#tab-game[aria-selected="true"] svg{stroke-width:1.8}
+.tabbar button#tab-game[aria-selected="true"] svg{stroke-width:1.75}
 
 /* ====================================================================
    RESPONSIVE - widest first, so a narrower block always wins
@@ -501,8 +503,8 @@ details.fold>summary{padding:.75rem .9rem;background:rgba(12,35,64,.5);font-weig
   #panel-news>ul.plain{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (max-width:760px){
-  .tabbar button#tab-game{width:4rem;height:4rem;min-height:4rem;border-radius:50%;transform:translateY(-.72rem)}
-  .tabbar button#tab-game svg{width:26px;height:26px}
+  .tabbar button#tab-game{width:5.9rem;height:5.9rem;min-height:5.9rem;border-radius:50%;transform:translateY(-1.3rem)}
+  .tabbar button#tab-game svg{width:37px;height:37px}
 }
 @media (max-width:32rem){
   :root{--gutter:.8rem}
@@ -522,8 +524,8 @@ details.fold>summary{padding:.75rem .9rem;background:rgba(12,35,64,.5);font-weig
   .strip{gap:.4rem}
   a.art img{width:4.6rem;height:3.25rem}
   .brand-group{gap:.55rem}
-  .tabbar button#tab-game{width:4rem;height:4rem;min-height:4rem;border-radius:50%;transform:translateY(-.42rem)}
-  .tabbar button#tab-game svg{width:27px;height:27px}
+  .tabbar button#tab-game{width:5.9rem;height:5.9rem;min-height:5.9rem;border-radius:50%;transform:translateY(-1.2rem)}
+  .tabbar button#tab-game svg{width:37px;height:37px}
 }
 @media (max-width:22rem){
   .motto{font-size:2.6rem;line-height:1.05}
@@ -539,7 +541,7 @@ details.fold>summary{padding:.75rem .9rem;background:rgba(12,35,64,.5);font-weig
   #refresh.polling::before{animation:none}
   .strip .cell::after{transition:none}
   a.art{transition:none}
-  .tabbar button#tab-game{transform:translateY(-.2rem)}
+  .tabbar button#tab-game{transform:translateY(-.9rem)}
   .tabbar button[role="tab"] svg{transition:none}
   .row.tappable::after{transition:none}
 }
