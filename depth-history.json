@@ -2236,22 +2236,94 @@
     }
    ],
    "availability": {
-    "questionable": [],
-    "out": []
+    "questionable": [
+     {
+      "no": "27",
+      "pos": "LB",
+      "name": "Kyngstonn Viliamu-Asa",
+      "detail": "Left Knee",
+      "weeks": 0
+     }
+    ],
+    "out": [
+     {
+      "no": "58",
+      "pos": "OL",
+      "name": "Matty Augustine",
+      "detail": "Right Foot",
+      "weeks": 3
+     },
+     {
+      "no": "6",
+      "pos": "DL",
+      "name": "Christopher Burgess Jr.",
+      "detail": "Left Tibia",
+      "weeks": 3
+     },
+     {
+      "no": "55",
+      "pos": "DL",
+      "name": "Tiki Hola",
+      "detail": "Right Knee",
+      "weeks": 3
+     },
+     {
+      "no": "56",
+      "pos": "OL",
+      "name": "Charles Jagusah",
+      "detail": "Left Humerus",
+      "weeks": 3
+     },
+     {
+      "no": "9",
+      "pos": "S",
+      "name": "Brauntae Johnson",
+      "detail": "Left Foot",
+      "weeks": 2
+     },
+     {
+      "no": "16",
+      "pos": "LB",
+      "name": "Ko\u2019o Kia",
+      "detail": "Left Shoulder",
+      "weeks": 3
+     },
+     {
+      "no": "47",
+      "pos": "DL",
+      "name": "Jason Onye",
+      "detail": "Left Ankle",
+      "weeks": 2
+     },
+     {
+      "no": "0",
+      "pos": "WR",
+      "name": "Quincy Porter",
+      "detail": "Left Knee",
+      "weeks": 3
+     },
+     {
+      "no": "26",
+      "pos": "DB",
+      "name": "Chaz Smith",
+      "detail": "Right Wrist",
+      "weeks": 3
+     },
+     {
+      "no": "55",
+      "pos": "OL",
+      "name": "Chris Terek",
+      "detail": "Right Knee",
+      "weeks": 3
+     }
+    ],
+    "reported": false,
+    "carried_from": "2026-09-08",
+    "carried_source": "https://www.uhnd.com/football/2026/09/08/notre-dame-football-week-2-depth-chart-2026-rice"
    },
    "date": "2026-09-14",
    "changes": [
-    "Matt Jeffery moves from WR to HLD",
-    "Brauntae Johnson no longer listed out",
-    "Charles Jagusah no longer listed out",
-    "Chaz Smith no longer listed out",
-    "Chris Terek no longer listed out",
-    "Christopher Burgess Jr. no longer listed out",
-    "Jason Onye no longer listed out",
-    "Ko\u2019o Kia no longer listed out",
-    "Matty Augustine no longer listed out",
-    "Quincy Porter no longer listed out",
-    "Tiki Hola no longer listed out"
+    "Matt Jeffery moves from WR to HLD"
    ]
   }
  ]

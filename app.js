@@ -948,50 +948,20 @@ function loadDepth(){
     var d=res[0]; if(!d) return "";
     var html="", av=d.availability||{out:[],questionable:[]};
     outCount=av.out.length;
+    var mmdd=function(iso){ return esc((iso||"").replace(/^\d{4}-/,"").replace("-","/")); };
+    var srcLink=function(url, label){
+      return '<a href="'+esc(url||"#")+'" target="_blank" rel="noopener">'+esc(label)+
+        '<span class="sr-only"> (opens in a new tab)</span></a>';
+    };
 
-    if(av.out.length||av.questionable.length){
-      html+='<h2 class="sec">Availability</h2>'+
-        '<p class="asof">Notre Dame\u2019s official report, released '+
-        esc((d.date||"").replace(/^\d{4}-/,"").replace("-","/"))+
-        '. Beat writers often update it later in the week \u2014 anything newer is flagged below.</p>';
-      [["Out",av.out],["Questionable",av.questionable]].forEach(function(pair){
-        if(!pair[1].length) return;
-        html+='<h3 class="depth-pos"><b>'+pair[0]+" ("+pair[1].length+')</b></h3><ul class="plain avail">';
-        pair[1].forEach(function(p){
-          html+="<li><span class=\"who\">"+
-            (p.pos?'<span class="pos">'+esc(p.pos)+"</span>":"")+esc(p.name)+"</span>"+
-            (p.detail?'<span class="part">'+esc(p.detail)+"</span>":"")+
-            (p.weeks>1?'<span class="weeks">wk '+p.weeks+"</span>":"")+
-            ((p.newer||[]).length
-              ? '<span class="newer"><b>Newer reporting</b> \u00B7 '+
-                p.newer.map(function(n){
-                  return '<a href="'+esc(n.link)+'" target="_blank" rel="noopener">'+
-                    esc(n.source)+", "+esc((n.published||"").slice(5,10).replace("-","/"))+
-                    '<span class="sr-only"> — '+esc(n.title)+' (opens in a new tab)</span></a>';
-                }).join(" · ")+
-                ". This page doesn\u2019t pick a winner \u2014 read it and decide.</span>"
-              : "")+"</li>";
-        });
-        html+="</ul>";
-      });
+    // ---- 1. the two-deep, offense open, the rest folded ----
+    var groupNames=Object.keys(d.groups||{});
+    if(groupNames.length){
+      html+='<h2 class="sec">Depth chart</h2>'+
+        '<p class="asof">Week of '+mmdd(d.date)+', from '+srcLink(d.source, d.title||"UHND")+
+        '. Notre Dame publishes a new two-deep most Tuesdays.</p>';
     }
-
-    if((d.battles||[]).length){
-      html+='<h2 class="sec">Jobs still open</h2><ul class="plain avail">';
-      d.battles.forEach(function(b){
-        html+="<li><span class=\"who\"><span class=\"pos\">"+esc(b.pos)+"</span>"+
-          esc(b.names.join("  /  "))+"</span></li>";
-      });
-      html+="</ul>";
-    }
-
-    if((d.changes||[]).length){
-      html+='<h2 class="sec">Since last week</h2><ul class="chg">';
-      d.changes.forEach(function(c){ html+="<li>"+esc(c)+"</li>"; });
-      html+="</ul>";
-    }
-
-    Object.keys(d.groups||{}).forEach(function(label){
+    groupNames.forEach(function(label, gi){
       var body="", posCount=0;
       var rows=d.groups[label], i=0;
       while(i<rows.length){
@@ -1012,15 +982,67 @@ function loadDepth(){
         body+="</ul>";
       }
       // Ninety depth rows in one scroll is unusable on a phone.
-      html+='<details class="fold"><summary>'+esc(label)+
+      html+='<details class="fold"'+(gi===0?" open":"")+'><summary>'+esc(label)+
         ' <span class="count">'+posCount+" positions</span></summary>"+
         '<div class="foldbody">'+body+"</div></details>";
     });
 
-    if(!html) return '<p class="msg">The depth chart file is empty.</p>';
-    html+='<p class="stamp">From <a href="'+esc(d.source||"#")+'" target="_blank" rel="noopener">'+
-      esc(d.title||"UHND")+'<span class="sr-only"> (opens in a new tab)</span></a>. '+
-      'Notre Dame publishes a new two-deep most Tuesdays.</p>';
+    // ---- 2. job battles, folded ----
+    if((d.battles||[]).length){
+      html+='<details class="fold"><summary>Jobs still open'+
+        '<span class="count">'+d.battles.length+'</span></summary><div class="foldbody"><ul class="plain avail">';
+      d.battles.forEach(function(b){
+        html+="<li><span class=\"who\"><span class=\"pos\">"+esc(b.pos)+"</span>"+
+          esc(b.names.join("  /  "))+"</span></li>";
+      });
+      html+="</ul></div></details>";
+    }
+
+    // ---- 3. the injury report: this week's list, then week by week ----
+    html+='<h2 class="sec">Injury report</h2>';
+    if(av.carried_from){
+      // UHND posted the chart without ND's availability report. The Action
+      // carries the last one forward rather than pretending everyone is fit.
+      html+='<p class="asof">No availability report was published with the '+mmdd(d.date)+
+        ' chart ('+srcLink(d.source,"see the article")+'), so this is Notre Dame\u2019s '+
+        mmdd(av.carried_from)+' report, from '+srcLink(av.carried_source,"UHND")+
+        '. Beat writers often update it later in the week \u2014 anything newer is flagged below.</p>';
+    } else {
+      html+='<p class="asof">Notre Dame\u2019s official report, released '+mmdd(d.date)+
+        ', from '+srcLink(d.source,"UHND")+
+        '. Beat writers often update it later in the week \u2014 anything newer is flagged below.</p>';
+    }
+    if(av.out.length||av.questionable.length){
+      [["Out",av.out],["Questionable",av.questionable]].forEach(function(pair){
+        if(!pair[1].length) return;
+        html+='<h3 class="depth-pos"><b>'+pair[0]+" ("+pair[1].length+')</b></h3><ul class="plain avail">';
+        pair[1].forEach(function(p){
+          html+="<li><span class=\"who\">"+
+            (p.pos?'<span class="pos">'+esc(p.pos)+"</span>":"")+esc(p.name)+"</span>"+
+            (p.detail?'<span class="part">'+esc(p.detail)+"</span>":"")+
+            (p.weeks>1?'<span class="weeks">wk '+p.weeks+"</span>":"")+
+            ((p.newer||[]).length
+              ? '<span class="newer"><b>Newer reporting</b> \u00B7 '+
+                p.newer.map(function(n){
+                  return '<a href="'+esc(n.link)+'" target="_blank" rel="noopener">'+
+                    esc(n.source)+", "+esc((n.published||"").slice(5,10).replace("-","/"))+
+                    '<span class="sr-only"> — '+esc(n.title)+' (opens in a new tab)</span></a>';
+                }).join(" · ")+
+                ". This page doesn\u2019t pick a winner \u2014 read it and decide.</span>"
+              : "")+"</li>";
+        });
+        html+="</ul>";
+      });
+    } else {
+      html+='<p class="msg">Nobody is listed out or questionable.</p>';
+    }
+    // week-by-week history lands here once depth-history.json arrives
+    html+='<div id="depthHistory"></div>';
+
+    if(!groupNames.length && !av.out.length) return '<p class="msg">The depth chart file is empty.</p>';
+
+    // ---- 4. the full roster ----
+    html+='<h2 class="sec">Roster</h2>';
     html+='<details class="fold" id="rosterFold"><summary>Full roster'+
       '<span class="count">every player</span></summary>'+
       '<div class="foldbody" id="rosterBody"></div></details>';
@@ -1033,31 +1055,30 @@ function loadDepth(){
 function loadHistory(){
   get("depth-history.json?t="+Date.now()).then(function(d){
     var snaps=(d.snapshots||[]).slice().reverse();
-    if(snaps.length<2) return;
-    var html='<details class="fold"><summary>Week by week '+
-      '<span class="count">'+snaps.length+" charts</span></summary><div class=\"foldbody\">";
+    var slot=$("panel-depth").querySelector("#depthHistory");
+    if(!slot || snaps.length<2) return;
+    var html='<details class="fold" open><summary>Week by week '+
+      '<span class="count">'+snaps.length+" reports</span></summary><div class=\"foldbody\">";
     snaps.forEach(function(s,i){
-      var ch=s.changes||[];
-      var summary = i===snaps.length-1 ? "first chart of the season"
+      var av=s.availability||{}, ch=s.changes||[], mmdd=(s.date||"").slice(5).replace("-","/");
+      var outN=(av.out||[]).length, qN=(av.questionable||[]).length;
+      var status = av.carried_from
+        ? "no report published; "+esc(av.carried_from.slice(5).replace("-","/"))+" carried forward"
+        : outN+" out"+(qN?", "+qN+" questionable":"");
+      var moves = i===snaps.length-1 ? "first chart of the season"
         : (ch.length ? ch.length+(ch.length===1?" change":" changes") : "no changes");
-      html+='<details class="week"><summary><span class="wd">'+
-        esc((s.date||"").slice(5).replace("-","/"))+"</span>"+
-        '<span class="ws">'+esc(summary)+" · "+
-        ((s.availability&&s.availability.out)?s.availability.out.length:0)+" out</span></summary>";
+      html+='<details class="week"'+(i===0?" open":"")+'><summary><span class="wd">'+esc(mmdd)+"</span>"+
+        '<span class="ws">'+status+" · "+esc(moves)+"</span></summary>";
       html+= ch.length ? '<ul class="chg">'+ch.map(function(c){
                return "<li>"+esc(c)+"</li>"; }).join("")+"</ul>"
-             : '<p class="chg" style="color:var(--dim)">Nothing moved.</p>';
+             : '<p class="chg" style="color:var(--dim)">Nothing moved on the two-deep.</p>';
+      html+='<p class="weeksrc">Source: <a href="'+esc(s.source||"#")+
+        '" target="_blank" rel="noopener">'+esc(s.title||"UHND")+
+        '<span class="sr-only"> (opens in a new tab)</span></a></p>';
       html+="</details>";
     });
     html+="</div></details>";
-    var panel=$("panel-depth"), stamp=panel.querySelector(".stamp");
-    if(!stamp) return;                   // the tab was repainted underneath us
-    var old=panel.querySelector("#depthHistory");
-    if(old) old.remove();                // never two copies, whichever paint we ran from
-    var el=document.createElement("div");
-    el.id="depthHistory";
-    el.innerHTML=html;
-    panel.insertBefore(el, stamp);
+    slot.innerHTML=html;                 // one slot, so never two copies
   }).catch(function(){ /* history is a bonus; silence is fine */ });
 }
 

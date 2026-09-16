@@ -205,7 +205,7 @@ jobs:
           pip install --quiet beautifulsoup4
           python3 - <<'PY'
           """Parse UHND's weekly Notre Dame depth chart + availability update."""
-          import json, re, sys, urllib.request
+          import copy, json, re, sys, urllib.request
           from datetime import datetime, timezone
           from bs4 import BeautifulSoup
 
@@ -279,14 +279,18 @@ jobs:
               return rows
 
           def parse_availability(soup):
-              """Find the AVAILABILITY heading, then read each status heading + list."""
-              out = {"questionable": [], "out": []}
+              """Find the AVAILABILITY heading, then read each status heading + list.
+              `reported` says whether the article carried a report at all: UHND's
+              Week 3 post had only an editor's placeholder where it belonged, and
+              an absent report must not be read as everyone healthy."""
+              out = {"questionable": [], "out": [], "reported": False}
               head = None
               for h in soup.find_all(re.compile("^h[1-6]$")):
                   if "availability" in h.get_text(" ", strip=True).lower():
                       head = h; break
               if head is None:
                   return out
+              out["reported"] = True
               bucket = None
               for el in head.find_all_next():
                   if el.name and re.match(r"^h[1-3]$", el.name) and el is not head:
@@ -442,6 +446,28 @@ jobs:
                   sys.exit("nothing parsed — refusing to write")
 
               history.sort(key=lambda h: h["date"])
+
+              # A chart posted without an availability report inherits the previous
+              # week's, and says so. Older snapshots on file predate the `reported`
+              # flag; for those, an empty report is taken to mean none was published.
+              # Runs over the whole history every time, so it is idempotent.
+              for i, snap in enumerate(history):
+                  av = snap.get("availability") or {}
+                  reported = av.get("reported", bool(av.get("out") or av.get("questionable")))
+                  if reported or i == 0:
+                      av.pop("carried_from", None); av.pop("carried_source", None)
+                      snap["availability"] = av
+                      continue
+                  prev = history[i - 1]["availability"]
+                  snap["availability"] = {
+                      "questionable": copy.deepcopy(prev.get("questionable", [])),
+                      "out": copy.deepcopy(prev.get("out", [])),
+                      "reported": False,
+                      "carried_from": history[i - 1]["date"],
+                      "carried_source": history[i - 1].get("source"),
+                  }
+                  print(f"  {snap['date']}: no availability report in the article; "
+                        f"carrying the {history[i - 1]['date']} report forward")
 
               # each snapshot carries its diff against the one before it
               for i, snap in enumerate(history):

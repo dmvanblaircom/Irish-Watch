@@ -248,7 +248,9 @@ details.week summary::-webkit-details-marker{display:none}
 details.week summary .wd{font-family:'Barlow Condensed',sans-serif;font-weight:700;width:4.2rem;flex:none;color:var(--gold-bright)}
 details.week summary .ws{flex:1;color:var(--dim);font-size:.88rem}
 details.week[open] summary .ws{color:var(--parch)}
-details.week .chg{padding:0 0 .6rem 1.6rem}
+details.week .chg{padding:0 0 .3rem 1.6rem}
+details.week .weeksrc{margin:0;padding:0 0 .7rem .6rem;font-size:.78rem;color:var(--dim)}
+details.week .weeksrc a{color:var(--gold-bright)}
 details.fold{border:1px solid var(--line);border-radius:9px;overflow:hidden;margin:.5rem 0}
 details.fold > summary{display:flex;align-items:baseline;gap:.5rem;cursor:pointer;padding:.7rem .15rem;min-height:2.75rem;box-sizing:border-box;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:1rem;letter-spacing:.04em;color:var(--parch)}
 details.fold > summary::-webkit-details-marker{display:none}
@@ -468,7 +470,7 @@ footer{opacity:.92}
 #panel-schedule:before{content:"THE SEASON"}
 #panel-around:before{content:"TOP 25 THIS WEEK"}
 #panel-game:before{content:"GAME CENTER"}
-#panel-depth:before{content:"DEPTH CHART"}
+#panel-depth:before{content:"PERSONNEL"}
 #panel-news:before{content:"LATEST FROM SOUTH BEND"}
 .row.next{margin:0;padding-left:.72rem;padding-right:.72rem;border:1px solid rgba(201,151,0,.28);border-left:4px solid var(--gold-bright);border-radius:9px;background:linear-gradient(90deg,rgba(201,151,0,.14),rgba(201,151,0,.035));box-shadow:inset 0 0 0 1px rgba(201,151,0,.1)}
 .row.next .team{color:#FFF7D6}
