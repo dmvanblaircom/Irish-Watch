@@ -63,6 +63,59 @@ jobs:
               print(f, "->", len(d["markets"]), "markets")
           PY
 
+      - name: Append Notre Dame's price to the season history
+        run: |
+          python3 - <<'PY'
+          import json, os, re
+          from datetime import datetime, timezone
+
+          # Same arithmetic as the page: midpoint of bid and ask, as a percentage.
+          def num(v):
+              try: return float(v)
+              except (TypeError, ValueError): return None
+          def price(m):
+              bd, ad = num(m.get("yes_bid_dollars")), num(m.get("yes_ask_dollars"))
+              if bd is not None and ad is not None and (bd or ad): return (bd + ad) / 2 * 100
+              ld = num(m.get("last_price_dollars"))
+              if ld: return ld * 100
+              b, a = num(m.get("yes_bid")), num(m.get("yes_ask"))
+              if b is not None and a is not None and (b or a): return (b + a) / 2
+              return num(m.get("last_price"))
+          def nd(f):
+              for m in json.load(open(f)).get("markets", []):
+                  name = " ".join(str(m.get(k, "")) for k in ("yes_sub_title", "subtitle", "title"))
+                  if re.search(r"-ND$", m.get("ticker", "")) or re.search(r"notre dame|fighting irish", name, re.I):
+                      p = price(m)
+                      return round(p, 1) if p is not None else None
+              return None
+
+          point = {"t": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ"),
+                   "title": nd("odds-title.json"), "playoff": nd("odds-playoff.json")}
+          if point["title"] is None and point["playoff"] is None:
+              print("  no Notre Dame market found; history unchanged"); raise SystemExit
+
+          hist = {"points": []}
+          if os.path.exists("odds-history.json"):
+              try: hist = json.load(open("odds-history.json"))
+              except Exception: pass
+          pts = [p for p in hist.get("points", []) if isinstance(p, dict) and p.get("t")]
+
+          # Twice an hour is 48 points a day of mostly the same number. Keep a
+          # point only when either market moved half a point, or six hours
+          # passed - enough to draw the season without bloating the file.
+          last = pts[-1] if pts else None
+          def moved(k):
+              return last is None or last.get(k) is None or point[k] is None or abs(last[k] - point[k]) >= 0.5
+          stale = last is None or (datetime.now(timezone.utc) -
+                  datetime.strptime(last["t"], "%Y-%m-%dT%H:%MZ").replace(tzinfo=timezone.utc)).total_seconds() > 6*3600
+          if moved("title") or moved("playoff") or stale:
+              pts.append(point); pts = pts[-600:]
+              json.dump({"updated": point["t"], "points": pts}, open("odds-history.json", "w"), indent=0)
+              print(f"  appended {point}; {len(pts)} points on file")
+          else:
+              print(f"  unchanged ({point['title']}% / {point['playoff']}%); history not touched")
+          PY
+
       - name: Pull Notre Dame beat writers
         continue-on-error: true      # a dead feed must never block the odds
         run: |
@@ -418,6 +471,6 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add odds-title.json odds-playoff.json news.json depth.json depth-history.json
+          git add odds-title.json odds-playoff.json odds-history.json news.json depth.json depth-history.json
           git diff --staged --quiet || git commit -m "Refresh Kalshi odds"
           git push

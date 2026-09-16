@@ -454,6 +454,11 @@ a.art:hover{background:rgba(18,52,90,.72);border-color:var(--gold-line);transfor
 .strip .cell .v{display:block;margin-top:.25rem;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.7rem;line-height:1.1;font-variant-numeric:tabular-nums;color:var(--gold-bright)}
 .strip .cell .v em{font-style:normal;font-size:.6em;font-weight:600;margin-left:.3rem}
 .strip .cell .v.pending{font-size:.95rem;font-weight:500;color:var(--dim);font-family:'Barlow',system-ui,-apple-system,sans-serif}
+/* season sparkline under the number, drawn once odds-history.json has two points */
+.strip .cell .spark{display:block;width:100%;height:1.35rem;margin-top:.4rem;overflow:visible}
+.strip .cell .spark path{fill:rgba(255,205,0,.12)}
+.strip .cell .spark polyline{fill:none;stroke:var(--gold-bright);stroke-width:1.6;
+  stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
 .strip .cell::after{content:"\25BE";position:absolute;top:.6rem;right:.7rem;transition:transform .15s ease}
 .strip .cell[aria-expanded="true"]::after{transform:rotate(180deg)}
 .hint{text-transform:uppercase;letter-spacing:.1em;font-size:.58rem;color:#71849A;text-align:right;margin:.4rem .2rem .8rem}
@@ -1506,6 +1511,40 @@ function loadStrip(){
       $(q.cell).textContent="Unavailable";
     });
   });
+  loadSparklines();
+}
+
+// The Action appends Notre Dame's price to odds-history.json whenever it
+// moves. Two points or more and each card gets the season drawn under the
+// number - the shape of the market, not just today's reading.
+function sparkline(vals){
+  var n=vals.length, W=100, H=24, PAD=2;
+  var lo=Math.min.apply(null,vals), hi=Math.max.apply(null,vals);
+  var span=(hi-lo)||1;
+  var pts=vals.map(function(v,i){
+    var x=n>1 ? (i/(n-1))*W : W;
+    var y=H-PAD-((v-lo)/span)*(H-PAD*2);
+    return x.toFixed(1)+","+y.toFixed(1);
+  });
+  return '<svg class="spark" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true">'+
+    '<path d="M0,'+H+' L'+pts.join(" L")+' L'+W+','+H+' Z"/>'+
+    '<polyline points="'+pts.join(" ")+'"/></svg>';
+}
+function loadSparklines(){
+  get("odds-history.json?t="+Date.now()).then(function(d){
+    var pts=(d.points||[]).filter(function(p){ return p&&p.t; });
+    [["title","btnTitle"],["playoff","btnPlayoff"]].forEach(function(pair){
+      var vals=pts.map(function(p){ return p[pair[0]]; }).filter(function(v){ return typeof v==="number"; });
+      var cell=$(pair[1]);
+      var old=cell.querySelector(".spark, .sparknote"); if(old) old.remove();
+      if(vals.length<2) return;
+      var lo=Math.min.apply(null,vals), hi=Math.max.apply(null,vals);
+      var first=pts.filter(function(p){ return typeof p[pair[0]]==="number"; })[0];
+      cell.insertAdjacentHTML("beforeend", sparkline(vals)+
+        '<span class="sr-only sparknote">Season range '+lo.toFixed(0)+' to '+hi.toFixed(0)+
+        ' percent since '+esc(first.t.slice(0,10))+'.</span>');
+    });
+  }).catch(function(){ /* no history yet; the number alone is fine */ });
 }
 
 /* ---------- depth chart and availability ---------- */
