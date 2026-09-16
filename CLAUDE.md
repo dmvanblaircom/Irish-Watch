@@ -29,10 +29,21 @@ The existing app is a strong foundation. Do not rewrite it from scratch.
 
 Before making architectural changes:
 1. Read this file and the Project LND docs.
-2. Inspect the current data flow and identify where external provider schemas enter the application.
-3. Identify Notre Dame-specific assumptions.
-4. Separate reusable domain behavior from TeamOS concerns and Suite concerns.
-5. Preserve existing behavior unless the task explicitly changes product behavior.
+2. Read `docs/09_AI_OPERATING_SYSTEM.md` for the collaboration model.
+3. Inspect the current data flow and identify where external provider schemas enter the application.
+4. Identify Notre Dame-specific assumptions.
+5. Separate reusable domain behavior from TeamOS concerns and Suite concerns.
+6. Preserve existing behavior unless the task explicitly changes product behavior.
+
+For meaningful feature work:
+1. Read the approved product brief in `docs/product/`.
+2. Read the engineering handoff in `docs/engineering/` when one exists.
+3. Inspect before editing.
+4. Implement the smallest safe change.
+5. Run relevant checks.
+6. Report changes, validation, risks, and unresolved decisions.
+
+If implementation requires a product decision, materially expands scope, or conflicts with an established architecture decision, stop and ask rather than guessing.
 
 Run the existing checks after changes:
 - `node --check app.js`
@@ -59,6 +70,30 @@ Run the existing checks after changes:
 Do not introduce React, Next.js, a database, microservices, authentication, or a dedicated backend solely for architectural purity. Introduce them only when a concrete product requirement makes them necessary.
 
 The initial TeamOS can be a domain layer inside the existing application/repository. The goal is to establish clean boundaries first, not to create infrastructure for its own sake.
+
+## Collaboration Boundaries
+
+### David
+
+David is the Product Owner and final decision maker for product direction, scope, and meaningful architecture tradeoffs.
+
+### ChatGPT
+
+ChatGPT is the Product, UX, and Architecture Partner. It helps define product requirements, user experience, domain models, acceptance criteria, and architecture direction. It should not silently prescribe implementation details when multiple valid approaches exist.
+
+### Claude Code
+
+Claude Code is the Engineering Partner. It owns repository inspection, implementation, refactoring, testing, debugging, and technical documentation. It should not silently invent product requirements or make unresolved product decisions.
+
+The repository is the shared source of truth. Decisions that matter after the current conversation belong in the repository rather than only in chat history.
+
+## Branch Strategy
+
+- `main` = stable Irish Watch product
+- `project-lnd-platform` = active Project LND platform development
+- `project-lnd-foundation` = architecture checkpoint / historical foundation branch
+
+Feature work should normally branch from `project-lnd-platform`. Do not modify `main` for platform development unless explicitly approved.
 
 ## Current Objective
 
