@@ -54,7 +54,7 @@
   </header>
 
   <!-- 2026 team motto -->
-  <p class="motto">Leave No Doubt</p>
+  <p class="motto" id="motto">Leave No Doubt</p>
 
   <!-- 4.1.3 — one polite region announces every load result -->
   <p class="sr-only" id="live" role="status" aria-live="polite"></p>
@@ -72,8 +72,10 @@
       <!-- aria-live off: a countdown that announced itself every 30s would be unusable -->
       <p class="clock" id="heroClock" aria-live="off"></p>
     </section>
+    <!-- the hero, folded to one line, on tabs where the full card is in the way -->
+    <button type="button" class="heromini" id="heroMini" hidden></button>
 
-    <div class="strip">
+    <div class="strip" id="strip">
       <button type="button" class="cell" id="btnTitle" aria-expanded="false" aria-controls="oddsboard">
         <span class="k">National title</span>
         <span class="v pending" id="mTitle">Loading…</span>

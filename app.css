@@ -135,6 +135,27 @@ details.fold > summary::after,
     linear-gradient(135deg,#7E2925 0%,#471817 62%,#241214 100%);border-color:rgba(255,122,112,.38)}
 .hero.live .when,.hero.live .venue{color:var(--live-fg-2)}
 .hero.live .clock{border-top-color:rgba(255,255,255,.4)}
+/* The hero folded to one line, for tabs where the full card is in the way.
+   A button: it opens the Game tab. */
+.heromini{
+  display:flex;align-items:center;gap:.7rem;width:100%;min-height:2.9rem;
+  margin:.85rem 0 .2rem;padding:.55rem .9rem;
+  font:inherit;color:var(--paper);text-align:left;cursor:pointer;
+  background:rgba(12,35,64,.6);border:1px solid var(--gold-line);border-radius:8px;
+  transition:border-color .16s ease,background .16s ease;
+}
+.heromini:hover{border-color:var(--gold);background:rgba(20,56,101,.5)}
+.heromini::after{content:"\25B8";flex:none;color:var(--gold);
+  font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.25rem;line-height:1}
+.heromini .mopp{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.1rem;
+  letter-spacing:.02em;text-transform:uppercase;white-space:nowrap}
+.heromini .mopp .vs{color:var(--gold);font-weight:600;font-size:.85em}
+.heromini .mwhen{flex:1;min-width:0;font-size:.86rem;color:#9FB0C4;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.heromini .mwhen .live-lbl{font-family:'Barlow Condensed',sans-serif;font-weight:700;
+  font-size:.74rem;letter-spacing:.09em;color:var(--live)}
+.heromini .mclock{flex:none;font-family:'Barlow Condensed',sans-serif;font-weight:700;
+  font-size:1.05rem;font-variant-numeric:tabular-nums;color:var(--gold)}
 
 /* ====================================================================
    MARKET STRIP AND ODDS BOARD
@@ -549,7 +570,7 @@ details.fold>summary{padding:.75rem .9rem;background:rgba(12,35,64,.5);font-weig
   details.fold > summary::after{transition:none}
   .gstatus .dot{animation:none}
   .row .live .lbl::before{animation:none}
-  .refresh,.row,[role="tab"],a.art{transition:none}
+  .refresh,.row,[role="tab"],a.art,.heromini{transition:none}
   #refresh.polling::before{animation:none}
   .strip .cell::after{transition:none}
   a.art{transition:none}

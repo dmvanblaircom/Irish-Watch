@@ -243,9 +243,48 @@ function normalize(ev){
 }
 
 /* ---------- hero ---------- */
+// What sits above the tab panels depends on the tab. Home gets the whole
+// game-day header. Game keeps the hero only while the next game is still
+// upcoming - once it kicks off the Game Center below already has the score.
+// Everywhere else the hero collapses to a one-line bar that taps through.
+var UI={ tab:"schedule" };
+function layoutForTab(){
+  var home = UI.tab==="schedule";
+  var g=S.next, pre=!!g && g.state!=="in";
+  var full = !!g && (home || (UI.tab==="game" && pre));
+  ["motto","strip","oddsHint","oddsboard"].forEach(function(id){
+    var el=$(id); if(!el) return;
+    if(id==="oddsboard"){ el.hidden = !home || !BOARD.open; return; }
+    el.hidden = !home || (id==="oddsHint" && !!BOARD.open);
+  });
+  $("hero").hidden = !full;
+  $("heroMini").hidden = full || !g;
+}
+function paintHeroMini(g){
+  var el=$("heroMini");
+  var prefix=g.neutral?"vs":(g.home?"vs":"at");
+  var opp=(g.oppRank?"#"+g.oppRank+" ":"")+g.oppName;
+  var when, clock;
+  if(g.state==="in"){
+    when='<span class="live-lbl">LIVE</span> '+esc(g.detail||"");
+    clock="ND "+(g.us||0)+"–"+(g.them||0);
+  } else {
+    when = g.timeSet
+      ? new Date(g.date).toLocaleDateString([],{weekday:"short"})+" "+fmtTime(g.date)+(g.net?" · "+esc(g.net):"")
+      : fmtDay(g.date)+" · time TBA";
+    clock="";                          // filled by the countdown tick
+  }
+  el.innerHTML='<span class="mopp"><span class="vs">'+prefix+"</span> "+esc(opp)+"</span>"+
+    '<span class="mwhen">'+when+"</span>"+
+    '<span class="mclock" id="heroMiniClock">'+esc(clock)+"</span>"+
+    '<span class="sr-only">. Open the Game tab</span>';
+}
+
 function paintHero(g){
-  var hero=$("hero"); hero.hidden=false;
+  var hero=$("hero");
   hero.classList.toggle("live", g.state==="in");
+  paintHeroMini(g);
+  layoutForTab();
   var prefix=g.neutral?"vs":(g.home?"vs":"at");
   var prefixWord=g.neutral?"versus":(g.home?"at home versus":"away at");
   $("heroOpp").innerHTML='<span class="sr-only">'+prefixWord+" </span>"+
@@ -286,11 +325,17 @@ function paintHero(g){
   if(!known){ $("heroClock").textContent=""; return; }
   function tickOnce(){
     var ms=new Date(g.date)-new Date();
-    if(ms<=0){ $("heroClock").textContent="Kickoff"; clearInterval(S.tick); return; }
+    var mini=$("heroMiniClock");
+    if(ms<=0){
+      $("heroClock").textContent="Kickoff"; if(mini) mini.textContent="Kickoff";
+      clearInterval(S.tick); return;
+    }
     var s=Math.floor(ms/1000), d=Math.floor(s/86400), h=Math.floor(s%86400/3600), m=Math.floor(s%3600/60);
     var full=(d?d+" days ":"")+h+" hours "+m+" minutes until kickoff";
     $("heroClock").innerHTML='<span class="sr-only">'+full+"</span>"+
       '<span aria-hidden="true">'+(d?d+"<small>d</small>":"")+h+"<small>h</small>"+m+"<small>m</small></span>";
+    // the bar has room for two units: days and hours, or hours and minutes
+    if(mini) mini.textContent = d ? d+"d "+h+"h" : h+"h "+m+"m";
   }
   tickOnce(); S.tick=setInterval(tickOnce,30000);
 }
@@ -2012,6 +2057,7 @@ function selectTab(tab, focusIt){
   // disorienting. Jump, do not animate — smooth scrolling here feels laggy.
   window.scrollTo(0,0);
   var name=tab.id.replace("tab-","");
+  UI.tab=name; layoutForTab();
   // Force a refresh on entry: the dataset guard would otherwise skip
   // schedulePoll and the tab would sit frozen after the first visit.
   if(name==="game")   loadGame(true);
@@ -2208,7 +2254,7 @@ function refreshSchedule(first){
     var live=games.filter(function(g){return g.state==="in";})[0];
     var up=games.filter(function(g){return g.state==="pre";})[0];
     S.next=live||up||null;
-    if(S.next) paintHero(S.next); else $("hero").hidden=true;
+    if(S.next) paintHero(S.next); else layoutForTab();   // no next game: nothing above the tabs
     paintSchedule(games);
     return games;
   }
@@ -2397,6 +2443,7 @@ function refreshAll(silent){
   FRESH.at=Date.now();
 }
 $("refresh").addEventListener("click", function(){ refreshAll(false); });
+$("heroMini").addEventListener("click", function(){ selectTab($("tab-game"), false); });
 
 // How long data may sit before a silent refresh: on return to a tab that was
 // hidden this long, and on a timer while it stays visible.
