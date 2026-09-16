@@ -1,0 +1,19 @@
+# Runs on every push that touches the front end. A red X here means a change
+# reintroduced the override-layer problem: a responsive rule that a later base
+# rule silently kills, or a property declared twice for the same selector.
+name: Check the stylesheet
+
+on:
+  push:
+    paths: ["app.css", "app.js", "sw.js", "index.html", "tools/csscheck.py"]
+  workflow_dispatch:
+
+jobs:
+  css:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dead and shadowed CSS
+        run: python3 tools/csscheck.py app.css
+      - name: JavaScript parses
+        run: node --check app.js && node --check sw.js
