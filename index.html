@@ -374,6 +374,14 @@ details.fold .foldbody{padding-bottom:.5rem}
 .plr .who{flex:1;min-width:0}
 .plr .meta{display:block;font-size:.78rem;color:var(--dim);margin-top:.05rem}
 .plr .cl{flex:none;font-size:.78rem;color:var(--dim);width:2.2rem;text-align:right}
+.filter{display:block;margin:.35rem 0 .5rem}
+.filter input{
+  width:100%;min-height:2.6rem;padding:.45rem .9rem;
+  font:inherit;font-size:.95rem;color:var(--paper);
+  background:rgba(12,35,64,.5);border:1px solid var(--line);border-radius:999px;
+}
+.filter input::placeholder{color:var(--dim)}
+.filter input:focus-visible{outline:3px solid var(--focus);outline-offset:1px;border-color:transparent}
 .stamp{font-size:.78rem;color:var(--dim);padding:.5rem .15rem 0}
 .stamp a{color:var(--leaf)}
 
@@ -719,7 +727,14 @@ function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){
   return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
 function fmtTime(iso){ return new Date(iso).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}); }
 function fmtDay(iso){ return new Date(iso).toLocaleDateString([],{weekday:"long",month:"long",day:"numeric"}); }
-function timeIsSet(iso){ var d=new Date(iso); return !(d.getUTCHours()===0&&d.getUTCMinutes()===0); }
+// ESPN flags a placeholder kickoff with timeValid:false and files it at
+// midnight Eastern, which is 04:00Z or 05:00Z - so a midnight-UTC check misses
+// it and would also misread a real 8pm ET kickoff. Trust the flag when it is
+// there; the heuristic is only a fallback for feeds that omit it.
+function timeIsSet(iso, comp){
+  if(comp && typeof comp.timeValid==="boolean") return comp.timeValid;
+  var d=new Date(iso); return !(d.getUTCHours()===0&&d.getUTCMinutes()===0);
+}
 function tzAbbr(){
   try{ var p=new Intl.DateTimeFormat([],{timeZoneName:"short"}).formatToParts(new Date());
     for(var i=0;i<p.length;i++) if(p[i].type==="timeZoneName") return p[i].value; }catch(e){}
@@ -833,7 +848,7 @@ function normalize(ev){
     if(String(id)===TEAM) us=c; else them=c; });
   var st=(comp.status&&comp.status.type)||(ev.status&&ev.status.type)||{};
   return {
-    id:ev.id, date:ev.date,
+    id:ev.id, date:ev.date, timeSet:timeIsSet(ev.date, comp),
     home: us?us.homeAway==="home":true,
     neutral: isNeutral(comp, us),
     oppName: them&&them.team?(them.team.shortDisplayName||them.team.displayName):"opponent to be announced",
@@ -880,7 +895,7 @@ function paintHero(g){
   }
   $("heroWhen").textContent="Next up \u00B7 "+
     (g.neutral?"neutral site":(g.home?"home game":"road game"));
-  var known=timeIsSet(g.date), line=fmtDay(g.date);
+  var known=g.timeSet, line=fmtDay(g.date);
   line += known ? " at "+fmtTime(g.date)+" "+tzAbbr() : ", kickoff time not announced";
   if(g.net) line += " on <b>"+esc(g.net)+"</b>";
   else if(known) line += ", network not announced";
@@ -908,55 +923,74 @@ function paintSchedule(games){
   if(!games.length){ el.innerHTML='<p class="msg">No games on the schedule yet.</p>'; return; }
   var nextId=S.next?S.next.id:null;
 
-  // Completed games pile up and push the next one off screen by November.
+  // Completed games pile up and push the next one off screen by November, so
+  // the older results fold away. The most recent result stays out: that is
+  // the box score people come back for during the week.
   var done=games.filter(function(g){return g.state==="post";});
   var rest=games.filter(function(g){return g.state!=="post";});
-  var w=done.filter(function(g){return g.won;}).length;
   var fold = done.length>=3;
+  var older = fold ? done.slice(0,-1) : [];
+  var shown = fold ? done.slice(-1).concat(rest) : games;
 
-  // This runs a second time once the betting line arrives. Remember whether the
-  // user had opened the fold, or the repaint snaps it shut under their thumb.
-  if(DETAIL.open){ DETAIL.open=null; DETAIL.seq++; }   // repaint drops the expansion
+  // This repaints on every live poll and again when the betting line arrives.
+  // Carry the open fold and any expanded box score across, or the repaint
+  // snaps them shut under the reader's thumb.
   var prev=el.querySelector("details.fold");
   var wasOpen=!!(prev&&prev.open);
+  var detail=el.querySelector("li.gamedetail");
 
   var html='<h2 class="sr-only">2026 Notre Dame schedule</h2>';
   if(fold){
-    html+='<details class="fold"'+(wasOpen?" open":"")+'><summary>Completed '+
-      '<span class="count">'+w+"\u2013"+(done.length-w)+"</span></summary>"+
-      '<div class="foldbody"><ul class="plain">'+done.map(row).join("")+"</ul></div></details>";
-    games=rest;
+    html+='<details class="fold"'+(wasOpen?" open":"")+'><summary>Earlier results '+
+      '<span class="count">'+older.length+" games</span></summary>"+
+      '<div class="foldbody"><ul class="plain">'+older.map(row).join("")+"</ul></div></details>";
   }
   html+='<ul class="plain">';
-  games.forEach(function(g){ html+=row(g); });
+  shown.forEach(function(g){ html+=row(g); });
   el.innerHTML=html+"</ul>";
+
+  if(detail && DETAIL.open){
+    var anchor=el.querySelector('.row.tappable[data-ev="'+DETAIL.open+'"]');
+    if(anchor){
+      anchor.setAttribute("aria-expanded","true");
+      anchor.parentNode.insertBefore(detail, anchor.nextSibling);
+    } else {
+      DETAIL.open=null; DETAIL.seq++;
+    }
+  }
   return;
 
   function row(g){
-    var html="", isDone=g.state==="post", right, srResult="";
+    var html="", isDone=g.state==="post", isLive=g.state==="in", right, label;
     if(isDone){
-      srResult=(g.won?"Won":"Lost")+" "+(g.us||0)+" to "+(g.them||0)+". ";
-      right='<span class="sr-only">'+srResult+"</span>"+
+      right='<span class="sr-only">'+(g.won?"Won":"Lost")+" "+(g.us||0)+" to "+(g.them||0)+". </span>"+
         '<span aria-hidden="true"><span class="score">'+(g.us||0)+"\u2013"+(g.them||0)+"</span>"+
         '<span class="wl '+(g.won?"w":"l")+'">'+(g.won?"WIN":"LOSS")+"</span></span>";
+      label="Show the box score for the "+esc(g.oppName)+" game";
+    } else if(isLive){
+      right='<span class="sr-only">Score: Notre Dame '+(g.us||0)+", "+esc(g.oppName)+" "+(g.them||0)+
+          ". "+esc(g.detail)+"</span>"+
+        '<span aria-hidden="true"><span class="score">'+(g.us||0)+"\u2013"+(g.them||0)+"</span></span>";
+      label="Show the live box score for the "+esc(g.oppName)+" game";
     } else {
       right = g.net
         ? '<span class="net"><span class="sr-only">Watch on </span>'+esc(g.net)+"</span>"
         : '<span class="net tbd">Network <abbr title="to be determined">TBD</abbr></span>';
+      label="Show details for the "+esc(g.oppName)+" game";
     }
-    var sub = isDone ? esc(g.venue||"")+(g.city&&g.neutral?", "+esc(g.city):"")
-      : (timeIsSet(g.date)?fmtTime(g.date)+" "+tzAbbr():"Kickoff time not announced")
+    var sub = (isDone||isLive) ? esc(g.venue||"")+(g.city&&g.neutral?", "+esc(g.city):"")
+      : (g.timeSet?fmtTime(g.date)+" "+tzAbbr():"Kickoff time not announced")
         + (g.odds&&g.odds.line?" \u00B7 line "+esc(g.odds.line):"")
         + (g.venue?" \u00B7 "+esc(g.venue):"");
     html+='<li class="row tappable '+(isDone?"past":"")+" "+(g.id===nextId?"next":"")+
       '" data-ev="'+esc(String(g.id))+'" role="button" tabindex="0" '+
-      'aria-expanded="false" '+
-      'aria-label="Show the box score for '+esc(g.oppName)+'">'+
+      'aria-expanded="false" aria-label="'+label+'">'+
       dateChip(g.date)+
       '<span class="mid"><span class="team">'+ venueTag(g) +
         (g.oppRank?'<span class="rk"><span class="sr-only">number </span>'+
           '<span aria-hidden="true">#</span>'+g.oppRank+"</span> ":"")+esc(g.oppName)+
       '</span><span class="sub">'+sub+"</span>"+
+      (isLive?'<span class="live"><span class="lbl">LIVE</span>'+esc(g.detail)+"</span>":"")+
       (g.series?'<span class="trophy">'+
         (isDone?(g.won?"Retained ":"Lost "):"Playing for ")+esc(g.series)+"</span>":"")+
       "</span>"+
@@ -1090,7 +1124,7 @@ function rankedParts(ev){
     if(bits) liveLine='<span class="live"><span class="lbl">LIVE</span>'+esc(bits.slice(0,150))+"</span>";
   }
   var sub=(st.state==="pre"
-      ? (timeIsSet(ev.date)?fmtTime(ev.date)+" "+tzAbbr():"Kickoff time not announced")
+      ? (timeIsSet(ev.date, comp)?fmtTime(ev.date)+" "+tzAbbr():"Kickoff time not announced")
       : (comp.venue?esc(comp.venue.fullName||""):""))
     +(st.state!=="pre"&&net?" \u00B7 "+esc(net):"")
     +(o&&o.line?" \u00B7 line "+esc(o.line):"")
@@ -1609,11 +1643,7 @@ function loadGame(force){
     } else {
       el.innerHTML=renderGame(d);
       wireLeaderSwitch(el);
-      var hc=pick(d,["header","competitions",0],{})||{};
-      var hcs=hc.competitors||[];
-      var hHome=hcs.filter(function(c){return c.homeAway==="home";})[0]||hcs[0]||{};
-      var hAway=hcs.filter(function(c){return c.homeAway==="away";})[0]||hcs[1]||{};
-      if(pick(hc,["status","type","state"],"")==="pre") loadPreview(hAway,hHome);
+      previewIfPre(d, el);
       el.dataset.shape=shape;
     }
     el.dataset.loaded=g.id;
@@ -1790,7 +1820,10 @@ function renderGame(d, inline){
   }
   html+=side(away)+side(home);
 
-  if(!live && !done && !inline) html+='<div id="gPreview"></div>';
+  // Pre-game: a slot the matchup preview fills in once both teams' season
+  // stats arrive. Present in both modes, so a tapped future game on the
+  // Schedule gets the same preview as the Game tab.
+  if(!live && !done) html+='<div class="gpreview"'+(inline?"":' id="gPreview"')+"></div>";
   html+='<div class="gstatus"'+(inline?"":' id="gStatus"')+">"+(live?'<span class="dot" aria-hidden="true"></span>':"")+
     "<span>"+esc(st.detail||st.shortDetail||st.description||"")+"</span></div>";
 
@@ -1959,15 +1992,16 @@ function renderGame(d, inline){
       return '<details class="fold box"'+(G.box?" open":"")+'><summary>Full box score'+
         '<span class="count">'+ab(c)+'</span></summary><div class="foldbody">'+tables+"</div></details>";
     };
-    if(inline){
+    if(inline && (boxA||boxH)){
       // Expanded from the Schedule: the box score IS the point of tapping, so it
       // leads and the tables are open. The leaders are its first rows anyway.
+      // Nothing at all before kickoff - the matchup preview covers that.
       html+='<h2 class="sec">Box score</h2>'+toggle+
         '<div class="ldr-away"'+(G.side==="away"?"":" hidden")+">"+
           (boxA||'<p class="msg">ESPN has no player stats for '+ab(away)+" yet.</p>")+"</div>"+
         '<div class="ldr-home"'+(G.side==="home"?"":" hidden")+">"+
           (boxH||'<p class="msg">ESPN has no player stats for '+ab(home)+" yet.</p>")+"</div>";
-    } else {
+    } else if(!inline){
       html+='<h2 class="sec">Leaders and box score</h2>'+toggle+
         '<div class="ldr-away" id="ldr-away"'+(G.side==="away"?"":" hidden")+">"+ra+fold(boxA,away)+"</div>"+
         '<div class="ldr-home" id="ldr-home"'+(G.side==="home"?"":" hidden")+">"+rh+fold(boxH,home)+"</div>";
@@ -2041,7 +2075,7 @@ function renderGame(d, inline){
 /* ---------- full roster ---------- */
 // ESPN's roster endpoint is CORS-open, so this stays client side like the
 // schedule. Fetched only when the fold is opened, then kept for the session.
-var ROSTER={ data:null, group:"all", loading:false };
+var ROSTER={ data:null, group:"all", q:"", loading:false };
 
 // ESPN labels its groups with raw camelCase keys like "specialTeam". Map the
 // ones college football actually uses; title-case anything unexpected.
@@ -2106,8 +2140,29 @@ function renderRoster(){
       }).join("")+"</div>";
   }
 
+  // A hundred-odd players is too many to scan. One box filters by anything
+  // you might know about a player: name, number, position or hometown.
+  html+='<label class="filter"><span class="sr-only">Filter the roster</span>'+
+    '<input type="search" id="rosterQ" autocomplete="off" spellcheck="false" '+
+    'placeholder="Name, number, position or hometown" value="'+esc(ROSTER.q||"")+'"></label>';
+  html+='<div id="rosterList">'+rosterList()+"</div>";
+  return html;
+}
+
+// Text of the roster list for the current group and filter. Re-rendered on
+// its own as you type, so the search box keeps focus.
+function rosterHaystack(p){
+  return [p.displayName||p.fullName||"", p.jersey, pick(p,["position","abbreviation"],""),
+    pick(p,["position","name"],""), pick(p,["birthPlace","city"],""), pick(p,["birthPlace","state"],"")]
+    .join(" ").toLowerCase();
+}
+function rosterList(){
+  var groups=ROSTER.data||[], all=[];
+  groups.forEach(function(g){ all=all.concat(g.items); });
   var show = ROSTER.group==="all" ? all
     : (groups.filter(function(g){return g.key===ROSTER.group;})[0]||{items:[]}).items;
+  var q=(ROSTER.q||"").trim().toLowerCase();
+  if(q) show=show.filter(function(p){ return rosterHaystack(p).indexOf(q)>-1; });
   show=show.slice().sort(function(x,y){
     var a=parseInt(x.jersey,10), b=parseInt(y.jersey,10);
     if(isNaN(a)&&isNaN(b)) return 0;
@@ -2115,8 +2170,11 @@ function renderRoster(){
     if(isNaN(b)) return -1;
     return a-b;
   });
-  html+='<ul class="plain">'+show.map(playerRow).join("")+"</ul>";
-  html+='<p class="stamp">'+show.length+' players \u00B7 numbers as listed by ESPN. '+
+  var html = show.length
+    ? '<ul class="plain">'+show.map(playerRow).join("")+"</ul>"
+    : '<p class="msg">No player matches \u201C'+esc(ROSTER.q)+'\u201D.</p>';
+  html+='<p class="stamp">'+show.length+' player'+(show.length===1?"":"s")+
+    (q?" matching":"")+' \u00B7 numbers as listed by ESPN. '+
     'Official roster at <a href="https://fightingirish.com/sports/football/roster" '+
     'target="_blank" rel="noopener">fightingirish.com'+
     '<span class="sr-only"> (opens in a new tab)</span></a>.</p>';
@@ -2140,6 +2198,11 @@ function wireRosterPills(box){
       box.innerHTML=renderRoster();
       wireRosterPills(box);
     });
+  });
+  var q=box.querySelector("#rosterQ");
+  if(q) q.addEventListener("input", function(){
+    ROSTER.q=q.value;
+    box.querySelector("#rosterList").innerHTML=rosterList();
   });
 }
 
@@ -2279,10 +2342,22 @@ function renderPreview(awayStats, homeStats, awayAb, homeAb){
     '<p class="stamp">Per-game figures and national ranks for the season to date.</p>';
 }
 
+// Kick off the preview for a summary payload that renderGame just painted into
+// `root`, if the game has not started.
+function previewIfPre(d, root){
+  var hc=pick(d,["header","competitions",0],{})||{};
+  if(pick(hc,["status","type","state"],"")!=="pre") return;
+  var cs=hc.competitors||[];
+  var home=cs.filter(function(c){return c.homeAway==="home";})[0]||cs[0]||{};
+  var away=cs.filter(function(c){return c.homeAway==="away";})[0]||cs[1]||{};
+  loadPreview(away, home, root);
+}
+
 // Pre-game only: once there is a box score, that is the more useful thing.
-function loadPreview(away, home){
-  var slot=$("panel-game").querySelector("#gPreview");
+function loadPreview(away, home, root){
+  var slot=(root||$("panel-game")).querySelector(".gpreview");
   if(!slot) return;
+  slot.innerHTML='<p class="loading">Loading the matchup…</p>';
   var aId=pick(away,["team","id"],""), hId=pick(home,["team","id"],"");
   Promise.all([teamSeasonStats(aId), teamSeasonStats(hId)]).then(function(r){
     var html=renderPreview(r[0], r[1],
@@ -2605,6 +2680,7 @@ function openGame(id){
     if(token!==DETAIL.seq || DETAIL.open!==id) return;
     slot.innerHTML=renderGame(d, true);
     wireLeaderSwitch(slot);
+    previewIfPre(d, slot);
     pinRow(li);                       // the render changed the page height
   }).catch(function(){
     if(token!==DETAIL.seq || DETAIL.open!==id) return;
