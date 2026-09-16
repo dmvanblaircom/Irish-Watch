@@ -13,13 +13,13 @@
    Bump VERSION whenever the shell changes shape enough that an old cached
    copy must not linger; the activate step throws away every other cache. */
 
-var VERSION = "iw-2026-09-16b";
+var VERSION = "iw-2026-09-16d";
 var SHELL   = VERSION + "-shell";
 var DATA    = VERSION + "-data";
 
 var SHELL_FILES = [
   "./", "./index.html", "./app.css", "./app.js", "./manifest.json",
-  "./irish-watch-favicon-32.png", "./irish-watch-favicon-64.png",
+  "./favicon.svg", "./irish-watch-favicon-32.png", "./irish-watch-favicon-64.png",
   "./irish-watch-icon-180.png", "./irish-watch-icon-192.png"
 ];
 
@@ -32,11 +32,20 @@ var DATA_FILES = [
   "./depth.json", "./depth-history.json", "./news.json"
 ];
 
+// Revalidate with the server rather than trusting the browser's HTTP cache:
+// GitHub Pages sends max-age=600, so a plain fetch here could seed a cache
+// with a ten-minute-old app.js and pin it for the life of this version.
+function fresh(req) {
+  return new Request(req, { cache: "no-cache" });
+}
+
 function addAll(cacheName, files) {
   return caches.open(cacheName).then(function (c) {
     // one missing file must not stop the install
     return Promise.all(files.map(function (f) {
-      return c.add(f).catch(function () {});
+      return fetch(fresh(f)).then(function (res) {
+        if (res && res.ok) return c.put(f, res);
+      }).catch(function () {});
     }));
   });
 }
@@ -62,7 +71,7 @@ function isShell(url) {
   if (url.origin === self.location.origin) {
     var p = url.pathname;
     return p.endsWith("/") || /\/index\.html$/.test(p) || /\/manifest\.json$/.test(p)
-        || /\.(css|js|png)$/.test(p);
+        || /\.(css|js|png|svg)$/.test(p);
   }
   return url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com";
 }
@@ -100,7 +109,7 @@ self.addEventListener("fetch", function (e) {
     e.respondWith(
       caches.open(SHELL).then(function (c) {
         return c.match(e.request, { ignoreSearch: true }).then(function (hit) {
-          var refresh = fetch(e.request).then(function (res) {
+          var refresh = fetch(fresh(e.request)).then(function (res) {
             if (res && res.ok) c.put(e.request, res.clone());
             return res;
           }).catch(function () { return hit; });

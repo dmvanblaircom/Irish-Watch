@@ -125,6 +125,7 @@ details.fold > summary::after,
   border-top:1px solid rgba(201,151,0,.24);font-size:.88rem;color:#DDE5EE}
 .hero .wx .k{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.7rem;
   letter-spacing:.14em;text-transform:uppercase;color:#D8B84F;margin-right:.5rem}
+.hero .wx .glyph{font-size:1.15rem;line-height:1;vertical-align:-.1em;margin-right:.15rem}
 .hero .clock{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:.02em;grid-column:2;grid-row:3 / span 2;align-self:end;margin:0;padding:.7rem 0 0 .9rem;border-top:0;border-left:1px solid rgba(201,151,0,.24);font-size:1.9rem;color:var(--paper)}
 .hero .clock small{font-size:.5em;font-weight:600;margin-left:.1rem;margin-right:.55rem}
 .hero .spread{margin:0;font-weight:600;line-height:1.35;text-align:right;font-variant-numeric:tabular-nums;top:1.35rem;right:1.35rem;grid-column:2;grid-row:1 / span 2;position:static;min-width:6rem;padding:.35rem 0 0 .9rem;border-left:1px solid rgba(201,151,0,.24);font-family:'Barlow Condensed',sans-serif;font-size:1rem;color:#E8EEF5}
@@ -176,9 +177,8 @@ ul.plain,ol.plain{list-style:none;margin:0;padding:0}
 .row .net{display:inline-block;font-size:.78rem;font-weight:600;border:1px solid var(--leaf);padding:.15rem .4rem;white-space:nowrap;background:rgba(201,151,0,.06);border-radius:999px;color:var(--gold-bright);border-color:rgba(255,205,0,.5)}
 .row .net.tbd{color:var(--dim);border-color:var(--dim)}
 .row.past{opacity:.85}
-/* Every schedule row expands in place to show that game. scroll-margin-top
-   keeps the tapped row clear of the sticky header when it is scrolled to. */
-.row.tappable{cursor:pointer;scroll-margin-top:5.5rem}
+/* Every schedule row expands in place to show that game. */
+.row.tappable{cursor:pointer}
 .row.tappable:hover{background:rgba(201,151,0,.07)}
 .row.tappable:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
 /* The chevron is a flex child of the row itself, so it sits in the same

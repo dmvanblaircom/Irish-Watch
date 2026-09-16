@@ -339,20 +339,21 @@ function venuePoint(g){
   return first.catch(function(){ return geoSearch(g.city, US_STATES[g.state]||null); })
     .then(function(pt){ geoRemember(key, pt); return pt; });
 }
-// WMO weather codes, in plain words.
-function wmoText(c){
-  if(c===0) return "clear";
-  if(c===1) return "mostly clear";
-  if(c===2) return "partly cloudy";
-  if(c===3) return "overcast";
-  if(c===45||c===48) return "fog";
-  if(c>=51&&c<=57) return "drizzle";
-  if(c>=61&&c<=67) return "rain";
-  if(c>=71&&c<=77) return "snow";
-  if(c>=80&&c<=82) return "showers";
-  if(c===85||c===86) return "snow showers";
-  if(c>=95) return "thunderstorms";
-  return "";
+// WMO weather codes, in plain words and a glyph. The glyph is aria-hidden;
+// the words carry the meaning for a screen reader.
+function wmo(c){
+  if(c===0)            return ["clear",         "☀️"];   // sun
+  if(c===1)            return ["mostly clear",  "🌤️"];
+  if(c===2)            return ["partly cloudy", "⛅"];
+  if(c===3)            return ["overcast",      "☁️"];
+  if(c===45||c===48)   return ["fog",           "🌫️"];
+  if(c>=51&&c<=57)     return ["drizzle",       "🌦️"];
+  if(c>=61&&c<=67)     return ["rain",          "🌧️"];
+  if(c>=71&&c<=77)     return ["snow",          "❄️"];
+  if(c>=80&&c<=82)     return ["showers",       "🌧️"];
+  if(c===85||c===86)   return ["snow showers",  "🌨️"];
+  if(c>=95)            return ["thunderstorms", "⛈️"];
+  return ["", ""];
 }
 var WX={ id:null, at:0, html:"" };      // one forecast per game, refreshed half-hourly
 function paintWeather(g){
@@ -374,10 +375,11 @@ function paintWeather(g){
     var i=(h.time||[]).indexOf(key);
     if(i<0) throw new Error("kickoff hour not in forecast");
     var t=Math.round(h.temperature_2m[i]), p=h.precipitation_probability[i], w=Math.round(h.wind_speed_10m[i]);
-    var sky=wmoText(h.weather_code[i]);
-    var bits=[t+"°F", sky, (p!=null?p+"% chance of rain":""), "wind "+w+" mph"].filter(Boolean);
+    var sky=wmo(h.weather_code[i]);
+    var bits=[t+"°F", sky[0], (p!=null?p+"% chance of rain":""), "wind "+w+" mph"].filter(Boolean);
     WX.id=g.id; WX.at=Date.now();
     WX.html='<span class="k">Kickoff forecast</span> '+
+      (sky[1]?'<span class="glyph" aria-hidden="true">'+sky[1]+"</span> ":"")+
       '<span class="sr-only">'+esc(bits.join(", "))+'</span>'+
       '<span aria-hidden="true">'+bits.map(esc).join(" · ")+"</span>";
     el.innerHTML=WX.html; el.hidden=false;
@@ -2147,13 +2149,8 @@ function refreshSchedule(first){
 // the Game tab is for the upcoming game, past results belong here.
 var DETAIL={ open:null, seq:0 };
 
-// Keep the tapped row pinned under the sticky header. The detail block is
-// often taller than the screen, so scrolling to IT would push the row - the
-// only thing that says which game this is - off the top.
-function pinRow(li){
-  if(li) li.scrollIntoView({block:"start"});
-}
-
+// Opening and closing never move the page: the detail simply appears under
+// the row you tapped, where your eye already is.
 function closeDetail(){
   var d=$("panel-schedule").querySelector("li.gamedetail");
   if(d) d.remove();
@@ -2181,13 +2178,11 @@ function openGame(id){
 
   var token=++DETAIL.seq;
   G.side=null;                        // default the team toggle to Notre Dame
-  pinRow(li);
   get(ESPN+"/summary?event="+id).then(function(d){
     if(token!==DETAIL.seq || DETAIL.open!==id) return;
     slot.innerHTML=renderGame(d, true);
     wireLeaderSwitch(slot);
     previewIfPre(d, slot);
-    pinRow(li);                       // the render changed the page height
   }).catch(function(){
     if(token!==DETAIL.seq || DETAIL.open!==id) return;
     slot.innerHTML='<p class="msg"><strong>Couldn\u2019t load that game.</strong>'+
@@ -2195,10 +2190,7 @@ function openGame(id){
   });
 }
 $("panel-schedule").addEventListener("click", function(e){
-  if(e.target.closest("[data-close-detail]")){
-    pinRow(closeDetail());            // land back on the row, not mid-list
-    return;
-  }
+  if(e.target.closest("[data-close-detail]")){ closeDetail(); return; }
   var li=e.target.closest(".row.tappable[data-ev]");
   if(li) openGame(li.getAttribute("data-ev"));
 });
