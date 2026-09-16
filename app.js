@@ -646,13 +646,33 @@ function patchRanked(sb){
 function loadAround(){
   var el=$("panel-around");
   if(el.dataset.loaded) return;
-  el.innerHTML='<p class="loading">Loading rankings and ranked games\u2026</p>';
+  if(!LAST_HTML[el.id]) el.innerHTML='<p class="loading">Loading rankings and ranked games\u2026</p>';
+  var gameCount=0;
 
-  Promise.all([
-    get(ESPN+"/rankings").catch(function(){return null;}),
-    getScoreboard().catch(function(){return null;})
-  ]).then(function(res){
-    var rk=res[0], sb=res[1], pollHtml="", gameHtml="", gameCount=0;
+  cachedThenFresh(el,
+    [ESPN+"/rankings", ESPN+"/scoreboard?groups=80&limit=400"],
+    Promise.all([
+      get(ESPN+"/rankings").catch(function(){return null;}),
+      getScoreboard().catch(function(){return null;})
+    ]),
+    build, wire
+  ).catch(function(){
+    if(LAST_HTML[el.id]) return;         // the cached paint stands
+    el.innerHTML='<p class="msg"><strong>The national picture didn\u2019t load.</strong>'+
+      'ESPN returned no rankings or scoreboard data. Choose Refresh to try again.</p>';
+    say("Top 25 failed to load.");
+  });
+
+  function wire(el, res, fromCache, unchanged){
+    if(!unchanged) wireAroundPills(el);
+    if(!fromCache) say(AROUND.view==="games"
+        ? gameCount+" ranked games this week."
+        : "Rankings loaded.");
+  }
+
+  function build(res){
+    var rk=res[0], sb=res[1], pollHtml="", gameHtml="";
+    gameCount=0;
 
     // ---- rankings ----
     if(rk&&rk.rankings&&rk.rankings.length){
@@ -721,22 +741,8 @@ function loadAround(){
         '<div id="ar-rankings"'+(view==="rankings"?"":" hidden")+">"+pollHtml+"</div>";
       AROUND.view=view;
     }
-
-    if(!html){
-      el.innerHTML='<p class="msg"><strong>The national picture didn\u2019t load.</strong>'+
-        'ESPN returned no rankings or scoreboard data. Choose Refresh to try again.</p>';
-      say("Top 25 failed to load."); return;
-    }
-    el.innerHTML=html; el.dataset.loaded="1";
-    wireAroundPills(el);
-    say(AROUND.view==="games"
-        ? gameCount+" ranked games this week."
-        : "Rankings loaded.");
-  }).catch(function(){
-    el.innerHTML='<p class="msg"><strong>The national picture didn\u2019t load.</strong>'+
-      'ESPN returned data this page couldn\u2019t read. Choose Refresh to try again.</p>';
-    say("Top 25 failed to load.");
-  });
+    return html;
+  }
 }
 
 /* ---------- kalshi ---------- */
@@ -917,10 +923,31 @@ function loadSparklines(){
 function loadDepth(){
   var el=$("panel-depth");
   if(el.dataset.loaded) return;
-  el.innerHTML='<p class="loading">Loading the two-deep…</p>';
+  if(!LAST_HTML[el.id]) el.innerHTML='<p class="loading">Loading the two-deep…</p>';
+  var outCount=0;
 
-  get("depth.json?t="+Date.now()).then(function(d){
+  cachedThenFresh(el, ["depth.json"], get("depth.json?t="+Date.now()).then(function(d){ return [d]; }),
+    build, wire
+  ).catch(function(){
+    if(LAST_HTML[el.id]) return;         // the cached paint stands
+    el.innerHTML='<details class="fold" id="rosterFold"><summary>Full roster'+
+      '<span class="count">every player</span></summary>'+
+      '<div class="foldbody" id="rosterBody"></div></details>'+
+      '<p class="msg"><strong>No depth chart yet.</strong>'+
+      'The scheduled job writes depth.json from UHND’s weekly post. '+
+      'If this stays empty, check the Actions log.</p>';
+    wireRosterFold(el);      // the roster is independent of the depth chart
+  });
+
+  function wire(el, res, fromCache, unchanged){
+    if(!unchanged){ wireRosterFold(el); loadHistory(); }
+    if(!fromCache) say("Depth chart loaded. "+outCount+" players out.");
+  }
+
+  function build(res){
+    var d=res[0]; if(!d) return "";
     var html="", av=d.availability||{out:[],questionable:[]};
+    outCount=av.out.length;
 
     if(av.out.length||av.questionable.length){
       html+='<h2 class="sec">Availability</h2>'+
@@ -990,26 +1017,15 @@ function loadDepth(){
         '<div class="foldbody">'+body+"</div></details>";
     });
 
-    if(!html){ el.innerHTML='<p class="msg">The depth chart file is empty.</p>'; return; }
+    if(!html) return '<p class="msg">The depth chart file is empty.</p>';
     html+='<p class="stamp">From <a href="'+esc(d.source||"#")+'" target="_blank" rel="noopener">'+
       esc(d.title||"UHND")+'<span class="sr-only"> (opens in a new tab)</span></a>. '+
       'Notre Dame publishes a new two-deep most Tuesdays.</p>';
     html+='<details class="fold" id="rosterFold"><summary>Full roster'+
       '<span class="count">every player</span></summary>'+
       '<div class="foldbody" id="rosterBody"></div></details>';
-    el.innerHTML=html; el.dataset.loaded="1";
-    wireRosterFold(el);
-    say("Depth chart loaded. "+av.out.length+" players out.");
-    loadHistory();
-  }).catch(function(){
-    el.innerHTML='<details class="fold" id="rosterFold"><summary>Full roster'+
-      '<span class="count">every player</span></summary>'+
-      '<div class="foldbody" id="rosterBody"></div></details>'+
-      '<p class="msg"><strong>No depth chart yet.</strong>'+
-      'The scheduled job writes depth.json from UHND\u2019s weekly post. '+
-      'If this stays empty, check the Actions log.</p>';
-    wireRosterFold(el);      // the roster is independent of the depth chart
-  });
+    return html;
+  }
 }
 
 // Every depth chart UHND has posted this season, newest first, each collapsed
@@ -1034,10 +1050,14 @@ function loadHistory(){
       html+="</details>";
     });
     html+="</div></details>";
+    var panel=$("panel-depth"), stamp=panel.querySelector(".stamp");
+    if(!stamp) return;                   // the tab was repainted underneath us
+    var old=panel.querySelector("#depthHistory");
+    if(old) old.remove();                // never two copies, whichever paint we ran from
     var el=document.createElement("div");
+    el.id="depthHistory";
     el.innerHTML=html;
-    var stamp=$("panel-depth").querySelector(".stamp");
-    $("panel-depth").insertBefore(el, stamp);
+    panel.insertBefore(el, stamp);
   }).catch(function(){ /* history is a bonus; silence is fine */ });
 }
 
@@ -1881,31 +1901,47 @@ function loadPreview(away, home, root){
 function loadNews(){
   var el=$("panel-news");
   if(el.dataset.loaded) return;
-  el.innerHTML='<p class="loading">Loading Notre Dame news…</p>';
+  if(!LAST_HTML[el.id]) el.innerHTML='<p class="loading">Loading Notre Dame news…</p>';
+  var count=0, sources=0;
 
-  var espn = get(ESPN+"/news?team="+TEAM+"&limit=30")
-    .then(function(d){
-      return (d.articles||[]).map(function(a){
-        return {
-          title: a.headline,
-          link: a.links&&a.links.web ? a.links.web.href : null,
-          img: a.images&&a.images[0] ? a.images[0].url : "",
-          source: "ESPN",
-          ts: a.published ? Date.parse(a.published) : 0
-        };
+  var espnUrl=ESPN+"/news?team="+TEAM+"&limit=30";
+  cachedThenFresh(el, [espnUrl, "news.json"],
+    Promise.all([get(espnUrl).catch(function(){ return null; }),
+                 get("news.json?t="+Date.now()).catch(function(){ return null; })]),
+    build, wire
+  ).catch(function(){
+    if(LAST_HTML[el.id]) return;         // the cached paint stands
+    el.innerHTML='<p class="msg"><strong>No stories right now.</strong>'+
+      'Neither ESPN nor the beat feeds returned anything. Choose Refresh to try again.</p>';
+  });
+
+  function wire(el, res, fromCache, unchanged){
+    if(!unchanged){
+      var btn=el.querySelector("#moreNews");
+      if(btn) btn.addEventListener("click",function(){
+        el.querySelectorAll("li.extra").forEach(function(li){ li.hidden=false; });
+        btn.remove();
+        say("Showing all "+count+" stories.");
       });
-    }).catch(function(){ return []; });
+    }
+    if(!fromCache) say("News loaded, "+count+" stories from "+sources+" sources.");
+  }
 
-  var beat = get("news.json?t="+Date.now())
-    .then(function(d){
-      return (d.items||[]).map(function(i){
-        return { title:i.title, link:i.link, img:"", source:i.source,
-                 ts: i.published ? Date.parse(i.published) : 0 };
-      });
-    }).catch(function(){ return []; });
-
-  Promise.all([espn,beat]).then(function(parts){
-    var all=parts[0].concat(parts[1]).filter(function(a){ return a.link&&a.title; });
+  function build(res){
+    var espn=((res[0]&&res[0].articles)||[]).map(function(a){
+      return {
+        title: a.headline,
+        link: a.links&&a.links.web ? a.links.web.href : null,
+        img: a.images&&a.images[0] ? a.images[0].url : "",
+        source: "ESPN",
+        ts: a.published ? Date.parse(a.published) : 0
+      };
+    });
+    var beat=((res[1]&&res[1].items)||[]).map(function(i){
+      return { title:i.title, link:i.link, img:"", source:i.source,
+               ts: i.published ? Date.parse(i.published) : 0 };
+    });
+    var all=espn.concat(beat).filter(function(a){ return a.link&&a.title; });
 
     // same story from two outlets: keep the first
     var seen={}, list=[];
@@ -1915,12 +1951,10 @@ function loadNews(){
       seen[k]=1; list.push(a);
     });
     list.sort(function(a,b){ return b.ts-a.ts; });
-
-    if(!list.length){
-      el.innerHTML='<p class="msg"><strong>No stories right now.</strong>'+
-        'Neither ESPN nor the beat feeds returned anything. Choose Refresh to try again.</p>';
-      return;
-    }
+    if(!list.length) return "";
+    count=list.length;
+    var srcs={}; list.forEach(function(a){ srcs[a.source]=1; });
+    sources=Object.keys(srcs).length;
 
     var FIRST=15;
     var html='<h2 class="sr-only">Latest Notre Dame stories</h2><ul class="plain">';
@@ -1939,17 +1973,8 @@ function loadNews(){
       html+='<button type="button" class="more" id="moreNews">Show '+
         (list.length-FIRST)+" more stories</button>";
     }
-    el.innerHTML=html;
-    var btn=$("moreNews");
-    if(btn) btn.addEventListener("click",function(){
-      el.querySelectorAll("li.extra").forEach(function(li){ li.hidden=false; });
-      btn.remove();
-      say("Showing all "+list.length+" stories.");
-    });
-    el.dataset.loaded="1";
-    var srcs={}; list.forEach(function(a){ srcs[a.source]=1; });
-    say("News loaded, "+list.length+" stories from "+Object.keys(srcs).length+" sources.");
-  });
+    return html;
+  }
 }
 
 /* ---------- tabs: full keyboard support per ARIA practices ---------- */
@@ -2110,6 +2135,40 @@ function load(){
 function cachedJSON(url){
   if(typeof caches==="undefined") return Promise.reject(0);
   return caches.match(url).then(function(r){ if(!r) throw 0; return r.json(); });
+}
+
+// Paint a tab from the worker's cached copies of its sources the instant it
+// is opened, then again from the network. If the fresh HTML comes out
+// identical - it usually does between visits - the second paint is skipped,
+// so nothing flickers and a fold the reader has already opened stays open.
+//   urls   the cache keys, same order and shape as the network results
+//   fresh  a Promise of the network results
+//   build  results -> HTML string, or "" when there is nothing to show
+//   wire   (el, results, fromCache) -> attach handlers, announce, etc.
+var LAST_HTML={};
+function cachedThenFresh(el, urls, fresh, build, wire){
+  Promise.all(urls.map(function(u){
+    return u ? cachedJSON(u).catch(function(){ return null; }) : Promise.resolve(null);
+  })).then(function(res){
+    if(el.dataset.loaded || !res.some(Boolean)) return;
+    var html=build(res);
+    if(!html || LAST_HTML[el.id]===html) return;
+    el.innerHTML=html; LAST_HTML[el.id]=html;
+    wire(el, res, true);
+  }).catch(function(){});
+
+  return fresh.then(function(res){
+    var html=build(res);
+    if(!html) throw new Error("nothing to show");
+    if(LAST_HTML[el.id]!==html){
+      el.innerHTML=html; LAST_HTML[el.id]=html;
+      wire(el, res, false);
+    } else {
+      wire(el, res, false, true);        // same content: announce only
+    }
+    el.dataset.loaded="1";
+    return res;
+  });
 }
 
 // Pulled out of load() so the auto-refresh can reuse it without re-fetching
