@@ -27,7 +27,12 @@
    --inplay is ND's #0A843D lifted to 5.8:1 on the page navy (the original is
    only 3.3:1), and --dim is tuned to 7.3:1 so secondary text still passes. */
 :root{
-    --gutter:.8rem;   /* page side padding; the sticky header mirrors it */--ink-2:#102844;--ink-3:#294A6E;--leaf:#C5A24A;--parch:#F2EFE6;--dim:#9DAABC;--win:#6FD69B;--loss:#F5A79C;--live-fg:#FFFFFF;--live-fg-2:#FFD9D3;--neutral:#7FC8E8;--live:#FF5A4E;--inplay:#4FAE78;--focus:#FFD966;color-scheme:dark;--navy:#0C2340;--navy-deep:#07192F;--gold:#C99700;--gold-bright:#FFCD00;--paper:#F8F4EC;--muted:#9AA9BA;--line:rgba(154,169,186,.18);--gold-line:rgba(201,151,0,.30)}
+  /* Page side padding. .wrap consumes it and the sticky header mirrors it with
+     negative margins, so they must agree or the header leaves transparent
+     strips at the screen edges. Steps up on desktop and down on phones in the
+     @media blocks at the foot of the file. */
+  --gutter:1rem;
+  --ink-2:#102844;--ink-3:#294A6E;--leaf:#C5A24A;--parch:#F2EFE6;--dim:#9DAABC;--win:#6FD69B;--loss:#F5A79C;--live-fg:#FFFFFF;--live-fg-2:#FFD9D3;--neutral:#7FC8E8;--live:#FF5A4E;--inplay:#4FAE78;--focus:#FFD966;color-scheme:dark;--navy:#0C2340;--navy-deep:#07192F;--gold:#C99700;--gold-bright:#FFCD00;--paper:#F8F4EC;--muted:#9AA9BA;--line:rgba(154,169,186,.18);--gold-line:rgba(201,151,0,.30)}
 
 /* ====================================================================
    BASE
@@ -42,19 +47,15 @@ body{font-family:'Barlow',system-ui,-apple-system,sans-serif;font-size:1rem;line
    it a scroll container and position:sticky then has nothing to stick to.
    overflow:clip clips without creating one. */
 .page{position:relative;isolation:isolate;min-height:100dvh;padding-top:0;padding-bottom:calc(5.2rem + env(safe-area-inset-bottom, 0px));overflow:visible;overflow-x:clip;background:transparent !important}
-/* Gutters carry the responsive step AND the iOS notch inset together. Keeping
-   them in one calc() is what stops a later rule from dropping one or the other;
-   the @media blocks at the foot of this file restate both. */
+/* Gutters carry the responsive step AND the iOS notch inset together, in one
+   calc(), so no later rule can drop one without the other. */
 .wrap{
-    margin:0 auto;
-    max-width:58rem;
-    padding:0 0 3rem;
-    /* One gutter value, consumed here and by the sticky header's negative
-       margins below. They must match or the header leaves transparent strips
-       at the screen edges, so they read from the same variable. */
-    padding-left:calc(var(--gutter) + env(safe-area-inset-left, 0px));
-    padding-right:calc(var(--gutter) + env(safe-area-inset-right, 0px));
-  }
+  margin:0 auto;
+  max-width:54rem;
+  padding:0 0 3rem;
+  padding-left:calc(var(--gutter) + env(safe-area-inset-left, 0px));
+  padding-right:calc(var(--gutter) + env(safe-area-inset-right, 0px));
+}
 
 /* ====================================================================
    ACCESSIBILITY PRIMITIVES
@@ -72,27 +73,26 @@ body{font-family:'Barlow',system-ui,-apple-system,sans-serif;font-size:1rem;line
    so Safari does not re-composite it at the moment it becomes stuck, and opaque
    enough that nothing ghosts through as content scrolls underneath. */
 .bar{
-    display:flex;align-items:center;flex-wrap:wrap;gap:.7rem;
-    min-height:4.15rem;
-    position:sticky;top:0;z-index:60;
-    background:rgba(6,21,37,.97);
-    -webkit-backdrop-filter:blur(14px);
-    backdrop-filter:blur(14px);
-    border-bottom:1px solid var(--line);
-    box-shadow:0 8px 28px rgba(0,0,0,.16);
-    /* promoted up front so Safari does not re-composite it when it sticks */
-    transform:translateZ(0);
-    -webkit-transform:translateZ(0);
-    will-change:transform;
-    /* the status-bar inset lives here, not on .page, so the header paints
-       behind the clock instead of leaving a transparent strip */
-    padding-top:calc(.75rem + env(safe-area-inset-top, 0px));
-    padding-bottom:.7rem;
-    margin-left:calc(-1 * (var(--gutter) + env(safe-area-inset-left, 0px)));
-    margin-right:calc(-1 * (var(--gutter) + env(safe-area-inset-right, 0px)));
-    padding-left:calc(var(--gutter) + env(safe-area-inset-left, 0px));
-    padding-right:calc(var(--gutter) + env(safe-area-inset-right, 0px));
-  }
+  display:flex;align-items:center;flex-wrap:wrap;gap:.7rem;
+  min-height:4.6rem;
+  position:sticky;top:0;z-index:60;
+  background:rgba(6,21,37,.97);
+  -webkit-backdrop-filter:blur(14px);
+  backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);
+  box-shadow:0 8px 28px rgba(0,0,0,.16);
+  transform:translateZ(0);
+  -webkit-transform:translateZ(0);
+  will-change:transform;
+  /* the status-bar inset lives here, not on .page, so the header paints
+     behind the clock instead of leaving a transparent strip */
+  padding-top:calc(.75rem + env(safe-area-inset-top, 0px));
+  padding-bottom:.7rem;
+  margin-left:calc(-1 * (var(--gutter) + env(safe-area-inset-left, 0px)));
+  margin-right:calc(-1 * (var(--gutter) + env(safe-area-inset-right, 0px)));
+  padding-left:calc(var(--gutter) + env(safe-area-inset-left, 0px));
+  padding-right:calc(var(--gutter) + env(safe-area-inset-right, 0px));
+}
 .bar h1{font-weight:700;margin:0;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;text-shadow:0 1px 18px rgba(201,151,0,.16);font-size:1.55rem;letter-spacing:.075em;color:var(--paper);line-height:1.05}
 .bar .rank{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.72rem;letter-spacing:.06em;background:var(--gold-bright);color:#07192F;border-radius:999px;padding:.16rem .5rem}
 .bar .rec{font-variant-numeric:tabular-nums;color:#BAC6D5;font-family:'Barlow Condensed',sans-serif;font-size:.86rem;letter-spacing:.04em}
@@ -170,6 +170,28 @@ ul.plain,ol.plain{list-style:none;margin:0;padding:0}
 .row .net{display:inline-block;font-size:.78rem;font-weight:600;border:1px solid var(--leaf);padding:.15rem .4rem;white-space:nowrap;background:rgba(201,151,0,.06);border-radius:999px;color:var(--gold-bright);border-color:rgba(255,205,0,.5)}
 .row .net.tbd{color:var(--dim);border-color:var(--dim)}
 .row.past{opacity:.85}
+/* Every schedule row expands in place to show that game. scroll-margin-top
+   keeps the tapped row clear of the sticky header when it is scrolled to. */
+.row.tappable{cursor:pointer;scroll-margin-top:5.5rem}
+.row.tappable:hover{background:rgba(201,151,0,.07)}
+.row.tappable:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
+.row.tappable .mid::after{
+  content:"\203A";float:right;color:var(--dim);font-size:1.1rem;line-height:1;
+  margin-left:.4rem;opacity:.7;transition:transform .15s ease;
+}
+.row.tappable[aria-expanded="true"] .mid::after{transform:rotate(90deg)}
+li.gamedetail{
+  list-style:none;
+  margin:0 -.55rem .4rem;
+  padding:.6rem .7rem .8rem;
+  background:rgba(255,255,255,.025);
+  border-left:3px solid var(--leaf);
+  border-bottom:1px solid var(--ink-3);
+  border-radius:0 4px 4px 0;
+}
+li.gamedetail .sec{margin-top:.7rem}
+li.gamedetail .gscore{padding:.5rem .1rem}
+li.gamedetail .gscore .pts{font-size:1.6rem}
 .row.nd{margin:.35rem 0;padding-left:.72rem;padding-right:.72rem;border:1px solid rgba(201,151,0,.28);border-left:3px solid var(--gold);background:linear-gradient(90deg,rgba(201,151,0,.14),rgba(201,151,0,.035));box-shadow:0 6px 18px rgba(0,0,0,.10)}
 .rk{color:var(--leaf);font-weight:600;font-size:.88em;margin-right:.15rem}
 .tag{display:inline-block;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.7rem;letter-spacing:.07em;line-height:1;padding:.22rem .34rem;border-radius:2px;border:1px solid;vertical-align:.08em;margin-right:.4rem}
@@ -264,6 +286,40 @@ details.fold .foldbody{padding-bottom:.5rem}
 .ldr .who{flex:1;min-width:0}
 .ldr .nm{display:block;font-weight:600}
 .ldr .line{display:block;color:var(--dim);font-size:.85rem;margin-top:.1rem}
+/* Full box score. Wide, so it scrolls inside its own box rather than pushing
+   the page sideways; the player column and header row stay pinned. */
+.boxcat{
+  font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.9rem;
+  letter-spacing:.06em;color:var(--leaf);margin:.9rem 0 .3rem;
+}
+.boxwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;
+  border:1px solid var(--ink-3);border-radius:4px}
+.boxtable{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;
+  font-size:.84rem;white-space:nowrap}
+.boxtable th,.boxtable td{padding:.4rem .55rem;text-align:right;
+  border-bottom:1px solid var(--ink-3)}
+.boxtable thead th{
+  font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.74rem;
+  letter-spacing:.05em;color:var(--dim);text-align:right;
+  position:sticky;top:0;background:var(--ink-2);
+}
+.boxtable tbody th[scope="row"]{
+  text-align:left;font-weight:500;position:sticky;left:0;
+  background:var(--ink-2);min-width:8.5rem;
+}
+.boxtable thead th:first-child{left:0;z-index:2;text-align:left}
+.boxtable .jn{color:var(--dim);font-family:'Barlow Condensed',sans-serif;font-weight:700}
+.boxtable tbody tr:last-child th,.boxtable tbody tr:last-child td{border-bottom:none}
+/* Matchup preview (pre-game only): the in-game team-stats grid, with the
+   national rank tucked under each value. */
+.statrow.prev{align-items:flex-start;padding:.5rem .15rem}
+.statrow.prev .v{line-height:1.15}
+.statrow .rk2{
+  display:block;font-family:'Barlow',system-ui,-apple-system,sans-serif;
+  font-weight:600;font-size:.7rem;letter-spacing:.03em;color:var(--dim);
+  margin-top:.1rem;
+}
+.statrow.prev .v.win .rk2{color:var(--leaf)}
 
 /* ====================================================================
    SEGMENTED CONTROLS
@@ -411,8 +467,9 @@ details.fold>summary{padding:.75rem .9rem;background:rgba(12,35,64,.5);font-weig
    RESPONSIVE - widest first, so a narrower block always wins
    ==================================================================== */
 @media (min-width:48rem){
-  
-  
+  :root{--gutter:1.25rem}
+  .wrap{max-width:58rem}
+  .bar{min-height:4.9rem}
   .motto{margin-top:1rem}
   [role="tabpanel"]{padding-top:.35rem}
   .row,.obar,a.art{padding-left:.9rem;padding-right:.9rem}
@@ -426,8 +483,8 @@ details.fold>summary{padding:.75rem .9rem;background:rgba(12,35,64,.5);font-weig
   .tabbar button#tab-game svg{width:26px;height:26px}
 }
 @media (max-width:32rem){
-  
-  
+  :root{--gutter:.8rem}
+  .bar{min-height:4.15rem}
   .brand-kicker{font-size:.57rem;letter-spacing:.14em}
   .bar h1{font-size:1.5rem}
   .refresh{padding:0 .75rem;font-size:.78rem}
@@ -462,69 +519,8 @@ details.fold>summary{padding:.75rem .9rem;background:rgba(12,35,64,.5);font-weig
   a.art{transition:none}
   .tabbar button#tab-game{transform:translateY(-.2rem)}
   .tabbar button[role="tab"] svg{transition:none}
+  .row.tappable .mid::after{transition:none}
 }
-
-  /* tappable schedule rows */
-  .row.tappable{cursor:pointer}
-  .row.tappable:hover{background:rgba(201,151,0,.07)}
-  .row.tappable:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
-  .row.tappable .mid::after{
-    content:"\203A";float:right;color:var(--dim);font-size:1.1rem;line-height:1;
-    margin-left:.4rem;opacity:.7;
-  }
-
-  /* full box score: wide, so it scrolls inside its own box rather than
-     pushing the page sideways */
-  .boxcat{
-    font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.9rem;
-    letter-spacing:.06em;color:var(--leaf);margin:.9rem 0 .3rem;
-  }
-  .boxwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;
-    border:1px solid var(--ink-3);border-radius:4px}
-  .boxtable{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;
-    font-size:.84rem;white-space:nowrap}
-  .boxtable th,.boxtable td{padding:.4rem .55rem;text-align:right;
-    border-bottom:1px solid var(--ink-3)}
-  .boxtable thead th{
-    font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.74rem;
-    letter-spacing:.05em;color:var(--dim);text-align:right;
-    position:sticky;top:0;background:var(--ink-2);
-  }
-  .boxtable tbody th[scope="row"]{
-    text-align:left;font-weight:500;position:sticky;left:0;
-    background:var(--ink-2);min-width:8.5rem;
-  }
-  .boxtable thead th:first-child{left:0;z-index:2;text-align:left}
-  .boxtable .jn{color:var(--dim);font-family:'Barlow Condensed',sans-serif;font-weight:700}
-  .boxtable tbody tr:last-child th,.boxtable tbody tr:last-child td{border-bottom:none}
-
-  /* matchup preview: same two-column grid as the in-game team stats, with the
-     national rank tucked under each value */
-  .statrow.prev{align-items:flex-start;padding:.5rem .15rem}
-  .statrow.prev .v{line-height:1.15}
-  .statrow .rk2{
-    display:block;font-family:'Barlow',system-ui,-apple-system,sans-serif;
-    font-weight:600;font-size:.7rem;letter-spacing:.03em;color:var(--dim);
-    margin-top:.1rem;
-  }
-  .statrow.prev .v.win .rk2{color:var(--leaf)}
-
-  /* expanded game detail under a schedule row */
-  li.gamedetail{
-    list-style:none;
-    margin:0 -.55rem .4rem;
-    padding:.6rem .7rem .8rem;
-    background:rgba(255,255,255,.025);
-    border-left:3px solid var(--leaf);
-    border-bottom:1px solid var(--ink-3);
-    border-radius:0 4px 4px 0;
-  }
-  li.gamedetail .sec{margin-top:.7rem}
-  li.gamedetail .gscore{padding:.5rem .1rem}
-  li.gamedetail .gscore .pts{font-size:1.6rem}
-  .row.tappable .mid::after{transition:transform .15s ease}
-  .row.tappable[aria-expanded="true"] .mid::after{transform:rotate(90deg)}
-  @media (prefers-reduced-motion:reduce){.row.tappable .mid::after{transition:none}}
 </style>
   <meta name="description" content="Irish Watch — a Notre Dame football game-day dashboard.">
 
@@ -1497,7 +1493,9 @@ function loadHistory(){
 // this is all client side. Field names vary by game state, so every read is
 // defensive — a missing section drops out rather than blanking the tab.
 
-var G = { poll:null, id:null, side:null, pending:false };
+// box: whether the full box score fold is open, remembered across the team
+// toggle and the 25-second live repaint.
+var G = { poll:null, id:null, side:null, box:false, pending:false };
 
 function pick(o, path, dflt){
   var cur=o;
@@ -1564,11 +1562,11 @@ function gameToShow(){
   var done=S.games.filter(function(g){return g.state==="post";});
   var last=done.length ? done[done.length-1] : null;
 
-  // Hold a finished game until the midnight AFTER it ended. The half hour after
-  // the whistle is when the box score matters most, so swapping the instant
-  // ESPN marks it final takes it away at the worst moment. Computed from the
-  // game's own end rather than its date, so a late kickoff that runs past
-  // midnight still gets its full evening.
+  // Hold a finished game until 3am the following morning (see justFinished).
+  // The half hour after the whistle is when the box score matters most, so
+  // swapping the instant ESPN marks it final takes it away at the worst
+  // moment. Computed from the game's own end rather than its date, so a late
+  // kickoff that runs past midnight still gets its full evening.
   if(last && justFinished(last)) return last;
 
   var next=S.games.filter(function(g){return g.state==="pre";})[0];
@@ -1640,7 +1638,12 @@ function wireLeaderSwitch(el){
       var a=el.querySelector(".ldr-away"), hm=el.querySelector(".ldr-home");
       if(a)  a.hidden  = G.side!=="away";
       if(hm) hm.hidden = G.side!=="home";
+      // carry the fold state across to the side being revealed
+      el.querySelectorAll("details.fold.box").forEach(function(f){ f.open=G.box; });
     });
+  });
+  el.querySelectorAll("details.fold.box").forEach(function(f){
+    f.addEventListener("toggle", function(){ G.box=f.open; });
   });
 }
 
@@ -1778,6 +1781,13 @@ function renderGame(d, inline){
   html+='<div class="gstatus"'+(inline?"":' id="gStatus"')+">"+(live?'<span class="dot" aria-hidden="true"></span>':"")+
     "<span>"+esc(st.detail||st.shortDetail||st.description||"")+"</span></div>";
 
+  // Each block below is built into `html` and then cut into a named section,
+  // so the Game tab and the expanded Schedule row can order them differently
+  // without duplicating the markup.
+  var sec={};
+  function cut(name){ sec[name]=html; html=""; }
+  cut("head");
+
   // ---- last play and down/distance ----
   var sit=d.situation||comp.situation||{};
   var lastText=pick(sit,["lastPlay","text"],null);
@@ -1800,6 +1810,7 @@ function renderGame(d, inline){
       ((dd||poss)?'<div class="dd">'+esc([poss,dd].filter(Boolean).join(" · "))+"</div>":"")+
       "</div>";
   }
+  cut("play");
 
   // ---- win probability ----
   var wp=d.winprobability;
@@ -1815,6 +1826,7 @@ function renderGame(d, inline){
         '<span class="v r">'+esc(pick(fav,["team","abbreviation"],"")||"")+"</span></div>";
     }
   }
+  cut("winprob");
 
   // ---- linescore by quarter ----
   var al=away.linescores||[], hl=home.linescores||[];
@@ -1833,6 +1845,7 @@ function renderGame(d, inline){
     });
     html+="</tbody></table>";
   }
+  cut("quarters");
 
   // ---- team stats, away on the left to match the score line ----
   var bt=pick(d,["boxscore","teams"],[])||[];
@@ -1882,8 +1895,9 @@ function renderGame(d, inline){
         body;
     }
   }
+  cut("stats");
 
-  // ---- leaders, one team at a time ----
+  // ---- leaders and box score, one team at a time ----
   var lead=d.leaders||[];
   function catLabel(cat){
     var n=String(cat.name||"").toLowerCase();
@@ -1908,38 +1922,45 @@ function renderGame(d, inline){
     });
     return out;
   }
-  var la=lead.filter(function(t){return String(pick(t,["team","id"],""))===String(pick(away,["team","id"],""));})[0];
-  var lh=lead.filter(function(t){return String(pick(t,["team","id"],""))===String(pick(home,["team","id"],""));})[0];
-  if(!la||!lh){ la=lead[0]; lh=lead[1]; }
-  if(la&&lh){
-    var ra=leaderRows(la), rh=leaderRows(lh);
-    if(ra||rh){
-      // default to whichever side is Notre Dame, and remember the choice
-      // across the 25-second refresh
-      if(!G.side) G.side = String(pick(lh,["team","id"],""))===TEAM ? "home" : "away";
-      var tag=function(tl){
-        var ab=pick(tl,["team","abbreviation"],null)||pick(tl,["team","shortDisplayName"],"")||"";
-        return esc(ab);
-      };
-      var boxA=boxTables(d, pick(away,["team","id"],"")),
-          boxH=boxTables(d, pick(home,["team","id"],""));
-      html+='<h2 class="sec">Leaders and box score</h2>'+
-        '<div class="seg" role="group" aria-label="Show leaders for">'+
-          '<button type="button" data-side="away" aria-pressed="'+(G.side==="away")+'">'+
-            tag(la)+'<span class="sub">away</span></button>'+
-          '<button type="button" data-side="home" aria-pressed="'+(G.side==="home")+'">'+
-            tag(lh)+'<span class="sub">home</span></button>'+
-        "</div>"+
-        '<div class="ldr-away"'+(inline?"":' id="ldr-away"')+(G.side==="away"?"":" hidden")+">"+ra+
-          (boxA?'<details class="fold"><summary>Full box score<span class="count">'+
-            esc(pick(away,["team","abbreviation"],"")||"")+'</span></summary>'+
-            '<div class="foldbody">'+boxA+"</div></details>":"")+"</div>"+
-        '<div class="ldr-home"'+(inline?"":' id="ldr-home"')+(G.side==="home"?"":" hidden")+">"+rh+
-          (boxH?'<details class="fold"><summary>Full box score<span class="count">'+
-            esc(pick(home,["team","abbreviation"],"")||"")+'</span></summary>'+
-            '<div class="foldbody">'+boxH+"</div></details>":"")+"</div>";
+  var awayId2=String(pick(away,["team","id"],"")), homeId2=String(pick(home,["team","id"],""));
+  var la=lead.filter(function(t){return String(pick(t,["team","id"],""))===awayId2;})[0];
+  var lh=lead.filter(function(t){return String(pick(t,["team","id"],""))===homeId2;})[0];
+  if(!la&&!lh){ la=lead[0]; lh=lead[1]; }
+  var ra=la?leaderRows(la):"", rh=lh?leaderRows(lh):"";
+  var boxA=boxTables(d, awayId2), boxH=boxTables(d, homeId2);
+  if(ra||rh||boxA||boxH){
+    // default to whichever side is Notre Dame, and remember the choice
+    // across the 25-second refresh
+    if(!G.side) G.side = homeId2===TEAM ? "home" : "away";
+    var ab=function(c){ return esc(pick(c,["team","abbreviation"],null)||pick(c,["team","shortDisplayName"],"")||""); };
+    var toggle='<div class="seg" role="group" aria-label="Show which team">'+
+        '<button type="button" data-side="away" aria-pressed="'+(G.side==="away")+'">'+
+          ab(away)+'<span class="sub">away</span></button>'+
+        '<button type="button" data-side="home" aria-pressed="'+(G.side==="home")+'">'+
+          ab(home)+'<span class="sub">home</span></button>'+
+      "</div>";
+    // Fold for the full box score. The open state is shared by both sides, so
+    // flipping the team toggle does not shut the tables you just opened.
+    var fold=function(tables, c){
+      if(!tables) return "";
+      return '<details class="fold box"'+(G.box?" open":"")+'><summary>Full box score'+
+        '<span class="count">'+ab(c)+'</span></summary><div class="foldbody">'+tables+"</div></details>";
+    };
+    if(inline){
+      // Expanded from the Schedule: the box score IS the point of tapping, so it
+      // leads and the tables are open. The leaders are its first rows anyway.
+      html+='<h2 class="sec">Box score</h2>'+toggle+
+        '<div class="ldr-away"'+(G.side==="away"?"":" hidden")+">"+
+          (boxA||'<p class="msg">ESPN has no player stats for '+ab(away)+" yet.</p>")+"</div>"+
+        '<div class="ldr-home"'+(G.side==="home"?"":" hidden")+">"+
+          (boxH||'<p class="msg">ESPN has no player stats for '+ab(home)+" yet.</p>")+"</div>";
+    } else {
+      html+='<h2 class="sec">Leaders and box score</h2>'+toggle+
+        '<div class="ldr-away" id="ldr-away"'+(G.side==="away"?"":" hidden")+">"+ra+fold(boxA,away)+"</div>"+
+        '<div class="ldr-home" id="ldr-home"'+(G.side==="home"?"":" hidden")+">"+rh+fold(boxH,home)+"</div>";
     }
   }
+  cut("people");
 
   // ---- scoring summary ----
   var sp=d.scoringPlays||[];
@@ -1988,11 +2009,20 @@ function renderGame(d, inline){
         '<span class="sc">'+esc(awayAb)+"\u2013"+esc(homeAb)+"</span></div>"+
       sbody+"</div></details>";
   }
+  cut("scoring");
 
-  html+='<p class="stamp">'+(live
+  var stamp='<p class="stamp">'+(live
       ? "Updating every 25 seconds while the game is live."
       : "Final data from ESPN. Live updates resume at kickoff.")+"</p>";
-  return html;
+
+  if(inline){
+    // Score, then straight to the box score. Everything else follows, and a
+    // Close at the foot so a long expansion can be dismissed without
+    // scrolling back up to the row.
+    return sec.head+sec.people+sec.quarters+sec.stats+sec.play+sec.scoring+
+      '<button type="button" class="more" data-close-detail>Close</button>'+stamp;
+  }
+  return sec.head+sec.play+sec.winprob+sec.quarters+sec.stats+sec.people+sec.scoring+stamp;
 }
 
 /* ---------- full roster ---------- */
@@ -2523,13 +2553,21 @@ function refreshSchedule(first){
 // the Game tab is for the upcoming game, past results belong here.
 var DETAIL={ open:null, seq:0 };
 
+// Keep the tapped row pinned under the sticky header. The detail block is
+// often taller than the screen, so scrolling to IT would push the row - the
+// only thing that says which game this is - off the top.
+function pinRow(li){
+  if(li) li.scrollIntoView({block:"start"});
+}
+
 function closeDetail(){
   var d=$("panel-schedule").querySelector("li.gamedetail");
   if(d) d.remove();
-  $("panel-schedule").querySelectorAll('.row.tappable[aria-expanded="true"]')
-    .forEach(function(r){ r.setAttribute("aria-expanded","false"); });
+  var open=$("panel-schedule").querySelector('.row.tappable[aria-expanded="true"]');
+  if(open) open.setAttribute("aria-expanded","false");
   DETAIL.open=null;
   DETAIL.seq++;                       // invalidate anything still in flight
+  return open;
 }
 
 function openGame(id){
@@ -2548,12 +2586,13 @@ function openGame(id){
   li.parentNode.insertBefore(slot, li.nextSibling);
 
   var token=++DETAIL.seq;
-  G.side=null;                        // default the leaders toggle to Notre Dame
+  G.side=null;                        // default the team toggle to Notre Dame
+  pinRow(li);
   get(ESPN+"/summary?event="+id).then(function(d){
     if(token!==DETAIL.seq || DETAIL.open!==id) return;
     slot.innerHTML=renderGame(d, true);
     wireLeaderSwitch(slot);
-    slot.scrollIntoView({block:"nearest"});
+    pinRow(li);                       // the render changed the page height
   }).catch(function(){
     if(token!==DETAIL.seq || DETAIL.open!==id) return;
     slot.innerHTML='<p class="msg"><strong>Couldn\u2019t load that game.</strong>'+
@@ -2561,6 +2600,10 @@ function openGame(id){
   });
 }
 $("panel-schedule").addEventListener("click", function(e){
+  if(e.target.closest("[data-close-detail]")){
+    pinRow(closeDetail());            // land back on the row, not mid-list
+    return;
+  }
   var li=e.target.closest(".row.tappable[data-ev]");
   if(li) openGame(li.getAttribute("data-ev"));
 });
