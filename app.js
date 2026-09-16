@@ -1142,7 +1142,7 @@ function loadGame(force){
   if(el.dataset.loaded===g.id && !force) return;
   if(!el.dataset.loaded) el.innerHTML='<p class="loading">Loading the game…</p>';
 
-  get(ESPN+"/summary?event="+g.id).then(function(d){
+  summaryFor(g.id, g.state==="in").then(function(d){
     var shape=gameShape(d);
     if(el.dataset.loaded===g.id && el.dataset.shape===shape){
       patchGame(d);                     // scores, clock and last play only
@@ -1997,12 +1997,16 @@ function warmTabs(){
   var c=navigator.connection;
   if(c && (c.saveData || /(^|-)2g$/.test(c.effectiveType||""))) return;  // respect data saver
 
-  var jobs=[loadAround, loadDepth, loadNews, function(){ loadGame(); }];
+  // The scoreboard goes first: loadAround reuses it, and it decides whether
+  // the live poller should run. It is 95KB on the wire, which is why it is
+  // here and not in load() competing with the schedule for first paint.
+  var jobs=[function(){ getScoreboard().catch(function(){}); },
+            loadAround, loadDepth, loadNews, function(){ loadGame(); }, prefetchSummaries];
   jobs.forEach(function(fn,i){
     setTimeout(function(){
       if(document.hidden) return;
       try{ fn(); }catch(e){}
-    }, 900 + i*550);
+    }, 700 + i*500);
   });
 }
 
@@ -2098,14 +2102,25 @@ function load(){
   }).catch(function(){});
 
   refreshSchedule(true);
-  getScoreboard().catch(function(){});   // sets the live state before any tab is opened
   loadStrip();
+}
+
+// What the service worker last stored for a URL, if anything. Lets the page
+// paint from the previous visit's data before the network answers.
+function cachedJSON(url){
+  if(typeof caches==="undefined") return Promise.reject(0);
+  return caches.match(url).then(function(r){ if(!r) throw 0; return r.json(); });
 }
 
 // Pulled out of load() so the auto-refresh can reuse it without re-fetching
 // team info, odds or anything else that does not change during a game.
 function refreshSchedule(first){
-  return get(ESPN+"/teams/"+TEAM+"/schedule").then(function(d){
+  var url=ESPN+"/teams/"+TEAM+"/schedule";
+
+  // Everything that turns a schedule payload into pixels. Runs twice on a
+  // repeat visit: once from the worker's cache the instant the page opens,
+  // then again when ESPN answers. paintSchedule keeps any open box score.
+  function apply(d){
     var games=(d.events||[]).map(normalize).sort(function(a,b){return new Date(a.date)-new Date(b.date);});
     S.games=games;
     var live=games.filter(function(g){return g.state==="in";})[0];
@@ -2113,6 +2128,18 @@ function refreshSchedule(first){
     S.next=live||up||null;
     if(S.next) paintHero(S.next); else $("hero").hidden=true;
     paintSchedule(games);
+    return games;
+  }
+  var painted=false;
+  if(first){
+    cachedJSON(url).then(function(d){
+      if(S.games) return;              // the network beat the cache; nothing to do
+      apply(d); painted=true;
+    }).catch(function(){});
+  }
+
+  return get(url).then(function(d){
+    var games=apply(d);
     if(G.pending) loadGame(true);        // the Game tab was waiting on this
     if(first) say("Schedule loaded, "+games.length+" games."+
       (S.next?" Next game is "+(S.next.home?"versus ":"at ")+S.next.oppName+".":""));
@@ -2124,7 +2151,7 @@ function refreshSchedule(first){
 
     if(S.next && !S.next.odds && S.oddsTried!==S.next.id){
       S.oddsTried=S.next.id;          // ESPN often has no line for these; ask once
-      get(ESPN+"/summary?event="+S.next.id).then(function(sm){
+      summaryFor(S.next.id).then(function(sm){
         var pc=sm.pickcenter&&sm.pickcenter[0]; if(!pc) return;
         S.next.odds={ line:pc.details||null, total:pc.overUnder!=null?pc.overUnder:null };
         paintHero(S.next); paintSchedule(S.games);
@@ -2136,12 +2163,70 @@ function refreshSchedule(first){
       new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})+".";
     paintStale();                      // overrides the line above when offline
   }).catch(function(){
-    if(!first) return;                 // a failed background poll keeps the old data
+    if(!first || painted) return;      // a failed poll, or a cached paint, keeps what is there
     $("panel-schedule").innerHTML='<p class="msg"><strong>The schedule didn\u2019t load.</strong>'+
       'If you are viewing this inside another app\u2019s file preview, that preview is most likely '+
       'blocking outside requests. Open the file in Safari or Chrome directly and it should fill in. '+
       'Otherwise, check your connection and choose Refresh.</p>';
     say("Schedule failed to load.");
+  });
+}
+
+/* ---------- summaries: one fetch per game, finals kept for good ---------- */
+// ESPN's summary is the box score, and every call to ESPN costs about half a
+// second of latency whatever its size. A finished game's summary never
+// changes, so it is stored in the Cache API and never fetched twice on this
+// device. A live game is always fetched fresh. In-flight requests are shared,
+// so a prefetch and a tap on the same row make one call between them.
+var SUM={ mem:{}, inflight:{} };
+var SUM_CACHE="iw-final-summaries";
+
+function gameById(id){
+  return (S.games||[]).filter(function(g){ return String(g.id)===String(id); })[0]||null;
+}
+function summaryFor(id, live){
+  id=String(id);
+  var url=ESPN+"/summary?event="+id;
+  var g=gameById(id), isFinal=!!g && g.state==="post";
+  var hit=SUM.mem[id];
+  if(!live && hit && (hit.final || Date.now()-hit.at<60000)) return Promise.resolve(hit.d);
+  if(SUM.inflight[id]) return SUM.inflight[id];
+
+  var stored = (isFinal && !live && typeof caches!=="undefined")
+    ? caches.open(SUM_CACHE).then(function(c){ return c.match(url); })
+        .then(function(r){ if(!r) throw 0; return r.json(); })
+    : Promise.reject(0);
+
+  var p = stored.catch(function(){
+    return fetch(url,{cache:"no-store"}).then(function(r){
+      if(!r.ok) throw new Error("HTTP "+r.status);
+      if(isFinal && typeof caches!=="undefined"){
+        var copy=r.clone();
+        caches.open(SUM_CACHE).then(function(c){ return c.put(url, copy); }).catch(function(){});
+      }
+      return r.json();
+    });
+  }).then(function(d){
+    SUM.mem[id]={ d:d, at:Date.now(), final:isFinal };
+    return d;
+  });
+  SUM.inflight[id]=p;
+  p.then(function(){ delete SUM.inflight[id]; }, function(){ delete SUM.inflight[id]; });
+  return p;
+}
+
+// After the page has settled: the box scores people actually tap - finished
+// games, newest first - and the next game. Staggered so it never competes
+// with anything the reader asked for, and skipped on a data-saver connection.
+function prefetchSummaries(){
+  if(document.hidden || !S.games) return;
+  var c=navigator.connection;
+  if(c && (c.saveData || /(^|-)2g$/.test(c.effectiveType||""))) return;
+  var ids=S.games.filter(function(g){ return g.state==="post"; })
+    .map(function(g){ return g.id; }).reverse();
+  if(S.next) ids.unshift(S.next.id);
+  ids.forEach(function(id,i){
+    setTimeout(function(){ if(!document.hidden) summaryFor(id).catch(function(){}); }, 350*i);
   });
 }
 
@@ -2178,7 +2263,7 @@ function openGame(id){
 
   var token=++DETAIL.seq;
   G.side=null;                        // default the team toggle to Notre Dame
-  get(ESPN+"/summary?event="+id).then(function(d){
+  summaryFor(id).then(function(d){
     if(token!==DETAIL.seq || DETAIL.open!==id) return;
     slot.innerHTML=renderGame(d, true);
     wireLeaderSwitch(slot);
@@ -2194,6 +2279,12 @@ $("panel-schedule").addEventListener("click", function(e){
   var li=e.target.closest(".row.tappable[data-ev]");
   if(li) openGame(li.getAttribute("data-ev"));
 });
+// The finger is down before the tap completes; start the fetch then. On a
+// prefetched or final game this is a no-op.
+$("panel-schedule").addEventListener("pointerdown", function(e){
+  var li=e.target.closest(".row.tappable[data-ev]");
+  if(li) summaryFor(li.getAttribute("data-ev")).catch(function(){});
+}, {passive:true});
 $("panel-schedule").addEventListener("keydown", function(e){
   if(e.key!=="Enter" && e.key!==" ") return;
   var li=e.target.closest(".row.tappable[data-ev]");

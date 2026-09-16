@@ -13,7 +13,7 @@
    Bump VERSION whenever the shell changes shape enough that an old cached
    copy must not linger; the activate step throws away every other cache. */
 
-var VERSION = "iw-2026-09-16d";
+var VERSION = "iw-2026-09-16e";
 var SHELL   = VERSION + "-shell";
 var DATA    = VERSION + "-data";
 
@@ -61,7 +61,9 @@ self.addEventListener("activate", function (e) {
   e.waitUntil(
     caches.keys().then(function (keys) {
       return Promise.all(keys.map(function (k) {
-        if (k !== SHELL && k !== DATA) return caches.delete(k);
+        // only this worker's own versioned caches; the page keeps its own
+        // store of final box scores under a different name
+        if (k.indexOf("iw-20") === 0 && k !== SHELL && k !== DATA) return caches.delete(k);
       }));
     }).then(function () { return self.clients.claim(); })
   );
