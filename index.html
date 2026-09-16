@@ -65,6 +65,16 @@ body{font-family:'Barlow',system-ui,-apple-system,sans-serif;font-size:1rem;line
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 .skip{position:absolute;left:1rem;top:-4rem;z-index:10;background:var(--leaf);color:#231A03;font-weight:600;padding:.75rem 1rem;border-radius:3px;text-decoration:none}
 .skip:focus{top:.75rem}
+/* One disclosure indicator everywhere something expands: schedule rows,
+   folds, and the two market cards. Same glyph family, size and colour, so
+   "this opens" reads the same on every tab. */
+.row.tappable::after,
+details.fold > summary::after,
+.strip .cell::after{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:1.35rem;line-height:1;font-weight:700;
+  color:var(--gold-bright);
+}
 
 /* ====================================================================
    HEADER
@@ -175,11 +185,14 @@ ul.plain,ol.plain{list-style:none;margin:0;padding:0}
 .row.tappable{cursor:pointer;scroll-margin-top:5.5rem}
 .row.tappable:hover{background:rgba(201,151,0,.07)}
 .row.tappable:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
-.row.tappable .mid::after{
-  content:"\203A";float:right;color:var(--dim);font-size:1.1rem;line-height:1;
-  margin-left:.4rem;opacity:.7;transition:transform .15s ease;
+/* The chevron is a flex child of the row itself, so it sits in the same
+   column on every row regardless of what the score/network cell is showing.
+   Shares its look with the fold and market-card indicators (see .disclose). */
+.row.tappable::after{
+  content:"\25B8";flex:none;width:1.4rem;text-align:center;
+  transition:transform .15s ease;
 }
-.row.tappable[aria-expanded="true"] .mid::after{transform:rotate(90deg)}
+.row.tappable[aria-expanded="true"]::after{transform:rotate(90deg)}
 li.gamedetail{
   list-style:none;
   margin:0 -.55rem .4rem;
@@ -243,7 +256,7 @@ details.week .chg{padding:0 0 .6rem 1.6rem}
 details.fold{border:1px solid var(--line);border-radius:9px;overflow:hidden;margin:.5rem 0}
 details.fold > summary{display:flex;align-items:baseline;gap:.5rem;cursor:pointer;padding:.7rem .15rem;min-height:2.75rem;box-sizing:border-box;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:1rem;letter-spacing:.04em;color:var(--parch)}
 details.fold > summary::-webkit-details-marker{display:none}
-details.fold > summary::after{content:"\25BE";margin-left:auto;color:var(--leaf);font-size:.85rem;transition:transform .15s ease}
+details.fold > summary::after{content:"\25BE";margin-left:auto;transition:transform .15s ease}
 details.fold[open] > summary::after{transform:rotate(180deg)}
 details.fold > summary .count{font-weight:500;color:var(--dim);font-size:.85rem;letter-spacing:0}
 details.fold > summary:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
@@ -427,7 +440,7 @@ a.art:hover{background:rgba(18,52,90,.72);border-color:var(--gold-line);transfor
 .strip .cell .v{display:block;margin-top:.25rem;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.7rem;line-height:1.1;font-variant-numeric:tabular-nums;color:var(--gold-bright)}
 .strip .cell .v em{font-style:normal;font-size:.6em;font-weight:600;margin-left:.3rem}
 .strip .cell .v.pending{font-size:.95rem;font-weight:500;color:var(--dim);font-family:'Barlow',system-ui,-apple-system,sans-serif}
-.strip .cell::after{content:"\25BE";position:absolute;top:.55rem;right:.6rem;color:var(--leaf);font-size:.75rem;transition:transform .15s ease}
+.strip .cell::after{content:"\25BE";position:absolute;top:.6rem;right:.7rem;transition:transform .15s ease}
 .strip .cell[aria-expanded="true"]::after{transform:rotate(180deg)}
 .hint{text-transform:uppercase;letter-spacing:.1em;font-size:.58rem;color:#71849A;text-align:right;margin:.4rem .2rem .8rem}
 #oddsboard{margin-top:.4rem}
@@ -519,7 +532,7 @@ details.fold>summary{padding:.75rem .9rem;background:rgba(12,35,64,.5);font-weig
   a.art{transition:none}
   .tabbar button#tab-game{transform:translateY(-.2rem)}
   .tabbar button[role="tab"] svg{transition:none}
-  .row.tappable .mid::after{transition:none}
+  .row.tappable::after{transition:none}
 }
 </style>
   <meta name="description" content="Irish Watch — a Notre Dame football game-day dashboard.">
