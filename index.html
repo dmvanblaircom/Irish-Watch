@@ -119,7 +119,7 @@ details.fold > summary::after,
    ==================================================================== */
 /* The broadcast card. Two columns on a desktop; the phone block at the foot of
    this file collapses it to a single flow. */
-.hero{position:relative;overflow:hidden;opacity:0;animation:reveal .7s cubic-bezier(.2,.7,.3,1) forwards;margin:0;color:var(--paper);display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto 1fr;column-gap:1.25rem;border:1px solid var(--gold-line);border-radius:12px;min-height:13rem;margin-top:.85rem;padding:1.35rem 1.4rem 1.25rem;background:radial-gradient(circle at 86% 18%,rgba(255,205,0,.13),transparent 14rem),
+.hero{position:relative;overflow:hidden;opacity:0;animation:reveal .7s cubic-bezier(.2,.7,.3,1) forwards;margin:0;color:var(--paper);display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto 1fr auto;column-gap:1.25rem;border:1px solid var(--gold-line);border-radius:12px;min-height:13rem;margin-top:.85rem;padding:1.35rem 1.4rem 1.25rem;background:radial-gradient(circle at 86% 18%,rgba(255,205,0,.13),transparent 14rem),
       linear-gradient(135deg,#12345A 0%,#0C2340 50%,#061525 100%);box-shadow:0 18px 45px rgba(0,0,0,.22)}
 .hero .when,.hero .opp{padding-right:5.5rem}
 .hero .when{font-weight:600;grid-column:1;grid-row:1;color:#D8B84F;text-transform:uppercase;letter-spacing:.13em;font-size:.68rem}
@@ -129,6 +129,12 @@ details.fold > summary::after,
 .hero .line b{font-weight:600}
 .hero .venue{font-size:.85rem;margin-top:.1rem;grid-column:1;grid-row:4;align-self:end;color:#9FB0C4}
 .hero .series{font-size:.9rem;font-weight:600;margin:.4rem 0 0;padding-right:5.5rem;color:var(--gold-bright);letter-spacing:.02em;grid-column:1;grid-row:4;align-self:end;margin-left:0;margin-top:0}
+/* Kickoff forecast, full width under everything. Only painted for a game
+   inside Open-Meteo's 16-day window. */
+.hero .wx{grid-column:1 / -1;grid-row:5;margin:.8rem 0 0;padding-top:.6rem;
+  border-top:1px solid rgba(201,151,0,.24);font-size:.88rem;color:#DDE5EE}
+.hero .wx .k{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.7rem;
+  letter-spacing:.14em;text-transform:uppercase;color:#D8B84F;margin-right:.5rem}
 .hero .clock{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:.02em;grid-column:2;grid-row:3 / span 2;align-self:end;margin:0;padding:.7rem 0 0 .9rem;border-top:0;border-left:1px solid rgba(201,151,0,.24);font-size:1.9rem;color:var(--paper)}
 .hero .clock small{font-size:.5em;font-weight:600;margin-left:.1rem;margin-right:.55rem}
 .hero .spread{margin:0;font-weight:600;line-height:1.35;text-align:right;font-variant-numeric:tabular-nums;top:1.35rem;right:1.35rem;grid-column:2;grid-row:1 / span 2;position:static;min-width:6rem;padding:.35rem 0 0 .9rem;border-left:1px solid rgba(201,151,0,.24);font-family:'Barlow Condensed',sans-serif;font-size:1rem;color:#E8EEF5}
@@ -601,6 +607,7 @@ details.fold>summary{padding:.75rem .9rem;background:rgba(12,35,64,.5);font-weig
       <p class="line" id="heroLine"></p>
       <p class="venue" id="heroVenue"></p>
       <p class="series" id="heroSeries" hidden></p>
+      <p class="wx" id="heroWx" hidden></p>
       <p class="spread" id="heroSpread"></p>
       <!-- aria-live off: a countdown that announced itself every 30s would be unusable -->
       <p class="clock" id="heroClock" aria-live="off"></p>
@@ -855,6 +862,8 @@ function normalize(ev){
     oppRank: them&&them.curatedRank&&them.curatedRank.current<26?them.curatedRank.current:null,
     venue: comp.venue?(comp.venue.fullName||""):"",
     city: comp.venue&&comp.venue.address?comp.venue.address.city:"",
+    state: comp.venue&&comp.venue.address?(comp.venue.address.state||""):"",
+    zip: comp.venue&&comp.venue.address?(comp.venue.address.zipCode||""):"",
     net: network(comp) || fallbackNetwork(
            them&&them.team ? (them.team.displayName||them.team.shortDisplayName) : ""),
     odds: oddsOf(comp),
@@ -891,6 +900,7 @@ function paintHero(g){
     $("heroSeries").hidden = !g.series;
     if(g.series) $("heroSeries").textContent="Playing for the "+g.series;
     $("heroClock").textContent=g.detail;
+    $("heroWx").hidden=true;
     return;
   }
   $("heroWhen").textContent="Next up \u00B7 "+
@@ -903,6 +913,7 @@ function paintHero(g){
   $("heroVenue").textContent=g.venue+(g.city?", "+g.city:"");
   $("heroSeries").hidden = !g.series;
   if(g.series) $("heroSeries").textContent="Playing for the "+g.series;
+  paintWeather(g);
 
   if(S.tick) clearInterval(S.tick);
   if(!known){ $("heroClock").textContent=""; return; }
@@ -915,6 +926,98 @@ function paintHero(g){
       '<span aria-hidden="true">'+(d?d+"<small>d</small>":"")+h+"<small>h</small>"+m+"<small>m</small></span>";
   }
   tickOnce(); S.tick=setInterval(tickOnce,30000);
+}
+
+/* ---------- kickoff weather ---------- */
+// Open-Meteo: free, no key, CORS-open. The venue is geocoded once and kept in
+// localStorage; the forecast is pulled for the kickoff hour. Forecasts run 16
+// days out, so a game further away than that simply shows nothing.
+var GEO="https://geocoding-api.open-meteo.com/v1/search";
+var METEO="https://api.open-meteo.com/v1/forecast";
+var GEO_KEY="iw-geo-v1";
+// The home field first: Open-Meteo's geocoder does not know zip 46556.
+var KNOWN_VENUES=[[/notre dame stadium/i, 41.6984, -86.2339]];
+var US_STATES={AL:"Alabama",AK:"Alaska",AZ:"Arizona",AR:"Arkansas",CA:"California",CO:"Colorado",
+  CT:"Connecticut",DE:"Delaware",DC:"District of Columbia",FL:"Florida",GA:"Georgia",HI:"Hawaii",
+  ID:"Idaho",IL:"Illinois",IN:"Indiana",IA:"Iowa",KS:"Kansas",KY:"Kentucky",LA:"Louisiana",
+  ME:"Maine",MD:"Maryland",MA:"Massachusetts",MI:"Michigan",MN:"Minnesota",MS:"Mississippi",
+  MO:"Missouri",MT:"Montana",NE:"Nebraska",NV:"Nevada",NH:"New Hampshire",NJ:"New Jersey",
+  NM:"New Mexico",NY:"New York",NC:"North Carolina",ND:"North Dakota",OH:"Ohio",OK:"Oklahoma",
+  OR:"Oregon",PA:"Pennsylvania",RI:"Rhode Island",SC:"South Carolina",SD:"South Dakota",
+  TN:"Tennessee",TX:"Texas",UT:"Utah",VT:"Vermont",VA:"Virginia",WA:"Washington",
+  WV:"West Virginia",WI:"Wisconsin",WY:"Wyoming"};
+
+function geoCache(){ try{ return JSON.parse(localStorage.getItem(GEO_KEY)||"{}"); }catch(e){ return {}; } }
+function geoRemember(key, pt){
+  try{ var c=geoCache(); c[key]=pt; localStorage.setItem(GEO_KEY, JSON.stringify(c)); }catch(e){}
+}
+function geoSearch(q, admin1){
+  return get(GEO+"?name="+encodeURIComponent(q)+"&count=5&language=en&format=json").then(function(d){
+    var hits=(d.results||[]).filter(function(r){
+      return r.country_code==="US" && (!admin1 || r.admin1===admin1);
+    });
+    if(!hits.length) throw new Error("no geocode hit for "+q);
+    return { lat:hits[0].latitude, lon:hits[0].longitude };
+  });
+}
+// Where the game is: known field, else zip, else city + state.
+function venuePoint(g){
+  for(var i=0;i<KNOWN_VENUES.length;i++){
+    if(KNOWN_VENUES[i][0].test(g.venue||"")) return Promise.resolve({lat:KNOWN_VENUES[i][1], lon:KNOWN_VENUES[i][2]});
+  }
+  if(!g.city && !g.zip) return Promise.reject(new Error("no venue address"));
+  var key=[g.zip,g.city,g.state].join("|"), hit=geoCache()[key];
+  if(hit) return Promise.resolve(hit);
+  var first = g.zip ? geoSearch(g.zip) : Promise.reject(new Error("no zip"));
+  return first.catch(function(){ return geoSearch(g.city, US_STATES[g.state]||null); })
+    .then(function(pt){ geoRemember(key, pt); return pt; });
+}
+// WMO weather codes, in plain words.
+function wmoText(c){
+  if(c===0) return "clear";
+  if(c===1) return "mostly clear";
+  if(c===2) return "partly cloudy";
+  if(c===3) return "overcast";
+  if(c===45||c===48) return "fog";
+  if(c>=51&&c<=57) return "drizzle";
+  if(c>=61&&c<=67) return "rain";
+  if(c>=71&&c<=77) return "snow";
+  if(c>=80&&c<=82) return "showers";
+  if(c===85||c===86) return "snow showers";
+  if(c>=95) return "thunderstorms";
+  return "";
+}
+var WX={ id:null, at:0, html:"" };      // one forecast per game, refreshed half-hourly
+function paintWeather(g){
+  var el=$("heroWx");
+  var ms=new Date(g.date)-Date.now();
+  if(!g.timeSet || ms<-3*3600e3 || ms>16*86400e3){ el.hidden=true; return; }
+  if(WX.id===g.id && Date.now()-WX.at<30*60e3){ el.innerHTML=WX.html; el.hidden=!WX.html; return; }
+  venuePoint(g).then(function(pt){
+    return get(METEO+"?latitude="+pt.lat+"&longitude="+pt.lon+
+      "&hourly=temperature_2m,precipitation_probability,wind_speed_10m,weather_code"+
+      "&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&forecast_days=16");
+  }).then(function(d){
+    // hourly.time is naive local time at the venue; shift kickoff by the
+    // venue's offset and round to the nearest hour to find the row
+    var h=d.hourly||{}, off=(d.utc_offset_seconds||0)*1000;
+    var local=new Date(new Date(g.date).getTime()+off);
+    local.setUTCMinutes(Math.round(local.getUTCMinutes()/60)*60, 0, 0);
+    var key=local.toISOString().slice(0,16);
+    var i=(h.time||[]).indexOf(key);
+    if(i<0) throw new Error("kickoff hour not in forecast");
+    var t=Math.round(h.temperature_2m[i]), p=h.precipitation_probability[i], w=Math.round(h.wind_speed_10m[i]);
+    var sky=wmoText(h.weather_code[i]);
+    var bits=[t+"°F", sky, (p!=null?p+"% chance of rain":""), "wind "+w+" mph"].filter(Boolean);
+    WX.id=g.id; WX.at=Date.now();
+    WX.html='<span class="k">Kickoff forecast</span> '+
+      '<span class="sr-only">'+esc(bits.join(", "))+'</span>'+
+      '<span aria-hidden="true">'+bits.map(esc).join(" · ")+"</span>";
+    el.innerHTML=WX.html; el.hidden=false;
+  }).catch(function(){
+    WX.id=g.id; WX.at=Date.now(); WX.html="";
+    el.hidden=true;                     // no forecast is better than a wrong one
+  });
 }
 
 /* ---------- schedule ---------- */
