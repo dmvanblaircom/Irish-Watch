@@ -2,11 +2,13 @@
 "use strict";
 
 var ESPN = "https://site.api.espn.com/apis/site/v2/sports/football/college-football";
-// The team this Suite is built around. Everything the page knows about the
-// team itself - name, ESPN id, home field, trophy games - comes from
-// teams/<team>.js, which index.html loads before this file.
-var TEAM = window.TEAM_CONFIG;
-var TEAM_ID = TEAM.externalIds.espn;     // ESPN's id for the team, as a string
+// The team this Suite is built around. index.html loads teams/<team>.js and
+// teamos/team.js before this file; TeamOS turns the config's `team` section
+// into a validated, frozen, provider-neutral Team. Everything ESPN- or
+// Kalshi-specific about the team is read from TEAM_CONFIG.sources, here and
+// in teamMarket() only, until the Phase 3 adapters take that over.
+var TEAM = TeamOS.createTeam(TEAM_CONFIG.team);
+var TEAM_ID = TEAM_CONFIG.sources.espn.teamId;     // ESPN's id for the team, as a string
 // Kalshi serves public market data without a key, but sends no CORS header, so
 // a browser cannot read it directly. Each entry below is a way to reach them;
 // they are tried in order until one works.
@@ -193,7 +195,7 @@ function venueTag(g){
     '<span aria-hidden="true">AWAY</span></span>';
 }
 // Trophy and series names for the season's opponents, from the team config.
-var SERIES = TEAM.series;
+var SERIES = TEAM_CONFIG.series;
 function seriesFor(name){
   for(var i=0;i<SERIES.length;i++){ if(SERIES[i][0].test(name||"")) return SERIES[i][1]; }
   return null;
@@ -202,7 +204,7 @@ function seriesFor(name){
 // streaming-only games because Peacock is not a TV network in their data model.
 // These are consulted ONLY when ESPN returns nothing for that game, so they can
 // never contradict the feed and they disappear on their own once it catches up.
-var NETWORK_FALLBACK = TEAM.networkFallback;
+var NETWORK_FALLBACK = TEAM_CONFIG.sources.espn.broadcastFallback;
 function fallbackNetwork(oppName){
   for(var i=0;i<NETWORK_FALLBACK.length;i++){
     if(NETWORK_FALLBACK[i][0].test(oppName||"")) return NETWORK_FALLBACK[i][1];
@@ -808,8 +810,8 @@ function prevPrice(m){
 function teamOf(m){ return m.yes_sub_title||m.subtitle||m.title||m.ticker; }
 // Whether a Kalshi market is this team's: by ticker suffix, then by name.
 function teamMarket(ticker, name){
-  return String(ticker||"").endsWith(TEAM.kalshi.tickerSuffix) ||
-         TEAM.kalshi.namePattern.test(String(name||""));
+  var k=TEAM_CONFIG.sources.kalshi;
+  return String(ticker||"").endsWith(k.tickerSuffix) || k.namePattern.test(String(name||""));
 }
 function isTeamMarket(m){ return teamMarket(m.ticker, teamOf(m)); }
 
@@ -1762,8 +1764,8 @@ function rosterList(){
     : '<p class="msg">No player matches \u201C'+esc(ROSTER.q)+'\u201D.</p>';
   html+='<p class="stamp">'+show.length+' player'+(show.length===1?"":"s")+
     (q?" matching":"")+' \u00B7 numbers as listed by ESPN. '+
-    'Official roster at <a href="'+esc(TEAM.links.roster.url)+'" '+
-    'target="_blank" rel="noopener">'+esc(TEAM.links.roster.label)+
+    'Official roster at <a href="'+esc(TEAM_CONFIG.links.roster.url)+'" '+
+    'target="_blank" rel="noopener">'+esc(TEAM_CONFIG.links.roster.label)+
     '<span class="sr-only"> (opens in a new tab)</span></a>.</p>';
   return html;
 }
@@ -1809,8 +1811,8 @@ function loadRoster(box){
     ROSTER.loading=false;
     box.innerHTML='<p class="msg"><strong>Couldn\u2019t load the roster.</strong>'+
       'ESPN didn\u2019t return one. The official list is at '+
-      '<a href="'+esc(TEAM.links.roster.url)+'" target="_blank" '+
-      'rel="noopener">'+esc(TEAM.links.roster.label)+'</a>.</p>';
+      '<a href="'+esc(TEAM_CONFIG.links.roster.url)+'" target="_blank" '+
+      'rel="noopener">'+esc(TEAM_CONFIG.links.roster.label)+'</a>.</p>';
   });
 }
 

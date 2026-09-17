@@ -1,0 +1,52 @@
+/* TeamOS - the Team domain model.
+
+   A Team is what the platform knows about a team independent of where the
+   data comes from: nothing here names ESPN, Kalshi or any other provider.
+   Provider identifiers and matching rules live in the team config's
+   `sources` section (see teams/notre-dame.js and
+   docs/decisions/0001-team-is-provider-neutral.md).
+
+   createTeam() checks that a config's `team` section has every required
+   field, copies it, and freezes the result so nothing downstream can
+   quietly alter the team the page is built around. A missing or malformed
+   field throws at startup with the field named, which beats rendering
+   "undefined" into the neutral-site rule for a second team's config. */
+
+var TeamOS = (function () {
+  "use strict";
+
+  function fail(field, why) {
+    throw new Error("TeamOS.createTeam: team." + field + " " + why);
+  }
+  // `label` is the dotted path used in the error; it defaults to the field.
+  function str(obj, field, label) {
+    var v = obj[field];
+    if (typeof v !== "string" || !v.trim()) fail(label || field, "must be a non-empty string");
+    return v;
+  }
+  function num(obj, field, label) {
+    var v = obj[field];
+    if (typeof v !== "number" || isNaN(v)) fail(label || field, "must be a number");
+    return v;
+  }
+
+  function createTeam(t) {
+    if (!t || typeof t !== "object") throw new Error("TeamOS.createTeam: team config is missing");
+    var team = {
+      id:           str(t, "id"),
+      name:         str(t, "name"),
+      abbreviation: str(t, "abbreviation"),
+      sport:        str(t, "sport"),
+      league:       str(t, "league")
+    };
+    if (!t.venue || typeof t.venue !== "object") fail("venue", "must be an object");
+    team.venue = Object.freeze({
+      name: str(t.venue, "name", "venue.name"),
+      lat:  num(t.venue, "lat",  "venue.lat"),
+      lon:  num(t.venue, "lon",  "venue.lon")
+    });
+    return Object.freeze(team);
+  }
+
+  return { createTeam: createTeam };
+})();
