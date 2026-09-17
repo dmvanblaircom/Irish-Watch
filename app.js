@@ -2,7 +2,11 @@
 "use strict";
 
 var ESPN = "https://site.api.espn.com/apis/site/v2/sports/football/college-football";
-var TEAM = "87";
+// The team this Suite is built around. Everything the page knows about the
+// team itself - name, ESPN id, home field, trophy games - comes from
+// teams/<team>.js, which index.html loads before this file.
+var TEAM = window.TEAM_CONFIG;
+var TEAM_ID = TEAM.externalIds.espn;     // ESPN's id for the team, as a string
 // Kalshi serves public market data without a key, but sends no CORS header, so
 // a browser cannot read it directly. Each entry below is a way to reach them;
 // they are tried in order until one works.
@@ -166,15 +170,19 @@ function oddsOf(comp){
 // a stadium bigger than its own 34,000-seat one in Annapolis.
 var NEUTRAL_VENUES = /lambeau|gillette|metlife|m&t bank|soldier field|yankee stadium|aviva|at&t stadium|allegiant|mercedes-benz|hard rock|raymond james|caesars superdome|camping world|alamodome/i;
 
+// Case-insensitive match on the home field's name, the way ESPN spells it.
+function isHomeField(venueName){
+  return String(venueName||"").toLowerCase().indexOf(TEAM.venue.name.toLowerCase())>-1;
+}
 function isNeutral(comp, us){
   if(comp.neutralSite===true) return true;
   var v = comp.venue && comp.venue.fullName ? comp.venue.fullName : "";
   if(v === "") return false;
   // A pro or event venue is neutral no matter which side is listed as home.
   if(NEUTRAL_VENUES.test(v)) return true;
-  // Notre Dame listed at home but not actually in South Bend.
+  // Listed at home but not actually at the home field.
   var listedHome = us ? us.homeAway==="home" : false;
-  return listedHome && !/notre dame stadium/i.test(v);
+  return listedHome && !isHomeField(v);
 }
 function venueTag(g){
   if(g.neutral) return '<span class="tag n"><span class="sr-only">Neutral site game. </span>'+
@@ -184,19 +192,8 @@ function venueTag(g){
   return '<span class="tag a"><span class="sr-only">Away game. </span>'+
     '<span aria-hidden="true">AWAY</span></span>';
 }
-// Trophy and series names for Notre Dame's 2026 opponents. Matched on the
-// opponent name because no public feed carries this. Sourced from Notre Dame's
-// own schedule release; the USC entry is dormant while that series is paused.
-var SERIES = [
-  [/wisconsin/i,                 "Shamrock Series"],
-  [/michigan st/i,               "Megaphone Trophy"],
-  [/purdue/i,                    "Shillelagh Trophy"],
-  [/stanford/i,                  "Legends Trophy"],
-  [/navy|midshipmen/i,           "Rip Miller Trophy"],
-  [/boston college/i,            "Frank Leahy Memorial Bowl"],
-  [/^usc$|southern cal|trojans/i,"Jeweled Shillelagh"],
-  [/northwestern/i,              "Lost Shillelagh"]
-];
+// Trophy and series names for the season's opponents, from the team config.
+var SERIES = TEAM.series;
 function seriesFor(name){
   for(var i=0;i<SERIES.length;i++){ if(SERIES[i][0].test(name||"")) return SERIES[i][1]; }
   return null;
@@ -205,9 +202,7 @@ function seriesFor(name){
 // streaming-only games because Peacock is not a TV network in their data model.
 // These are consulted ONLY when ESPN returns nothing for that game, so they can
 // never contradict the feed and they disappear on their own once it catches up.
-var NETWORK_FALLBACK = [
-  [/purdue/i, "Peacock"]          // 2026-09-26, announced 9/14, absent from ESPN
-];
+var NETWORK_FALLBACK = TEAM.networkFallback;
 function fallbackNetwork(oppName){
   for(var i=0;i<NETWORK_FALLBACK.length;i++){
     if(NETWORK_FALLBACK[i][0].test(oppName||"")) return NETWORK_FALLBACK[i][1];
@@ -219,7 +214,7 @@ function normalize(ev){
   var comp=(ev.competitions&&ev.competitions[0])||{}, cs=comp.competitors||[];
   var us=null,them=null;
   cs.forEach(function(c){ var id=c.id||(c.team&&c.team.id);
-    if(String(id)===TEAM) us=c; else them=c; });
+    if(String(id)===TEAM_ID) us=c; else them=c; });
   var st=(comp.status&&comp.status.type)||(ev.status&&ev.status.type)||{};
   return {
     id:ev.id, date:ev.date, timeSet:timeIsSet(ev.date, comp),
@@ -267,7 +262,7 @@ function paintHeroMini(g){
   var when, clock;
   if(g.state==="in"){
     when='<span class="live-lbl">LIVE</span> '+esc(g.detail||"");
-    clock="ND "+(g.us||0)+"–"+(g.them||0);
+    clock=TEAM.abbreviation+" "+(g.us||0)+"–"+(g.them||0);
   } else {
     when = g.timeSet
       ? new Date(g.date).toLocaleDateString([],{weekday:"short"})+" "+fmtTime(g.date)+(g.net?" · "+esc(g.net):"")
@@ -301,7 +296,7 @@ function paintHero(g){
   if(g.state==="in"){
     $("heroWhen").textContent="Playing now \u00B7 "+
       (g.neutral?"neutral site":(g.home?"home game":"road game"));
-    $("heroLine").innerHTML="<b>Notre Dame "+(g.us||0)+", "+esc(g.oppName)+" "+(g.them||0)+"</b>";
+    $("heroLine").innerHTML="<b>"+esc(TEAM.name)+" "+(g.us||0)+", "+esc(g.oppName)+" "+(g.them||0)+"</b>";
     $("heroVenue").textContent=g.venue;
     $("heroSeries").hidden = !g.series;
     if(g.series) $("heroSeries").textContent="Playing for the "+g.series;
@@ -347,8 +342,6 @@ function paintHero(g){
 var GEO="https://geocoding-api.open-meteo.com/v1/search";
 var METEO="https://api.open-meteo.com/v1/forecast";
 var GEO_KEY="iw-geo-v1";
-// The home field first: Open-Meteo's geocoder does not know zip 46556.
-var KNOWN_VENUES=[[/notre dame stadium/i, 41.6984, -86.2339]];
 var US_STATES={AL:"Alabama",AK:"Alaska",AZ:"Arizona",AR:"Arkansas",CA:"California",CO:"Colorado",
   CT:"Connecticut",DE:"Delaware",DC:"District of Columbia",FL:"Florida",GA:"Georgia",HI:"Hawaii",
   ID:"Idaho",IL:"Illinois",IN:"Indiana",IA:"Iowa",KS:"Kansas",KY:"Kentucky",LA:"Louisiana",
@@ -372,11 +365,10 @@ function geoSearch(q, admin1){
     return { lat:hits[0].latitude, lon:hits[0].longitude };
   });
 }
-// Where the game is: known field, else zip, else city + state.
+// Where the game is: the home field from the team config, else zip, else
+// city + state.
 function venuePoint(g){
-  for(var i=0;i<KNOWN_VENUES.length;i++){
-    if(KNOWN_VENUES[i][0].test(g.venue||"")) return Promise.resolve({lat:KNOWN_VENUES[i][1], lon:KNOWN_VENUES[i][2]});
-  }
+  if(isHomeField(g.venue)) return Promise.resolve({lat:TEAM.venue.lat, lon:TEAM.venue.lon});
   if(!g.city && !g.zip) return Promise.reject(new Error("no venue address"));
   var key=[g.zip,g.city,g.state].join("|"), hit=geoCache()[key];
   if(hit) return Promise.resolve(hit);
@@ -456,7 +448,7 @@ function paintSchedule(games){
   var wasOpen=!!(prev&&prev.open);
   var detail=el.querySelector("li.gamedetail");
 
-  var html='<h2 class="sr-only">2026 Notre Dame schedule</h2>';
+  var html='<h2 class="sr-only">2026 '+esc(TEAM.name)+' schedule</h2>';
   if(fold){
     html+='<details class="fold"'+(wasOpen?" open":"")+'><summary>Earlier results '+
       '<span class="count">'+older.length+" games</span></summary>"+
@@ -485,7 +477,7 @@ function paintSchedule(games){
         '<span class="wl '+(g.won?"w":"l")+'">'+(g.won?"WIN":"LOSS")+"</span></span>";
       label="Show the box score for the "+esc(g.oppName)+" game";
     } else if(isLive){
-      right='<span class="sr-only">Score: Notre Dame '+(g.us||0)+", "+esc(g.oppName)+" "+(g.them||0)+
+      right='<span class="sr-only">Score: '+esc(TEAM.name)+' '+(g.us||0)+", "+esc(g.oppName)+" "+(g.them||0)+
           ". "+esc(g.detail)+"</span>"+
         '<span aria-hidden="true"><span class="score">'+(g.us||0)+"\u2013"+(g.them||0)+"</span></span>";
       label="Show the live box score for the "+esc(g.oppName)+" game";
@@ -549,7 +541,7 @@ function pollSlug(r){ return pollLabel(r).replace(/[^A-Za-z0-9]/g,""); }
 // and the one number you care about are both visible without tapping.
 function pollPill(r, active){
   var nd=null;
-  (r.ranks||[]).forEach(function(x){ if(x.team&&String(x.team.id)===TEAM) nd=x; });
+  (r.ranks||[]).forEach(function(x){ if(x.team&&String(x.team.id)===TEAM_ID) nd=x; });
   return '<button type="button" data-poll="'+pollSlug(r)+'" aria-pressed="'+active+'">'+
     esc(pollLabel(r))+
     (nd ? '<span class="n">#'+nd.current+"</span>"
@@ -562,7 +554,7 @@ function pollBody(r){
   var html = when ? '<p class="pollnote">'+esc(r.name||"Poll")+" \u00B7 "+esc(when)+"</p>" : "";
   html+='<ol class="plain" aria-label="'+esc(r.name||"Poll")+'">';
   (r.ranks||[]).forEach(function(x){
-    var isND=x.team&&String(x.team.id)===TEAM;
+    var isND=x.team&&String(x.team.id)===TEAM_ID;
     var mv=x.previous&&x.previous>0 ? x.previous-x.current : 0;
     var move = mv>0 ? '<span class="up"><span class="sr-only">up '+mv+'</span><span aria-hidden="true">\u25B2'+mv+"</span></span>"
              : mv<0 ? '<span class="down"><span class="sr-only">down '+Math.abs(mv)+'</span><span aria-hidden="true">\u25BC'+Math.abs(mv)+"</span></span>"
@@ -615,7 +607,7 @@ function rankedParts(ev){
   var home=cs.filter(function(c){return c.homeAway==="home";})[0]||cs[0];
   var away=cs.filter(function(c){return c.homeAway==="away";})[0]||cs[1];
   var st=(comp.status&&comp.status.type)||{};
-  var isND=cs.some(function(c){ return String(c.id)===TEAM; });
+  var isND=cs.some(function(c){ return String(c.id)===TEAM_ID; });
   var o=oddsOf(comp), net=network(comp);
   function nm(c){
     if(!c||!c.team) return "opponent to be announced";
@@ -814,9 +806,12 @@ function prevPrice(m){
   return num(m.previous_price);
 }
 function teamOf(m){ return m.yes_sub_title||m.subtitle||m.title||m.ticker; }
-function isNotreDame(m){
-  return /-ND$/.test(m.ticker||"") || /notre dame|fighting irish/i.test(teamOf(m));
+// Whether a Kalshi market is this team's: by ticker suffix, then by name.
+function teamMarket(ticker, name){
+  return String(ticker||"").endsWith(TEAM.kalshi.tickerSuffix) ||
+         TEAM.kalshi.namePattern.test(String(name||""));
 }
+function isTeamMarket(m){ return teamMarket(m.ticker, teamOf(m)); }
 
 function kalshiHelp(){
   return '<p class="msg"><strong>Kalshi didn\u2019t answer.</strong>'+
@@ -833,7 +828,7 @@ function kalshiHelp(){
 var BOARD={ open:null, seq:0 };
 
 function oddsBar(m, top, rank){
-  var isND=/notre dame|fighting irish/i.test(m.name)||/-ND$/.test(m.ticker);
+  var isND=teamMarket(m.ticker, m.name);
   return '<li class="obar '+(isND?"nd":"")+'">'+
     '<span class="orank" aria-hidden="true">'+rank+"</span>"+
     '<span class="nm">'+esc(m.name)+"</span>"+
@@ -846,7 +841,7 @@ function oddsBar(m, top, rank){
 function renderBoard(ms, heading){
   ms.forEach(function(m,i){ m.rank=i+1; });
   var top=ms[0].p||1;
-  function isND(m){ return /notre dame|fighting irish/i.test(m.name)||/-ND$/.test(m.ticker); }
+  function isND(m){ return teamMarket(m.ticker, m.name); }
   var lead=ms.slice(0,10), tail=ms.slice(10);
   if(!lead.some(isND)){
     var mine=tail.filter(isND)[0];
@@ -912,7 +907,7 @@ function loadStrip(){
   [{ ev: TITLE_EVENT,   cell: "mTitle"   },
    { ev: PLAYOFF_EVENT, cell: "mPlayoff" }].forEach(function(q){
     kalshi("/markets?event_ticker="+q.ev+"&limit=200&status=open").then(function(d){
-      var m = (d.markets||[]).filter(isNotreDame)[0];
+      var m = (d.markets||[]).filter(isTeamMarket)[0];
       var p = m ? price(m) : null;
       if(p==null){ $(q.cell).textContent="No market"; return; }
       var pp = prevPrice(m);
@@ -1400,13 +1395,13 @@ function renderGame(d, inline){
   function side(c){
     var t=c.team||{};
     var nm=t.shortDisplayName||t.displayName||t.name||"TBA";
-    var isND=String(t.id)===TEAM;
+    var isND=String(t.id)===TEAM_ID;
     var rec=(c.records&&c.records[0]&&c.records[0].summary)||"";
     var pts=c.score!=null?c.score:"";
     var lead = done||live ? (numOf(pts)>numOf((c===home?away:home).score) ? " lead":"") : "";
     var sideKey=(c===home)?"home":"away";
     return '<div class="gscore'+lead+'" data-side="'+sideKey+'">'+
-      '<div class="side"><div class="nm">'+(isND?'<span class="rk">ND</span> ':"")+esc(nm)+"</div>"+
+      '<div class="side"><div class="nm">'+(isND?'<span class="rk">'+esc(TEAM.abbreviation)+'</span> ':"")+esc(nm)+"</div>"+
       (rec?'<div class="rec">'+esc(rec)+"</div>":"")+"</div>"+
       '<div class="pts">'+esc(String(pts))+"</div></div>";
   }
@@ -1524,7 +1519,7 @@ function renderGame(d, inline){
     if(body){
       var head=function(t,right){
         var ab=pick(t,["team","abbreviation"],null)||pick(t,["team","shortDisplayName"],"")||"";
-        var isND=String(pick(t,["team","id"],""))===TEAM;
+        var isND=String(pick(t,["team","id"],""))===TEAM_ID;
         return '<span class="v'+(right?" r":"")+(isND?" nd":"")+'">'+esc(ab)+"</span>";
       };
       html+='<h2 class="sec">Team stats</h2>'+
@@ -1569,7 +1564,7 @@ function renderGame(d, inline){
   if(ra||rh||boxA||boxH){
     // default to whichever side is Notre Dame, and remember the choice
     // across the 25-second refresh
-    if(!G.side) G.side = homeId2===TEAM ? "home" : "away";
+    if(!G.side) G.side = homeId2===TEAM_ID ? "home" : "away";
     var ab=function(c){ return esc(pick(c,["team","abbreviation"],null)||pick(c,["team","shortDisplayName"],"")||""); };
     var toggle='<div class="seg" role="group" aria-label="Show which team">'+
         '<button type="button" data-side="away" aria-pressed="'+(G.side==="away")+'">'+
@@ -1614,7 +1609,7 @@ function renderGame(d, inline){
       var pab=pick(p,["team","abbreviation"],null);
       var scoredAway = pid ? pid===spAwayId : (pab ? pab===awayAb : false);
       var ab = pab || (scoredAway?awayAb:homeAb);
-      var isND = pid ? pid===TEAM : ab===("ND");
+      var isND = pid ? pid===TEAM_ID : ab===TEAM.abbreviation;
 
       var a=p.awayScore, hs=p.homeScore;
       var an=typeof a==="number"?a:parseInt(a,10);
@@ -1767,8 +1762,8 @@ function rosterList(){
     : '<p class="msg">No player matches \u201C'+esc(ROSTER.q)+'\u201D.</p>';
   html+='<p class="stamp">'+show.length+' player'+(show.length===1?"":"s")+
     (q?" matching":"")+' \u00B7 numbers as listed by ESPN. '+
-    'Official roster at <a href="https://fightingirish.com/sports/football/roster" '+
-    'target="_blank" rel="noopener">fightingirish.com'+
+    'Official roster at <a href="'+esc(TEAM.links.roster.url)+'" '+
+    'target="_blank" rel="noopener">'+esc(TEAM.links.roster.label)+
     '<span class="sr-only"> (opens in a new tab)</span></a>.</p>';
   return html;
 }
@@ -1803,7 +1798,7 @@ function loadRoster(box){
   if(ROSTER.loading) return;
   ROSTER.loading=true;
   box.innerHTML='<p class="loading">Loading the roster\u2026</p>';
-  get(ESPN+"/teams/"+TEAM+"/roster").then(function(d){
+  get(ESPN+"/teams/"+TEAM_ID+"/roster").then(function(d){
     ROSTER.loading=false;
     ROSTER.data=normRoster(d);
     box.innerHTML=renderRoster();
@@ -1814,8 +1809,8 @@ function loadRoster(box){
     ROSTER.loading=false;
     box.innerHTML='<p class="msg"><strong>Couldn\u2019t load the roster.</strong>'+
       'ESPN didn\u2019t return one. The official list is at '+
-      '<a href="https://fightingirish.com/sports/football/roster" target="_blank" '+
-      'rel="noopener">fightingirish.com</a>.</p>';
+      '<a href="'+esc(TEAM.links.roster.url)+'" target="_blank" '+
+      'rel="noopener">'+esc(TEAM.links.roster.label)+'</a>.</p>';
   });
 }
 
@@ -1967,10 +1962,10 @@ function loadPreview(away, home, root){
 function loadNews(){
   var el=$("panel-news");
   if(el.dataset.loaded) return;
-  if(!LAST_HTML[el.id]) el.innerHTML='<p class="loading">Loading Notre Dame news…</p>';
+  if(!LAST_HTML[el.id]) el.innerHTML='<p class="loading">Loading '+esc(TEAM.name)+' news…</p>';
   var count=0, sources=0;
 
-  var espnUrl=ESPN+"/news?team="+TEAM+"&limit=30";
+  var espnUrl=ESPN+"/news?team="+TEAM_ID+"&limit=30";
   cachedThenFresh(el, [espnUrl, "news.json"],
     Promise.all([get(espnUrl).catch(function(){ return null; }),
                  get("news.json?t="+Date.now()).catch(function(){ return null; })]),
@@ -2023,7 +2018,7 @@ function loadNews(){
     sources=Object.keys(srcs).length;
 
     var FIRST=15;
-    var html='<h2 class="sr-only">Latest Notre Dame stories</h2><ul class="plain">';
+    var html='<h2 class="sr-only">Latest '+esc(TEAM.name)+' stories</h2><ul class="plain">';
     list.forEach(function(a,idx){
       var when=a.ts ? new Date(a.ts).toLocaleDateString([],{month:"long",day:"numeric"}) : "";
       html+='<li'+(idx>=FIRST?' class="extra" hidden':"")+'><a class="art'+(a.source==="ESPN"?"":" beat")+'" href="'+esc(a.link)+
@@ -2183,7 +2178,7 @@ function load(){
   if(!S.games) $("panel-schedule").innerHTML='<p class="loading">Loading the schedule…</p>';
   S.stale=null;                        // a fresh load starts optimistic
 
-  get(ESPN+"/teams/"+TEAM).then(function(d){
+  get(ESPN+"/teams/"+TEAM_ID).then(function(d){
     var t=d.team||{};
     if(t.rank&&t.rank<26){
       $("rank").innerHTML='<span class="sr-only">Ranked number </span>'+
@@ -2242,7 +2237,7 @@ function cachedThenFresh(el, urls, fresh, build, wire){
 // Pulled out of load() so the auto-refresh can reuse it without re-fetching
 // team info, odds or anything else that does not change during a game.
 function refreshSchedule(first){
-  var url=ESPN+"/teams/"+TEAM+"/schedule";
+  var url=ESPN+"/teams/"+TEAM_ID+"/schedule";
   var announce=first && !S.games;      // only the very first paint is news
 
   // Everything that turns a schedule payload into pixels. Runs twice on a
