@@ -14,20 +14,20 @@ Represents a competition or league such as NCAA/FBS, NFL, NBA, MLB, NHL, MLS, or
 
 ### Team
 
-Represents the core team identity and stable identifiers.
+Represents the core team identity. **Implemented in Phase 2** as `TeamOS.createTeam()` in `teamos/team.js`, which validates the `team` section of a team config and returns a frozen, provider-neutral object.
 
-Suggested fields:
+Fields (all required):
 
-- id
-- name
-- shortName
-- sport
-- league
-- conference/division where applicable
-- externalIds
-- identity
-- venue
-- capabilities
+- `id` — stable domain id, e.g. `"notre-dame"`
+- `name`
+- `abbreviation`
+- `sport`
+- `league`
+- `venue.name`, `venue.lat`, `venue.lon` — the home field
+
+Team is provider-neutral: it carries no ESPN, Kalshi or other provider identifiers. Those live in the team config's `sources` section (see `docs/04_TEAM_CONFIG.md` and `docs/decisions/0001-team-is-provider-neutral.md`).
+
+Not yet modelled, pending a real need or a second team: `shortName`, conference/division, identity/branding, capabilities, history.
 
 ### Team Identity
 

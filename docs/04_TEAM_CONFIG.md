@@ -6,46 +6,48 @@
 
 Team configuration separates team identity and team-specific capabilities from generic Suite behavior.
 
-## Illustrative Shape
+## Current Shape (Phase 2)
+
+A team is one file in `teams/` that defines `TEAM_CONFIG`, loaded by `index.html` before `teamos/team.js` and `app.js`. It has four sections, each owned by a different layer:
 
 ```js
-{
-  id: "notre-dame",
-  name: "Notre Dame",
-  shortName: "ND",
-  sport: "football",
-  league: "college-football",
-  externalIds: {
-    espn: "87"
+var TEAM_CONFIG = {
+  // The Team domain object. Provider-neutral. TeamOS.createTeam() validates
+  // and freezes it; app.js uses the result for every domain read.
+  team: {
+    id: "notre-dame",
+    name: "Notre Dame",
+    abbreviation: "ND",
+    sport: "football",
+    league: "college-football",
+    venue: { name: "Notre Dame Stadium", lat: 41.6984, lon: -86.2339 }
   },
-  identity: {
-    primary: "#0C2340",
-    secondary: "#C99700"
+
+  // How each provider identifies this team, plus patches for feed gaps.
+  // Read by app.js for now; moves inside the Phase 3 adapters.
+  sources: {
+    espn:   { teamId: "87", broadcastFallback: [ /* [opponent regex, network] */ ] },
+    kalshi: { tickerSuffix: "-ND", namePattern: /notre dame|fighting irish/i }
   },
-  venue: {
-    name: "Notre Dame Stadium"
-  },
-  capabilities: {
-    rankings: true,
-    depthChart: true,
-    recruiting: true,
-    championshipOdds: true
-  }
-}
+
+  // Trophy games by opponent. Schedule data, headed for Game in Phase 3.
+  series: [ /* [opponent regex, trophy name] */ ],
+
+  // The team's own pages.
+  links: { roster: { url: "...", label: "..." } }
+};
 ```
 
-This is illustrative, not a final schema.
+The real file is `teams/notre-dame.js`. Values shown here are abbreviated.
 
 ## What Belongs in Configuration
 
-- Stable team identity
-- External IDs
-- Branding
-- Venue defaults
-- Capabilities
-- Supported content sources
-- Team-specific metadata
-- Structured exceptions that are genuinely part of the team's domain
+- `team` — stable identity: id, name, abbreviation, sport, league, home venue
+- `sources` — provider identifiers and provider-specific matching or fallback rules
+- `series` — team-specific schedule data no public feed carries
+- `links` — the team's official pages
+
+Not yet in configuration, pending a real need or a second team: branding/theme, capabilities, content sources (the RSS feeds and depth-chart source still live in `.github/workflows/odds.yml`), history.
 
 ## What Does Not Belong in Configuration
 

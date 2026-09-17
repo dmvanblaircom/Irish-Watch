@@ -5,7 +5,7 @@ name: Check the stylesheet
 
 on:
   push:
-    paths: ["app.css", "app.js", "sw.js", "index.html", "tools/csscheck.py"]
+    paths: ["app.css", "app.js", "sw.js", "index.html", "tools/csscheck.py", "teams/**", "teamos/**"]
   workflow_dispatch:
 
 jobs:
@@ -16,4 +16,4 @@ jobs:
       - name: Dead and shadowed CSS
         run: python3 tools/csscheck.py app.css
       - name: JavaScript parses
-        run: node --check app.js && node --check sw.js
+        run: node --check app.js && node --check sw.js && for f in teams/*.js teamos/*.js; do node --check "$f"; done
