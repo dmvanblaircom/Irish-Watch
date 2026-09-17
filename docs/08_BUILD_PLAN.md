@@ -1,5 +1,7 @@
 # Project LND Build Plan
 
+This document is the **architecture and platform roadmap**. It is intentionally separate from the consumer MVP and validation roadmap in `docs/product/mvp-validation-framework.md`.
+
 ## Phase 0: Understand
 
 - Read the existing application end to end.
@@ -7,52 +9,90 @@
 - Identify Notre Dame-specific assumptions.
 - Identify reusable UI/application logic.
 - Identify provider-specific logic.
+- Preserve the working Irish Watch product as the baseline.
 
-## Phase 1: Establish Boundaries
+## Phase 1: Establish the First TeamOS Boundary
 
-- Introduce a clear team/domain boundary.
-- Define normalized domain concepts.
-- Keep existing behavior working.
+Create the first clear separation between team-specific identity/configuration and generic application/platform behavior.
 
-## Phase 2: Extract Notre Dame Configuration
+### Milestone 1A: Extract Notre Dame Team Identity / Configuration
 
-Move team identity, external IDs, capabilities, and structured team metadata out of generic application logic.
+- Introduce a dedicated Notre Dame team configuration.
+- Move appropriate team identity and external identifiers out of generic application logic.
+- Have the existing Irish Watch experience consume that configuration.
+- Preserve existing product behavior, PWA/offline behavior, accessibility, responsive behavior, and integrations.
+- Do not attempt to complete TeamOS or build a speculative multi-team runtime in this milestone.
 
-## Phase 3: Establish Team Model
+`TEAM_CONFIG` / team configuration is an initial configuration mechanism, not TeamOS itself.
+
+## Phase 2: Establish Team Model
 
 Create the smallest useful TeamOS model and validate it against Notre Dame.
 
-## Phase 4: Establish Normalized Data
+The Team model should distinguish reusable team/domain concepts from simple configuration values and provide a foundation for future team implementations without prematurely modeling every possible capability.
+
+## Phase 3: Establish Normalized Data
 
 Move at least one major external data path behind an adapter/domain boundary.
 
 A good first candidate is schedule/game data.
 
-## Phase 5: Rebuild Irish Watch on Team Configuration
+Provider-specific schemas and behavior should remain outside Suite.
 
-Irish Watch should consume the new TeamOS/team configuration without changing the user's core experience.
+## Phase 4: Rebuild Suite on TeamOS Abstractions
 
-## Phase 6: Add Ohio State
+Irish Watch should consume the new TeamOS/team model and normalized data without changing the user's core experience.
+
+This phase establishes the intended relationship:
+
+```text
+External Sources
+      ↓
+    TeamOS
+      ↓
+Normalized Domain Model
+      ↓
+    Suite
+      ↓
+Irish Watch
+```
+
+## Phase 5: Add Ohio State
 
 Add Ohio State using configuration and the same Suite/application code.
 
-This is the most important architectural proof point.
+This is the most important architectural proof point: determine whether the abstractions genuinely generalize without copying the application.
 
-## Phase 7: Extract Team Identity / Theme
+Use the second-team implementation to identify what belongs in TeamOS, what belongs in Suite, and what was unnecessarily abstracted.
+
+## Phase 6: Extract Team Identity / Theme
 
 Once the team model works, make branding and identity team-driven instead of hard-coded Notre Dame styling.
 
-## Phase 8: Team Selection
+## Phase 7: Team Selection
 
 Allow a user to select a team and instantiate the corresponding Suite.
 
-## Phase 9: My Teams
+## Phase 8: My Teams
 
 Support multiple followed teams and personalized cross-team experiences.
 
-## Phase 10: Expand Sports
+## Phase 9: Expand Sports
 
 Validate the domain model against additional sports and leagues. Add sport-specific capabilities only where needed.
+
+## Parallel Product Track
+
+Platform architecture does not determine consumer scope by itself. Product work should run in parallel:
+
+1. Define the target fan and problem.
+2. Map the fan experience across game day and between games.
+3. Define the Suite product blueprint.
+4. Define the consumer MVP.
+5. Test the first validation hypothesis.
+6. Use evidence to determine what should be built next.
+
+The architecture roadmap should support validated product needs rather than becoming an end in itself.
 
 ## Definition of Done
 
@@ -67,6 +107,7 @@ The foundation work is complete when:
 7. Existing checks pass.
 8. PWA/offline behavior remains intact.
 9. Accessibility and responsive behavior remain intact.
+10. Product decisions that affect architecture are documented in the product/decision records.
 
 ## Guardrails
 
@@ -77,3 +118,5 @@ The foundation work is complete when:
 - Do not create abstractions without a second use case.
 - Do not break working features for architectural purity.
 - Do not put provider-specific logic in Suite.
+- Do not build speculative platform capabilities before a fan need or second use case justifies them.
+- Keep `main` stable and Irish Watch-focused.
