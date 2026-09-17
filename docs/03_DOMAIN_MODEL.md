@@ -47,22 +47,38 @@ Represents a home or game venue and relevant location information.
 
 ### Game
 
-A normalized representation of a scheduled or completed event.
+A team-perspective representation of a scheduled, live or completed game. **Implemented in Phase 3A**, produced only by the TeamOS ESPN adapter (`TeamOS.espn.schedule()` in `teamos/espn.js`).
 
-Potential fields:
+Game is provider-neutral: nothing in it names ESPN or carries an ESPN key. It is written from the team's point of view — `home`, `us`/`them`, `won` — because that is what a team's Suite renders. A neutral home/away Game for league-wide views does not exist yet and is not needed until the scoreboard is normalized.
 
-- id
-- season
-- status
-- startTime
-- homeTeam
-- awayTeam
-- venue
-- score
-- broadcast
-- odds where available
-- weather where available
-- series/history context
+Fields, in order:
+
+| Field | Meaning |
+|---|---|
+| `id` | the game's id (currently the provider's event id, used as an opaque key) |
+| `date` | kickoff, ISO 8601 |
+| `timeSet` | whether the kickoff time is real or a placeholder |
+| `home` | the team is the listed home side |
+| `neutral` | neutral site, whether flagged by the feed or inferred from the venue |
+| `oppName` | opponent's short name |
+| `oppRank` | opponent's rank if inside the top 25, else `null` |
+| `venue` | venue name |
+| `city` | venue city |
+| `venueState` | venue's U.S. state code, e.g. `"IN"` |
+| `zip` | venue zip |
+| `net` | broadcast network(s), or `""`; includes the team config's broadcast fallback when the feed has none |
+| `odds` | `{ line, total }` or `null`; may be filled after the fact by `TeamOS.espn.gameOdds()` |
+| `series` | trophy/series name from the team config's `series` table, or `null` |
+| `state` | **game status**: `"pre"`, `"in"` or `"post"` |
+| `detail` | human-readable status text, e.g. `"Final"` or `"9/19 - 7:30 PM EDT"` |
+| `us`, `them` | scores as displayed, or `null` before kickoff |
+| `won` | `true` when the team won; `false` otherwise, including before kickoff |
+
+`state` and `venueState` are distinct on purpose. Before Phase 3A both meanings were written to one `state` key and the game status won, so the venue's state was never available; `venueState` corrects that (see `docs/decisions/0002-adapters-are-pure.md`).
+
+Games are plain objects and are not frozen; the application patches `odds` onto the next game once the pregame line arrives.
+
+Not yet modelled: season, weather (computed by the application from `venue`/`city`/`zip`), a neutral home/away form.
 
 ### Player
 
