@@ -82,11 +82,29 @@ Not yet modelled: season, weather (computed by the application from `venue`/`cit
 
 ### Player
 
-Normalized player information independent of provider schema.
+A roster entry. **Implemented in Phase 3B**, produced only by `TeamOS.espn.roster()`. Provider-neutral; exactly the fields the roster view shows and searches, all strings, empty when the feed has nothing:
 
-### Roster / Depth
+| Field | Meaning |
+|---|---|
+| `name` | display name |
+| `jersey` | number as printed, e.g. `"75"`; a string, sorted numerically by the view |
+| `position` | abbreviation, e.g. `"OL"`, falling back to the full name |
+| `positionName` | full position name, e.g. `"Offensive Lineman"` — kept so a search for "quarterback" matches |
+| `height`, `weight` | as displayed, e.g. `"6' 7\""`, `"320 lbs"` |
+| `classYear` | e.g. `"SR"` |
+| `hometown` | `{ city, state }`; `state` is `""` for players from outside the U.S. |
 
-Represents roster membership, positions, depth, availability, and sport-specific lineup concepts.
+### RosterGroup
+
+`{ key, label, players: Player[] }` — a unit of the roster: `key` is the feed's unit key lowercased (`"offense"`, `"defense"`, `"specialteam"`), `label` is the display label. Empty units are dropped; a feed that sends a flat list yields one group `{ key: "all", label: "Roster" }`. Produced by `TeamOS.espn.roster()`.
+
+### TeamStatus
+
+`{ rank, record }` — the team's current poll rank (`null` outside the top 25) and overall record string (`"2-0"`, or `null`). **Implemented in Phase 3B**, produced by `TeamOS.espn.teamStatus()`; drives the two header chips.
+
+### Depth
+
+Depth chart, availability and sport-specific lineup concepts. Not yet modelled: the Depth tab consumes the Action-written `depth.json` snapshot directly.
 
 ### Ranking
 

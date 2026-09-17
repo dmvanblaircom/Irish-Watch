@@ -40,6 +40,7 @@ On the `state` collision: the adapter is where the Game shape becomes a document
 
 ## Consequences
 
+- **Phase 3B applied the same decision to the roster and team endpoints** (`TeamOS.espn.roster()`, `TeamOS.espn.teamStatus()`): pure functions of the JSON, URLs built by the adapter and unchanged, transport still in `app.js`.
 - `app.js` no longer contains the ESPN schedule URL shape, `normalize()`, or its helpers (`timeIsSet`, `network`, `oddsOf`, `isNeutral`, `NEUTRAL_VENUES`, `seriesFor`, `fallbackNetwork`).
 - `app.js` still owns `get()`, `cachedJSON()`, `S.stale`, polling, `S.next` selection and rendering.
 - `Game` has 19 fields, documented in `docs/03_DOMAIN_MODEL.md`; `venueState` replaces the shadowed venue state.

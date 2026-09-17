@@ -1566,53 +1566,20 @@ function renderGame(d, inline){
 // schedule. Fetched only when the fold is opened, then kept for the session.
 var ROSTER={ data:null, group:"all", q:"", loading:false };
 
-// ESPN labels its groups with raw camelCase keys like "specialTeam". Map the
-// ones college football actually uses; title-case anything unexpected.
-var GROUP_LABEL={ offense:"Offense", defense:"Defense", specialteam:"Special",
-                  specialteams:"Special", injuredreserve:"Injured",
-                  practicesquad:"Practice", suspended:"Suspended" };
-function groupLabel(key, fallback){
-  var k=String(key||"").toLowerCase();
-  if(GROUP_LABEL[k]) return GROUP_LABEL[k];
-  var s=String(fallback||key||"Squad").replace(/([a-z])([A-Z])/g,"$1 $2");
-  return s.charAt(0).toUpperCase()+s.slice(1);
-}
-
-function normRoster(d){
-  // Either a flat athletes array or one grouped by unit.
-  var groups=[];
-  var a=d.athletes||[];
-  if(a.length && a[0] && Array.isArray(a[0].items)){
-    a.forEach(function(g){
-      var items=g.items||[];
-      if(!items.length) return;          // no IR or practice squad in college
-      var key=String(g.position||g.name||"squad").toLowerCase();
-      groups.push({ key:key, label:groupLabel(key, g.text||g.name), items:items });
-    });
-  }
-  if(!groups.length) groups.push({ key:"all", label:"Roster", items:a });
-  return groups;
-}
-
+// One row of the roster, from a Player (docs/03_DOMAIN_MODEL.md).
 function playerRow(p){
-  var no=p.jersey!=null?p.jersey:"";
-  var pos=pick(p,["position","abbreviation"],null)||pick(p,["position","name"],"")||"";
-  var name=p.displayName||p.fullName||"";
-  var ht=p.displayHeight||"", wt=p.displayWeight||"";
-  var cl=pick(p,["experience","abbreviation"],null)||pick(p,["experience","displayValue"],"")||"";
-  var city=pick(p,["birthPlace","city"],""), st=pick(p,["birthPlace","state"],"");
-  var home=[city,st].filter(Boolean).join(", ");
-  var meta=[ [ht,wt].filter(Boolean).join(" \u00B7 "), home ].filter(Boolean).join("  \u2014  ");
-  return '<li class="plr"><span class="no">'+esc(String(no))+"</span>"+
-    '<span class="pos">'+esc(pos)+"</span>"+
-    '<span class="who">'+esc(name)+
+  var home=[p.hometown.city,p.hometown.state].filter(Boolean).join(", ");
+  var meta=[ [p.height,p.weight].filter(Boolean).join(" \u00B7 "), home ].filter(Boolean).join("  \u2014  ");
+  return '<li class="plr"><span class="no">'+esc(p.jersey)+"</span>"+
+    '<span class="pos">'+esc(p.position)+"</span>"+
+    '<span class="who">'+esc(p.name)+
       (meta?'<span class="meta">'+esc(meta)+"</span>":"")+"</span>"+
-    '<span class="cl">'+esc(String(cl).slice(0,3))+"</span></li>";
+    '<span class="cl">'+esc(p.classYear.slice(0,3))+"</span></li>";
 }
 
 function renderRoster(){
   var groups=ROSTER.data||[];
-  var all=[]; groups.forEach(function(g){ all=all.concat(g.items); });
+  var all=[]; groups.forEach(function(g){ all=all.concat(g.players); });
   if(!all.length) return '<p class="msg">ESPN returned no roster for this team.</p>';
 
   var html="";
@@ -1625,7 +1592,7 @@ function renderRoster(){
       groups.map(function(g){
         return '<button type="button" data-grp="'+esc(g.key)+'" aria-pressed="'+
           (ROSTER.group===g.key)+'">'+esc(g.label)+
-          '<span class="n">'+g.items.length+"</span></button>";
+          '<span class="n">'+g.players.length+"</span></button>";
       }).join("")+"</div>";
   }
 
@@ -1641,15 +1608,14 @@ function renderRoster(){
 // Text of the roster list for the current group and filter. Re-rendered on
 // its own as you type, so the search box keeps focus.
 function rosterHaystack(p){
-  return [p.displayName||p.fullName||"", p.jersey, pick(p,["position","abbreviation"],""),
-    pick(p,["position","name"],""), pick(p,["birthPlace","city"],""), pick(p,["birthPlace","state"],"")]
+  return [p.name, p.jersey, p.position, p.positionName, p.hometown.city, p.hometown.state]
     .join(" ").toLowerCase();
 }
 function rosterList(){
   var groups=ROSTER.data||[], all=[];
-  groups.forEach(function(g){ all=all.concat(g.items); });
+  groups.forEach(function(g){ all=all.concat(g.players); });
   var show = ROSTER.group==="all" ? all
-    : (groups.filter(function(g){return g.key===ROSTER.group;})[0]||{items:[]}).items;
+    : (groups.filter(function(g){return g.key===ROSTER.group;})[0]||{players:[]}).players;
   var q=(ROSTER.q||"").trim().toLowerCase();
   if(q) show=show.filter(function(p){ return rosterHaystack(p).indexOf(q)>-1; });
   show=show.slice().sort(function(x,y){
@@ -1700,12 +1666,12 @@ function loadRoster(box){
   if(ROSTER.loading) return;
   ROSTER.loading=true;
   box.innerHTML='<p class="loading">Loading the roster\u2026</p>';
-  get(ESPN+"/teams/"+TEAM_ID+"/roster").then(function(d){
+  get(TeamOS.espn.rosterUrl(TEAM_CONFIG)).then(function(d){
     ROSTER.loading=false;
-    ROSTER.data=normRoster(d);
+    ROSTER.data=TeamOS.espn.roster(d);
     box.innerHTML=renderRoster();
     wireRosterPills(box);
-    var n=0; ROSTER.data.forEach(function(g){ n+=g.items.length; });
+    var n=0; ROSTER.data.forEach(function(g){ n+=g.players.length; });
     say("Roster loaded, "+n+" players.");
   }).catch(function(){
     ROSTER.loading=false;
@@ -2080,15 +2046,14 @@ function load(){
   if(!S.games) $("panel-schedule").innerHTML='<p class="loading">Loading the schedule…</p>';
   S.stale=null;                        // a fresh load starts optimistic
 
-  get(ESPN+"/teams/"+TEAM_ID).then(function(d){
-    var t=d.team||{};
-    if(t.rank&&t.rank<26){
+  get(TeamOS.espn.teamUrl(TEAM_CONFIG)).then(function(d){
+    var st=TeamOS.espn.teamStatus(d);
+    if(st.rank){
       $("rank").innerHTML='<span class="sr-only">Ranked number </span>'+
-        '<span aria-hidden="true">#</span>'+t.rank;
+        '<span aria-hidden="true">#</span>'+st.rank;
       $("rank").hidden=false;
     }
-    var r=t.record&&t.record.items&&t.record.items[0];
-    if(r) $("rec").innerHTML='<span class="sr-only">Record </span>'+esc(r.summary);
+    if(st.record!=null) $("rec").innerHTML='<span class="sr-only">Record </span>'+esc(st.record);
   }).catch(function(){});
 
   refreshSchedule(true);

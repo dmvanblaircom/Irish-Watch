@@ -4,10 +4,10 @@
    Loads the same three files the page loads - the team config, the Team
    model, the ESPN adapter - into a bare Node scope with no window, no
    document and no fetch, so the adapter cannot quietly depend on any of
-   them. Then runs tools/fixtures/espn-schedule.json through it and checks
-   the Games that come out: the shape, the team's point of view, neutral
-   sites, broadcasts and the fallback, series, and that nothing ESPN-shaped
-   leaks through.
+   them. Then runs the fixtures in tools/fixtures/ through it and checks what
+   comes out: Games (shape, the team's point of view, neutral sites,
+   broadcasts and the fallback, series), roster groups and Players, the
+   team's rank and record - and that nothing ESPN-shaped leaks through.
 
    Usage:  node tools/adaptercheck.js
    Exit status is 1 if anything fails, so it can gate a push. */
@@ -96,10 +96,63 @@ eq(TeamOS.espn.gameOdds({ pickcenter: [{ overUnder: 50 }] }), { line: null, tota
 eq(TeamOS.espn.gameOdds({}), null, "no pickcenter -> null");
 eq(TeamOS.espn.gameOdds(null), null, "no summary -> null");
 
+// ---- roster ----
+var rosterFixture = JSON.parse(read("tools/fixtures/espn-roster.json"));
+var PLAYER = ["name","jersey","position","positionName","height","weight","classYear","hometown"];
+var PLEAK = /displayName|fullName|displayHeight|displayWeight|experience|birthPlace|abbreviation|athletes|espn/i;
+
+console.log("rosterUrl / teamUrl");
+eq(TeamOS.espn.rosterUrl(TEAM_CONFIG),
+   "https://site.api.espn.com/apis/site/v2/sports/football/college-football/teams/87/roster",
+   "roster URL unchanged (SW cache key)");
+eq(TeamOS.espn.teamUrl(TEAM_CONFIG),
+   "https://site.api.espn.com/apis/site/v2/sports/football/college-football/teams/87",
+   "team URL unchanged (SW cache key)");
+
+console.log("roster()");
+var groups = TeamOS.espn.roster(rosterFixture);
+eq(groups.map(function (g) { return g.key + ":" + g.label + ":" + g.players.length; }),
+   ["offense:Offense:2", "defense:Defense:1", "specialteam:Special:2"],
+   "groups keyed on ESPN's unit key, labelled, empty units dropped");
+groups.forEach(function (g) {
+  eq(Object.keys(g), ["key","label","players"], g.key + " group has exactly key/label/players");
+  g.players.forEach(function (p) {
+    eq(Object.keys(p), PLAYER, p.name + " has exactly the documented Player fields");
+    eq(Object.keys(p.hometown), ["city","state"], p.name + " hometown is {city, state}");
+    ok(!PLEAK.test(JSON.stringify(p)), p.name + " carries no ESPN keys or names");
+    ok(typeof p.jersey === "string", p.name + " jersey is a string (the sort parses it)");
+  });
+});
+var absher = groups[0].players[0], scaife = groups[2].players[0], walkon = groups[2].players[1];
+eq(absher, { name:"Sullivan Absher", jersey:"75", position:"OL", positionName:"Offensive Lineman",
+             height:"6' 7\"", weight:"320 lbs", classYear:"SR", hometown:{ city:"Belmont", state:"NC" } },
+   "full player: abbreviation shown, full position name kept for search, class abbreviation");
+eq([scaife.hometown.city, scaife.hometown.state], ["West Perth", ""], "missing state -> empty string, not undefined");
+eq(walkon, { name:"Walk On", jersey:"", position:"Long Snapper", positionName:"Long Snapper",
+             height:"", weight:"", classYear:"", hometown:{ city:"", state:"" } },
+   "sparse athlete: no jersey/height/weight/class/hometown -> empty strings; position falls back to name");
+eq(TeamOS.espn.roster({ athletes: [absherRaw(), absherRaw()] }).map(function (g) { return g.key + ":" + g.label + ":" + g.players.length; }),
+   ["all:Roster:2"], "a flat athletes array becomes one group called Roster");
+eq(TeamOS.espn.roster({}).map(function (g) { return g.key + ":" + g.players.length; }), ["all:0"], "no athletes -> one empty group");
+// the key is lowercased before the camelCase split, so an unknown unit gets a plain capital - as it always has
+eq(TeamOS.espn.roster({ athletes: [{ position: "someNewUnit", items: [absherRaw()] }] })[0].label, "Somenewunit", "unknown unit key is capitalised, not in the label map");
+function absherRaw() { return rosterFixture.athletes[0].items[0]; }
+
+// ---- team status ----
+var teamFixture = JSON.parse(read("tools/fixtures/espn-team.json"));
+console.log("teamStatus()");
+eq(TeamOS.espn.teamStatus(teamFixture), { rank: 3, record: "2-0" }, "rank and overall record");
+eq(TeamOS.espn.teamStatus({ team: { rank: 40, record: { items: [{ summary: "1-1" }] } } }), { rank: null, record: "1-1" }, "rank outside the top 25 -> null");
+eq(TeamOS.espn.teamStatus({ team: { rank: 3 } }), { rank: 3, record: null }, "no record -> null");
+eq(TeamOS.espn.teamStatus({}), { rank: null, record: null }, "empty payload");
+eq(Object.keys(TeamOS.espn.teamStatus(teamFixture)), ["rank","record"], "exactly rank and record");
+
 // ---- transitional helpers ----
 console.log("transitional helpers (Top 25 path)");
 eq(typeof TeamOS.espn.timeIsSet + typeof TeamOS.espn.broadcast + typeof TeamOS.espn.odds, "functionfunctionfunction", "timeIsSet, broadcast, odds exported");
-eq(Object.keys(TeamOS.espn).sort(), ["broadcast","gameOdds","odds","schedule","scheduleUrl","timeIsSet"], "and nothing else");
+eq(Object.keys(TeamOS.espn).sort(),
+   ["broadcast","gameOdds","odds","roster","rosterUrl","schedule","scheduleUrl","teamStatus","teamUrl","timeIsSet"],
+   "and nothing else");
 
 console.log("\n" + (failures ? failures + " check(s) FAILED" : "all adapter checks passed"));
 process.exit(failures ? 1 : 0);

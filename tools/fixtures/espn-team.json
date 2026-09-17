@@ -1,0 +1,12 @@
+{
+  "_comment": "Trimmed ESPN team payload for tools/adaptercheck.js: only the rank and overall record the header chips read.",
+  "team": {
+    "id": "87",
+    "displayName": "Notre Dame Fighting Irish",
+    "rank": 3,
+    "record": { "items": [
+      { "description": "Overall Record", "type": "total", "summary": "2-0" },
+      { "description": "Home Record",    "type": "home",  "summary": "1-0" }
+    ] }
+  }
+}
