@@ -1,5 +1,7 @@
 # Project LND Build Plan
 
+This document is the **architecture and platform roadmap**. It is intentionally separate from the consumer MVP and validation roadmap in `docs/product/mvp-validation-framework.md`.
+
 ## Phase 0: Understand
 
 - Read the existing application end to end.
@@ -7,12 +9,14 @@
 - Identify Notre Dame-specific assumptions.
 - Identify reusable UI/application logic.
 - Identify provider-specific logic.
+- Preserve the working Irish Watch product as the baseline.
 
 ## Phase 1: Establish Boundaries
 
 - Introduce a clear team/domain boundary.
 - Define normalized domain concepts.
 - Keep existing behavior working.
+- Keep provider schemas out of Suite.
 
 ## Phase 2: Extract Notre Dame Configuration
 
@@ -54,6 +58,19 @@ Support multiple followed teams and personalized cross-team experiences.
 
 Validate the domain model against additional sports and leagues. Add sport-specific capabilities only where needed.
 
+## Parallel Product Track
+
+Platform architecture does not determine consumer scope by itself. Product work should run in parallel:
+
+1. Define the target fan and problem.
+2. Map the fan experience across game day and between games.
+3. Define the Suite product blueprint.
+4. Define the consumer MVP.
+5. Test the first validation hypothesis.
+6. Use evidence to determine what should be built next.
+
+The architecture roadmap should support validated product needs rather than becoming an end in itself.
+
 ## Definition of Done
 
 The foundation work is complete when:
@@ -67,6 +84,7 @@ The foundation work is complete when:
 7. Existing checks pass.
 8. PWA/offline behavior remains intact.
 9. Accessibility and responsive behavior remain intact.
+10. Product decisions that affect architecture are documented in the product/decision records.
 
 ## Guardrails
 
@@ -77,3 +95,5 @@ The foundation work is complete when:
 - Do not create abstractions without a second use case.
 - Do not break working features for architectural purity.
 - Do not put provider-specific logic in Suite.
+- Do not build speculative platform capabilities before a fan need or second use case justifies them.
+- Keep `main` stable and Irish Watch-focused.
