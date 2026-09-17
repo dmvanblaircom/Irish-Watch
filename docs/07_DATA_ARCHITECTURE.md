@@ -2,7 +2,26 @@
 
 ## Current State
 
-Irish Watch currently combines live provider data, local snapshots, and GitHub Actions workflows. This is acceptable for the proof of concept but should become more explicit as Project LND evolves.
+Irish Watch combines live provider data, local snapshots, and GitHub Actions workflows. As of Phase 3A, one data path — the team's schedule — runs through a TeamOS adapter; every other path is still consumed in its provider or snapshot shape by `app.js`.
+
+### The schedule path (Phase 3A)
+
+```text
+ESPN schedule JSON
+      |
+      v
+TeamOS ESPN adapter        teamos/espn.js  — pure: (json, team, config) -> Game[]
+      |
+      v
+Game[]                     docs/03_DOMAIN_MODEL.md — provider-neutral, team-perspective
+      |
+      v
+app.js / Suite             S.games, S.next, hero, schedule rows, Game tab selection, prefetch
+```
+
+Transport and caching stay in the application layer for now. `app.js` asks the adapter for the URL (`TeamOS.espn.scheduleUrl()`), fetches it with its own `get()`, paints first from the service worker's cached copy (`cachedJSON()`), records staleness from the `X-IW-Cached` header, and polls during live games. The adapter only ever sees the JSON. Because the URL is produced by the adapter but unchanged in shape, the service worker's data cache and the cache-first paint keep matching.
+
+Everything else — scoreboard, rankings, game summaries, roster, news, Kalshi odds, weather, depth chart — is unchanged and still provider-shaped in `app.js`. The Top 25 tab borrows three ESPN parsing helpers from the adapter rather than keeping its own copy; that is transitional.
 
 ## Target Flow
 

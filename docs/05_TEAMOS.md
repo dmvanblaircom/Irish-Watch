@@ -58,9 +58,31 @@ The Suite should not care whether a game came from ESPN, another provider, or a 
 
 ## Current Implementation
 
-Initially, TeamOS can be a logical/domain layer inside the existing repository. The current GitHub Actions workflows and local snapshots can remain in place while boundaries are established.
+TeamOS is a logical/domain layer inside the existing repository: two plain-script files loaded by `index.html` before `app.js`, exposing one global, `TeamOS`. The GitHub Actions workflows and local snapshots remain in place unchanged.
 
-The goal is not to create a backend immediately. The goal is to make ownership clear.
+| File | Provides | Since |
+|---|---|---|
+| `teamos/team.js` | `TeamOS.createTeam(config.team)` — validates and freezes the provider-neutral Team | Phase 2 |
+| `teamos/espn.js` | `TeamOS.espn.scheduleUrl(config)`, `TeamOS.espn.schedule(json, team, config)` → `Game[]`, `TeamOS.espn.gameOdds(summary)` | Phase 3A |
+
+### What TeamOS does now
+
+- Defines what a Team is and rejects a malformed team config at startup.
+- Turns ESPN's schedule payload into provider-neutral `Game` objects (`docs/03_DOMAIN_MODEL.md`), applying the team config's `series` table and `sources.espn.broadcastFallback` along the way.
+- Extracts the pregame line/total from ESPN's game summary.
+- Exposes three ESPN parsing helpers (`timeIsSet`, `broadcast`, `odds`) **transitionally**, because the Top 25 tab still renders ESPN's scoreboard raw and must not carry its own copy of that parsing. They become private once the scoreboard has its own object.
+
+### What TeamOS explicitly does not do yet
+
+- **Fetch.** The adapter is a pure transformation; `app.js` owns `fetch`, the cache-first paint, the offline/stale flag, polling and prefetching.
+- **Orchestrate.** Which game is "next", when a final rolls over, whether anything is live — all application logic.
+- **Cache or snapshot.** The service worker, the Cache API store of final summaries and `.github/workflows/odds.yml` are untouched.
+- **Normalize anything but the schedule.** Scoreboard, rankings, game summaries, roster, news, Kalshi odds, weather and the depth chart are still consumed in their provider or snapshot shapes.
+- **Know about a second team, a second provider, or the fan.**
+
+TeamOS is not an application framework. It has no `load()`, no registry, no adapter interface; the next adapter, if one is justified, earns its own shape.
+
+The goal is not to create a backend. The goal is to make ownership clear.
 
 ## Future Intelligence Layer
 

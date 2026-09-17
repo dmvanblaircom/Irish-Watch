@@ -1,0 +1,69 @@
+{
+  "_comment": "Trimmed ESPN team-schedule payload for tools/adaptercheck.js. Four events cover the cases the adapter has to get right: a final at a neutral pro venue (team listed home), a future home game with a TV broadcast, a future away game at a neutral venue, and a future away game with a placeholder kickoff and no broadcast (exercises the config's broadcast fallback). Only the keys TeamOS.espn reads are kept, in ESPN's real positions.",
+  "events": [
+    {
+      "id": "401858453",
+      "date": "2026-09-19T23:30Z",
+      "competitions": [{
+        "timeValid": true,
+        "neutralSite": false,
+        "venue": { "fullName": "Notre Dame Stadium", "address": { "city": "Notre Dame", "state": "IN", "zipCode": "46556", "country": "USA" } },
+        "status": { "type": { "state": "pre", "shortDetail": "9/19 - 7:30 PM EDT" } },
+        "broadcasts": [ { "type": { "id": "1", "shortName": "TV" }, "market": { "id": "1", "type": "National" }, "media": { "shortName": "NBC" }, "lang": "en", "region": "us" } ],
+        "geoBroadcasts": [],
+        "competitors": [
+          { "id": "87",  "homeAway": "home", "curatedRank": { "current": 3 },  "team": { "id": "87",  "displayName": "Notre Dame Fighting Irish", "shortDisplayName": "Notre Dame",  "abbreviation": "ND" } },
+          { "id": "127", "homeAway": "away", "curatedRank": { "current": 99 }, "team": { "id": "127", "displayName": "Michigan State Spartans",   "shortDisplayName": "Michigan St", "abbreviation": "MSU" } }
+        ]
+      }]
+    },
+    {
+      "id": "401858438",
+      "date": "2026-09-06T23:30Z",
+      "competitions": [{
+        "timeValid": true,
+        "neutralSite": false,
+        "venue": { "fullName": "Lambeau Field", "address": { "city": "Green Bay", "state": "WI", "zipCode": "54304", "country": "USA" } },
+        "status": { "type": { "state": "post", "shortDetail": "Final" } },
+        "broadcasts": [ { "type": { "id": "1", "shortName": "TV" }, "media": { "shortName": "NBC" } } ],
+        "geoBroadcasts": [],
+        "competitors": [
+          { "id": "87",  "homeAway": "home", "winner": true,  "score": { "value": 41, "displayValue": "41" }, "curatedRank": { "current": 4 },  "team": { "id": "87",  "displayName": "Notre Dame Fighting Irish", "shortDisplayName": "Notre Dame", "abbreviation": "ND" } },
+          { "id": "275", "homeAway": "away", "winner": false, "score": { "value": 13, "displayValue": "13" }, "curatedRank": { "current": 99 }, "team": { "id": "275", "displayName": "Wisconsin Badgers",         "shortDisplayName": "Wisconsin",  "abbreviation": "WIS" } }
+        ]
+      }]
+    },
+    {
+      "id": "401858471",
+      "date": "2026-10-31T19:30Z",
+      "competitions": [{
+        "timeValid": true,
+        "neutralSite": false,
+        "venue": { "fullName": "Gillette Stadium", "address": { "city": "Foxborough", "state": "MA", "zipCode": "02035", "country": "USA" } },
+        "status": { "type": { "state": "pre", "shortDetail": "10/31 - 3:30 PM EDT" } },
+        "broadcasts": [],
+        "geoBroadcasts": [ { "type": { "id": "1", "shortName": "TV" }, "media": { "shortName": "CBS" } } ],
+        "competitors": [
+          { "id": "2426", "homeAway": "home", "curatedRank": { "current": 99 }, "team": { "id": "2426", "displayName": "Navy Midshipmen",          "shortDisplayName": "Navy",       "abbreviation": "NAVY" } },
+          { "id": "87",   "homeAway": "away", "curatedRank": { "current": 3 },  "team": { "id": "87",   "displayName": "Notre Dame Fighting Irish", "shortDisplayName": "Notre Dame", "abbreviation": "ND" } }
+        ]
+      }]
+    },
+    {
+      "id": "401858460",
+      "date": "2026-09-26T04:00Z",
+      "competitions": [{
+        "timeValid": false,
+        "neutralSite": false,
+        "venue": { "fullName": "Ross-Ade Stadium", "address": { "city": "West Lafayette", "state": "IN", "zipCode": "47907", "country": "USA" } },
+        "status": { "type": { "state": "pre", "shortDetail": "9/26 - TBD" } },
+        "broadcasts": [],
+        "geoBroadcasts": [],
+        "competitors": [
+          { "id": "2509", "homeAway": "home", "curatedRank": { "current": 99 }, "team": { "id": "2509", "displayName": "Purdue Boilermakers",       "shortDisplayName": "Purdue",     "abbreviation": "PUR" } },
+          { "id": "87",   "homeAway": "away", "curatedRank": { "current": 3 },  "team": { "id": "87",   "displayName": "Notre Dame Fighting Irish", "shortDisplayName": "Notre Dame", "abbreviation": "ND" } }
+        ]
+      }]
+    }
+  ]
+}

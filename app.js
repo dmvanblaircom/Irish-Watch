@@ -3,10 +3,11 @@
 
 var ESPN = "https://site.api.espn.com/apis/site/v2/sports/football/college-football";
 // The team this Suite is built around. index.html loads teams/<team>.js and
-// teamos/team.js before this file; TeamOS turns the config's `team` section
-// into a validated, frozen, provider-neutral Team. Everything ESPN- or
-// Kalshi-specific about the team is read from TEAM_CONFIG.sources, here and
-// in teamMarket() only, until the Phase 3 adapters take that over.
+// teamos/*.js before this file; TeamOS turns the config's `team` section
+// into a validated, frozen, provider-neutral Team. The schedule comes through
+// TeamOS.espn as Game objects (docs/03_DOMAIN_MODEL.md); the ESPN id below is
+// read only by the paths that still render ESPN's own shapes - scoreboard,
+// summary, roster, news - and by teamMarket() for Kalshi.
 var TEAM = TeamOS.createTeam(TEAM_CONFIG.team);
 var TEAM_ID = TEAM_CONFIG.sources.espn.teamId;     // ESPN's id for the team, as a string
 // Kalshi serves public market data without a key, but sends no CORS header, so
@@ -107,14 +108,6 @@ function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){
   return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
 function fmtTime(iso){ return new Date(iso).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}); }
 function fmtDay(iso){ return new Date(iso).toLocaleDateString([],{weekday:"long",month:"long",day:"numeric"}); }
-// ESPN flags a placeholder kickoff with timeValid:false and files it at
-// midnight Eastern, which is 04:00Z or 05:00Z - so a midnight-UTC check misses
-// it and would also misread a real 8pm ET kickoff. Trust the flag when it is
-// there; the heuristic is only a fallback for feeds that omit it.
-function timeIsSet(iso, comp){
-  if(comp && typeof comp.timeValid==="boolean") return comp.timeValid;
-  var d=new Date(iso); return !(d.getUTCHours()===0&&d.getUTCMinutes()===0);
-}
 function tzAbbr(){
   try{ var p=new Intl.DateTimeFormat([],{timeZoneName:"short"}).formatToParts(new Date());
     for(var i=0;i<p.length;i++) if(p[i].type==="timeZoneName") return p[i].value; }catch(e){}
@@ -133,58 +126,10 @@ function dateChip(iso){
     '<span class="d" aria-hidden="true">'+d.getDate()+"</span></time>";
 }
 
-// ESPN files broadcasts inconsistently: TV networks usually land in
-// competition.broadcasts, but streaming-only outlets such as Peacock often
-// appear only in geoBroadcasts, or as a bare `broadcast` string. Read every
-// shape and merge them, rather than treating geoBroadcasts as a fallback —
-// a Peacock-exclusive game has nothing in broadcasts at all.
-function network(comp){
-  var out=[];
-  function add(v){
-    if(!v) return;
-    v=String(v).trim();
-    if(v && out.indexOf(v)===-1) out.push(v);
-  }
-  function scan(x){
-    if(!x) return;
-    if(x.media){ add(x.media.shortName); add(x.media.callLetters); add(x.media.name); }
-    if(Array.isArray(x.names)) x.names.forEach(add);
-    add(x.shortName); add(x.callLetters); add(x.station); add(x.name);
-  }
-  (comp.broadcasts||[]).forEach(scan);
-  (comp.geoBroadcasts||[]).forEach(scan);
-  if(typeof comp.broadcast==="string") add(comp.broadcast);
-  // a couple of feeds hang it off the event's status block instead
-  if(comp.status && typeof comp.status.broadcast==="string") add(comp.status.broadcast);
-  return out.join(", ");
-}
-function oddsOf(comp){
-  var o=(comp.odds&&comp.odds[0])||(comp.pickcenter&&comp.pickcenter[0]);
-  if(!o) return null;
-  return { line:o.details||(o.spread!=null?String(o.spread):null),
-           total:o.overUnder!=null?o.overUnder:null };
-}
-// ESPN does not always set neutralSite. A game where Notre Dame is the listed
-// home team but the venue is not Notre Dame Stadium is a neutral site in
-// practice — Lambeau, Gillette, the Shamrock Series and so on.
-// Venues that are never a college team's home field. Notre Dame plays one or
-// two of these a year — the Shamrock Series, and Navy selling its home date to
-// a stadium bigger than its own 34,000-seat one in Annapolis.
-var NEUTRAL_VENUES = /lambeau|gillette|metlife|m&t bank|soldier field|yankee stadium|aviva|at&t stadium|allegiant|mercedes-benz|hard rock|raymond james|caesars superdome|camping world|alamodome/i;
-
-// Case-insensitive match on the home field's name, the way ESPN spells it.
+// Case-insensitive match on the home field's name, as a feed spells it. The
+// kickoff forecast asks this of a Game's venue; TeamOS.espn asks it of ESPN's.
 function isHomeField(venueName){
   return String(venueName||"").toLowerCase().indexOf(TEAM.venue.name.toLowerCase())>-1;
-}
-function isNeutral(comp, us){
-  if(comp.neutralSite===true) return true;
-  var v = comp.venue && comp.venue.fullName ? comp.venue.fullName : "";
-  if(v === "") return false;
-  // A pro or event venue is neutral no matter which side is listed as home.
-  if(NEUTRAL_VENUES.test(v)) return true;
-  // Listed at home but not actually at the home field.
-  var listedHome = us ? us.homeAway==="home" : false;
-  return listedHome && !isHomeField(v);
 }
 function venueTag(g){
   if(g.neutral) return '<span class="tag n"><span class="sr-only">Neutral site game. </span>'+
@@ -194,51 +139,6 @@ function venueTag(g){
   return '<span class="tag a"><span class="sr-only">Away game. </span>'+
     '<span aria-hidden="true">AWAY</span></span>';
 }
-// Trophy and series names for the season's opponents, from the team config.
-var SERIES = TEAM_CONFIG.series;
-function seriesFor(name){
-  for(var i=0;i<SERIES.length;i++){ if(SERIES[i][0].test(name||"")) return SERIES[i][1]; }
-  return null;
-}
-// ESPN publishes kickoff times and broadcasts separately, and is slow on
-// streaming-only games because Peacock is not a TV network in their data model.
-// These are consulted ONLY when ESPN returns nothing for that game, so they can
-// never contradict the feed and they disappear on their own once it catches up.
-var NETWORK_FALLBACK = TEAM_CONFIG.sources.espn.broadcastFallback;
-function fallbackNetwork(oppName){
-  for(var i=0;i<NETWORK_FALLBACK.length;i++){
-    if(NETWORK_FALLBACK[i][0].test(oppName||"")) return NETWORK_FALLBACK[i][1];
-  }
-  return "";
-}
-
-function normalize(ev){
-  var comp=(ev.competitions&&ev.competitions[0])||{}, cs=comp.competitors||[];
-  var us=null,them=null;
-  cs.forEach(function(c){ var id=c.id||(c.team&&c.team.id);
-    if(String(id)===TEAM_ID) us=c; else them=c; });
-  var st=(comp.status&&comp.status.type)||(ev.status&&ev.status.type)||{};
-  return {
-    id:ev.id, date:ev.date, timeSet:timeIsSet(ev.date, comp),
-    home: us?us.homeAway==="home":true,
-    neutral: isNeutral(comp, us),
-    oppName: them&&them.team?(them.team.shortDisplayName||them.team.displayName):"opponent to be announced",
-    oppRank: them&&them.curatedRank&&them.curatedRank.current<26?them.curatedRank.current:null,
-    venue: comp.venue?(comp.venue.fullName||""):"",
-    city: comp.venue&&comp.venue.address?comp.venue.address.city:"",
-    state: comp.venue&&comp.venue.address?(comp.venue.address.state||""):"",
-    zip: comp.venue&&comp.venue.address?(comp.venue.address.zipCode||""):"",
-    net: network(comp) || fallbackNetwork(
-           them&&them.team ? (them.team.displayName||them.team.shortDisplayName) : ""),
-    odds: oddsOf(comp),
-    series: seriesFor(them&&them.team?(them.team.displayName||them.team.shortDisplayName):""),
-    state: st.state||"pre", detail: st.shortDetail||"",
-    us: us&&us.score?(us.score.displayValue||us.score.value||us.score):null,
-    them: them&&them.score?(them.score.displayValue||them.score.value||them.score):null,
-    won: us?us.winner===true:null
-  };
-}
-
 /* ---------- hero ---------- */
 // What sits above the tab panels depends on the tab. Home gets the whole
 // game-day header. Game keeps the hero only while the next game is still
@@ -372,10 +272,10 @@ function geoSearch(q, admin1){
 function venuePoint(g){
   if(isHomeField(g.venue)) return Promise.resolve({lat:TEAM.venue.lat, lon:TEAM.venue.lon});
   if(!g.city && !g.zip) return Promise.reject(new Error("no venue address"));
-  var key=[g.zip,g.city,g.state].join("|"), hit=geoCache()[key];
+  var key=[g.zip,g.city,g.venueState].join("|"), hit=geoCache()[key];
   if(hit) return Promise.resolve(hit);
   var first = g.zip ? geoSearch(g.zip) : Promise.reject(new Error("no zip"));
-  return first.catch(function(){ return geoSearch(g.city, US_STATES[g.state]||null); })
+  return first.catch(function(){ return geoSearch(g.city, US_STATES[g.venueState]||null); })
     .then(function(pt){ geoRemember(key, pt); return pt; });
 }
 // WMO weather codes, in plain words and a glyph. The glyph is aria-hidden;
@@ -610,7 +510,7 @@ function rankedParts(ev){
   var away=cs.filter(function(c){return c.homeAway==="away";})[0]||cs[1];
   var st=(comp.status&&comp.status.type)||{};
   var isND=cs.some(function(c){ return String(c.id)===TEAM_ID; });
-  var o=oddsOf(comp), net=network(comp);
+  var o=TeamOS.espn.odds(comp), net=TeamOS.espn.broadcast(comp);
   function nm(c){
     if(!c||!c.team) return "opponent to be announced";
     var r=c.curatedRank&&c.curatedRank.current<26
@@ -635,7 +535,7 @@ function rankedParts(ev){
     if(bits) liveLine='<span class="live"><span class="lbl">LIVE</span>'+esc(bits.slice(0,150))+"</span>";
   }
   var sub=(st.state==="pre"
-      ? (timeIsSet(ev.date, comp)?fmtTime(ev.date)+" "+tzAbbr():"Kickoff time not announced")
+      ? (TeamOS.espn.timeIsSet(ev.date, comp)?fmtTime(ev.date)+" "+tzAbbr():"Kickoff time not announced")
       : (comp.venue?esc(comp.venue.fullName||""):""))
     +(st.state!=="pre"&&net?" \u00B7 "+esc(net):"")
     +(o&&o.line?" \u00B7 line "+esc(o.line):"")
@@ -2239,14 +2139,14 @@ function cachedThenFresh(el, urls, fresh, build, wire){
 // Pulled out of load() so the auto-refresh can reuse it without re-fetching
 // team info, odds or anything else that does not change during a game.
 function refreshSchedule(first){
-  var url=ESPN+"/teams/"+TEAM_ID+"/schedule";
+  var url=TeamOS.espn.scheduleUrl(TEAM_CONFIG);
   var announce=first && !S.games;      // only the very first paint is news
 
   // Everything that turns a schedule payload into pixels. Runs twice on a
   // repeat visit: once from the worker's cache the instant the page opens,
   // then again when ESPN answers. paintSchedule keeps any open box score.
   function apply(d){
-    var games=(d.events||[]).map(normalize).sort(function(a,b){return new Date(a.date)-new Date(b.date);});
+    var games=TeamOS.espn.schedule(d, TEAM, TEAM_CONFIG);
     S.games=games;
     var live=games.filter(function(g){return g.state==="in";})[0];
     var up=games.filter(function(g){return g.state==="pre";})[0];
@@ -2277,8 +2177,8 @@ function refreshSchedule(first){
     if(S.next && !S.next.odds && S.oddsTried!==S.next.id){
       S.oddsTried=S.next.id;          // ESPN often has no line for these; ask once
       summaryFor(S.next.id).then(function(sm){
-        var pc=sm.pickcenter&&sm.pickcenter[0]; if(!pc) return;
-        S.next.odds={ line:pc.details||null, total:pc.overUnder!=null?pc.overUnder:null };
+        var o=TeamOS.espn.gameOdds(sm); if(!o) return;
+        S.next.odds=o;
         paintHero(S.next); paintSchedule(S.games);
       }).catch(function(){});
     }
