@@ -1,17 +1,20 @@
 /* TeamOS - the ESPN adapter.
 
    Everything the platform knows about how ESPN shapes a college football
-   schedule lives here, and nowhere else. The adapter is a pure
-   transformation: it is handed ESPN's JSON, the Team, and the team config,
-   and it returns Game objects. It never fetches, never touches the page,
-   never reads application state. app.js owns the network, the cache-first
-   paint, staleness and polling; this file owns the meaning of ESPN's keys.
+   team's schedule, roster and record lives here, and nowhere else. The
+   adapter is a pure transformation: it is handed ESPN's JSON (and, for the
+   schedule, the Team and the team config) and it returns domain objects. It
+   never fetches, never touches the page, never reads application state.
+   app.js owns the network, the cache-first paint, staleness and polling;
+   this file owns the meaning of ESPN's keys.
 
-     raw ESPN JSON + Team + TEAM_CONFIG  ->  TeamOS.espn.schedule()  ->  Game[]
+     schedule JSON + Team + TEAM_CONFIG  ->  TeamOS.espn.schedule()    ->  Game[]
+     roster JSON                         ->  TeamOS.espn.roster()      ->  RosterGroup[] of Player
+     team JSON                           ->  TeamOS.espn.teamStatus()  ->  { rank, record }
 
-   Game is documented in docs/03_DOMAIN_MODEL.md. It is written from the
-   team's point of view - us/them, home/away, won - because that is what a
-   team's Suite renders. Nothing in it names ESPN.
+   All three are documented in docs/03_DOMAIN_MODEL.md. Game is written from
+   the team's point of view - us/them, home/away, won - because that is what
+   a team's Suite renders. Nothing in any of them names ESPN.
 
    The three helpers at the foot of the exports (timeIsSet, broadcast, odds)
    are transitional: the Top 25 tab still renders ESPN's scoreboard raw and
@@ -137,11 +140,81 @@ TeamOS.espn = (function () {
     };
   }
 
+  /* ---------- roster ---------- */
+  // ESPN labels its groups with raw camelCase keys like "specialTeam". Map the
+  // ones college football actually uses; title-case anything unexpected.
+  var GROUP_LABEL={ offense:"Offense", defense:"Defense", specialteam:"Special",
+                    specialteams:"Special", injuredreserve:"Injured",
+                    practicesquad:"Practice", suspended:"Suspended" };
+  function groupLabel(key, fallback){
+    var k=String(key||"").toLowerCase();
+    if(GROUP_LABEL[k]) return GROUP_LABEL[k];
+    var s=String(fallback||key||"Squad").replace(/([a-z])([A-Z])/g,"$1 $2");
+    return s.charAt(0).toUpperCase()+s.slice(1);
+  }
+  function str(v){ return v==null ? "" : String(v); }
+
+  // One ESPN athlete -> one Player. Only what the roster view shows and
+  // searches; position is the abbreviation with the full name as a fallback,
+  // and positionName keeps the full name so a search for "quarterback" works.
+  function player(p){
+    var pos=p.position||{}, xp=p.experience||{}, bp=p.birthPlace||{};
+    return {
+      name:         str(p.displayName||p.fullName),
+      jersey:       str(p.jersey),
+      position:     str(pos.abbreviation||pos.name),
+      positionName: str(pos.name),
+      height:       str(p.displayHeight),
+      weight:       str(p.displayWeight),
+      classYear:    str(xp.abbreviation||xp.displayValue),
+      hometown:     { city: str(bp.city), state: str(bp.state) }
+    };
+  }
+
+  /* ---------- team ---------- */
+  var TOP25 = 26;
+
   return {
-    // The URL app.js fetches. Must not change shape: the service worker's
-    // data cache and the page's cache-first paint are keyed on it.
+    // The URLs app.js fetches. Must not change shape: the service worker's
+    // data cache and the page's cache-first paint are keyed on them.
     scheduleUrl: function(config){
       return SITE+"/teams/"+config.sources.espn.teamId+"/schedule";
+    },
+    rosterUrl: function(config){
+      return SITE+"/teams/"+config.sources.espn.teamId+"/roster";
+    },
+    teamUrl: function(config){
+      return SITE+"/teams/"+config.sources.espn.teamId;
+    },
+
+    // ESPN's roster payload -> RosterGroup[]: { key, label, players }. Either a
+    // flat athletes array or one grouped by unit; empty units (IR, practice
+    // squad) are dropped, and a flat list becomes one group called "Roster".
+    roster: function(json){
+      var groups=[];
+      var a=(json&&json.athletes)||[];
+      if(a.length && a[0] && Array.isArray(a[0].items)){
+        a.forEach(function(g){
+          var items=g.items||[];
+          if(!items.length) return;
+          var key=String(g.position||g.name||"squad").toLowerCase();
+          groups.push({ key:key, label:groupLabel(key, g.text||g.name), players:items.map(player) });
+        });
+      }
+      if(!groups.length) groups.push({ key:"all", label:"Roster", players:a.map(player) });
+      return groups;
+    },
+
+    // ESPN's team payload -> TeamStatus: { rank, record }. rank is null
+    // outside the top 25; record is the overall summary ("2-0") or null when
+    // ESPN sends none.
+    teamStatus: function(json){
+      var t=(json&&json.team)||{};
+      var r=t.record&&t.record.items&&t.record.items[0];
+      return {
+        rank:   (t.rank && t.rank<TOP25) ? t.rank : null,
+        record: r ? str(r.summary) : null
+      };
     },
 
     // ESPN's schedule payload -> Game[], oldest first.
