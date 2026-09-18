@@ -411,62 +411,30 @@ function paintSchedule(games){
 }
 
 /* ---------- top 25 ---------- */
-// Which poll leads. Once the committee starts releasing CFP rankings those are
-// the only ones that decide anything, so they sort to the top automatically.
-function pollOrder(r){
-  var n=((r.shortName||"")+" "+(r.name||"")+" "+(r.type||"")).toLowerCase();
-  if(/cfp|playoff/.test(n))               return 0;
-  if(/\bap\b|associated press/.test(n))   return 1;
-  if(/coach|afca|usa today/.test(n))      return 2;
-  return 3;
-}
-// ESPN's rankings endpoint returns FCS, Division II and Division III polls
-// alongside the FBS ones. Keep only the three that bear on Notre Dame.
-function isFBS(r){
-  var n=((r.shortName||"")+" "+(r.name||"")+" "+(r.type||"")+" "+
-         (r.headline||"")).toLowerCase();
-  if(/\bfcs\b|division\s*(ii|iii|2|3)\b|\bd-?ii+\b|\bd-?[23]\b|naia|juco|junior college/.test(n))
-    return false;
-  return pollOrder(r)<3;          // CFP, AP or FBS coaches only
-}
-function pollLabel(r){
-  var n=((r.shortName||"")+" "+(r.name||"")).toLowerCase();
-  if(/cfp|playoff/.test(n))             return "CFP";
-  if(/\bap\b|associated press/.test(n)) return "AP";
-  if(/coach|afca|usa today/.test(n))    return "Coaches";
-  return (r.shortName||r.name||"Poll").slice(0,10);
-}
-
-function pollSlug(r){ return pollLabel(r).replace(/[^A-Za-z0-9]/g,""); }
-
 // The pill carries the poll name and Notre Dame's place in it, so the options
 // and the one number you care about are both visible without tapping.
-function pollPill(r, active){
-  var nd=null;
-  (r.ranks||[]).forEach(function(x){ if(x.team&&String(x.team.id)===TEAM_ID) nd=x; });
-  return '<button type="button" data-poll="'+pollSlug(r)+'" aria-pressed="'+active+'">'+
-    esc(pollLabel(r))+
-    (nd ? '<span class="n">#'+nd.current+"</span>"
+function pollPill(p, active){
+  var nd=p.ranks.filter(function(x){ return x.mine; })[0];
+  return '<button type="button" data-poll="'+p.key+'" aria-pressed="'+active+'">'+
+    esc(p.label)+
+    (nd ? '<span class="n">#'+nd.rank+"</span>"
         : '<span class="n">NR</span>')+
     "</button>";
 }
 
-function pollBody(r){
-  var when=r.occurrence&&r.occurrence.displayValue ? r.occurrence.displayValue : "";
-  var html = when ? '<p class="pollnote">'+esc(r.name||"Poll")+" \u00B7 "+esc(when)+"</p>" : "";
-  html+='<ol class="plain" aria-label="'+esc(r.name||"Poll")+'">';
-  (r.ranks||[]).forEach(function(x){
-    var isND=x.team&&String(x.team.id)===TEAM_ID;
-    var mv=x.previous&&x.previous>0 ? x.previous-x.current : 0;
+function pollBody(p){
+  var html = p.asOf ? '<p class="pollnote">'+esc(p.name)+" \u00B7 "+esc(p.asOf)+"</p>" : "";
+  html+='<ol class="plain" aria-label="'+esc(p.name)+'">';
+  p.ranks.forEach(function(x){
+    var mv=x.previous ? x.previous-x.rank : 0;
     var move = mv>0 ? '<span class="up"><span class="sr-only">up '+mv+'</span><span aria-hidden="true">\u25B2'+mv+"</span></span>"
              : mv<0 ? '<span class="down"><span class="sr-only">down '+Math.abs(mv)+'</span><span aria-hidden="true">\u25BC'+Math.abs(mv)+"</span></span>"
-             : (x.previous===0 ? '<span class="up"><span class="sr-only">new</span><span aria-hidden="true">NEW</span></span>' : "");
-    html+='<li class="row '+(isND?"nd":"")+'" style="padding:.45rem .15rem">'+
+             : (x.isNew ? '<span class="up"><span class="sr-only">new</span><span aria-hidden="true">NEW</span></span>' : "");
+    html+='<li class="row '+(x.mine?"nd":"")+'" style="padding:.45rem .15rem">'+
       '<span class="date" style="width:2rem"><span class="sr-only">Rank </span>'+
-      '<span class="d">'+x.current+"</span></span>"+
-      '<span class="mid"><span class="team">'+
-        esc(x.team?(x.team.nickname||x.team.name||x.team.location||x.team.shortDisplayName):"")+"</span></span>"+
-      '<span class="right"><span class="status">'+esc(x.recordSummary||"")+" "+move+"</span></span></li>";
+      '<span class="d">'+x.rank+"</span></span>"+
+      '<span class="mid"><span class="team">'+esc(x.team)+"</span></span>"+
+      '<span class="right"><span class="status">'+esc(x.record)+" "+move+"</span></span></li>";
   });
   return html+"</ol>";
 }
@@ -504,63 +472,55 @@ function wireAroundPills(el){
 
 // Everything about a ranked row that can change while the game is on. Shared by
 // the initial render and the in-place refresh so the two can never drift.
-function rankedParts(ev){
-  var comp=ev.competitions[0], cs=comp.competitors||[];
-  var home=cs.filter(function(c){return c.homeAway==="home";})[0]||cs[0];
-  var away=cs.filter(function(c){return c.homeAway==="away";})[0]||cs[1];
-  var st=(comp.status&&comp.status.type)||{};
-  var isND=cs.some(function(c){ return String(c.id)===TEAM_ID; });
-  var o=TeamOS.espn.odds(comp), net=TeamOS.espn.broadcast(comp);
-  function nm(c){
-    if(!c||!c.team) return "opponent to be announced";
-    var r=c.curatedRank&&c.curatedRank.current<26
-      ? '<span class="rk"><span class="sr-only">number </span><span aria-hidden="true">#</span>'+c.curatedRank.current+"</span> " : "";
-    return r+esc(c.team.shortDisplayName||c.team.displayName);
+function rankedParts(lg){
+  var o=lg.odds, net=lg.net;
+  function nm(side){
+    var r=side.rank
+      ? '<span class="rk"><span class="sr-only">number </span><span aria-hidden="true">#</span>'+side.rank+"</span> " : "";
+    return r+esc(side.name);
   }
   var right;
-  if(st.state==="post"||st.state==="in"){
-    right='<span class="sr-only">Score: '+((away&&away.score)||0)+" to "+((home&&home.score)||0)+". "+esc(st.shortDetail||"")+"</span>"+
-      '<span aria-hidden="true"><span class="score">'+((away&&away.score)||0)+"\u2013"+((home&&home.score)||0)+"</span>"+
-      '<span class="status">'+esc(st.shortDetail||"")+"</span></span>";
+  if(lg.state==="post"||lg.state==="in"){
+    right='<span class="sr-only">Score: '+(lg.away.score||0)+" to "+(lg.home.score||0)+". "+esc(lg.detail)+"</span>"+
+      '<span aria-hidden="true"><span class="score">'+(lg.away.score||0)+"\u2013"+(lg.home.score||0)+"</span>"+
+      '<span class="status">'+esc(lg.detail)+"</span></span>";
   } else {
     right = net ? '<span class="net"><span class="sr-only">Watch on </span>'+esc(net)+"</span>"
                 : '<span class="net tbd">Network <abbr title="to be determined">TBD</abbr></span>';
   }
-  // The scoreboard payload already carries live down/distance and the last play.
-  var sit=comp.situation||{}, liveLine="";
-  if(st.state==="in"){
-    var lp=(sit.lastPlay&&sit.lastPlay.text)||"";
-    var dd=sit.downDistanceText||sit.shortDownDistanceText||"";
-    var bits=[dd, lp].filter(Boolean).join(" \u00B7 ");
+  // A live LeagueGame already carries down/distance and the last play.
+  var liveLine="";
+  if(lg.live){
+    var bits=[lg.live.downDistance, lg.live.lastPlay].filter(Boolean).join(" \u00B7 ");
     if(bits) liveLine='<span class="live"><span class="lbl">LIVE</span>'+esc(bits.slice(0,150))+"</span>";
   }
-  var sub=(st.state==="pre"
-      ? (TeamOS.espn.timeIsSet(ev.date, comp)?fmtTime(ev.date)+" "+tzAbbr():"Kickoff time not announced")
-      : (comp.venue?esc(comp.venue.fullName||""):""))
-    +(st.state!=="pre"&&net?" \u00B7 "+esc(net):"")
+  var sub=(lg.state==="pre"
+      ? (lg.timeSet?fmtTime(lg.date)+" "+tzAbbr():"Kickoff time not announced")
+      : esc(lg.venue))
+    +(lg.state!=="pre"&&net?" \u00B7 "+esc(net):"")
     +(o&&o.line?" \u00B7 line "+esc(o.line):"")
     +(o&&o.total!=null?" \u00B7 over-under "+o.total:"");
-  return { isND:isND, teams:nm(away)+' <span class="pre">at</span> '+nm(home),
+  return { isND:lg.mine, teams:nm(lg.away)+' <span class="pre">at</span> '+nm(lg.home),
            sub:sub, liveLine:liveLine, right:right };
 }
 
 // Patch the rows that changed instead of rebuilding the tab. Returns false if
 // the set of games itself changed, in which case the caller does a full render.
-function patchRanked(sb){
+function patchRanked(games){
   var list=$("panel-around").querySelector("#ar-games ul.plain");
   if(!list) return false;
   var rows=list.querySelectorAll("li.row[data-ev]");
   if(!rows.length) return false;
 
   var byId={};
-  (sb&&sb.events?sb.events:[]).forEach(function(ev){ byId[String(ev.id)]=ev; });
+  (games||[]).forEach(function(lg){ byId[lg.id]=lg; });
 
   var seen=0;
   for(var i=0;i<rows.length;i++){
-    var li=rows[i], ev=byId[li.dataset.ev];
-    if(!ev) return false;                       // window shifted, rebuild
+    var li=rows[i], lg=byId[li.dataset.ev];
+    if(!lg) return false;                       // window shifted, rebuild
     seen++;
-    var pr=rankedParts(ev);
+    var pr=rankedParts(lg);
 
     var right=li.querySelector(".right");
     if(right && right.innerHTML!==pr.right) right.innerHTML=pr.right;
@@ -589,9 +549,9 @@ function loadAround(){
   var gameCount=0;
 
   cachedThenFresh(el,
-    [ESPN+"/rankings", ESPN+"/scoreboard?groups=80&limit=400"],
+    [TeamOS.espn.rankingsUrl(), TeamOS.espn.scoreboardUrl()],
     Promise.all([
-      get(ESPN+"/rankings").catch(function(){return null;}),
+      get(TeamOS.espn.rankingsUrl()).catch(function(){return null;}),
       getScoreboard().catch(function(){return null;})
     ]),
     build, wire
@@ -609,54 +569,43 @@ function loadAround(){
         : "Rankings loaded.");
   }
 
+  // Both payloads arrive raw - from the worker's cache or the network - and
+  // cross into TeamOS here. Everything below reads Poll and LeagueGame.
   function build(res){
-    var rk=res[0], sb=res[1], pollHtml="", gameHtml="";
+    var polls=TeamOS.espn.rankings(res[0], TEAM_CONFIG);
+    var games=TeamOS.espn.scoreboard(res[1], TEAM_CONFIG);
+    var pollHtml="", gameHtml="";
     gameCount=0;
 
     // ---- rankings ----
-    if(rk&&rk.rankings&&rk.rankings.length){
-      var polls=rk.rankings.filter(function(r){ return (r.ranks||[]).length && isFBS(r); })
-                           .sort(function(a,b){ return pollOrder(a)-pollOrder(b); });
-      // ESPN sometimes publishes one poll under two names. Keep one per label.
-      var seenLabel={};
-      polls=polls.filter(function(r){
-        var k=pollLabel(r);
-        if(seenLabel[k]) return false;
-        seenLabel[k]=1; return true;
+    if(polls.length){
+      var keys=polls.map(function(p){ return p.key; });
+      if(keys.indexOf(AROUND.poll)===-1) AROUND.poll=keys[0];
+      pollHtml+='<div class="seg pills polls" role="group" aria-label="Which poll">'+
+        polls.map(function(p){ return pollPill(p, p.key===AROUND.poll); }).join("")+
+        "</div>";
+      polls.forEach(function(p){
+        pollHtml+='<div id="poll-'+p.key+'"'+
+          (p.key===AROUND.poll?"":" hidden")+">"+pollBody(p)+"</div>";
       });
-      if(polls.length){
-        var slugs=polls.map(pollSlug);
-        if(slugs.indexOf(AROUND.poll)===-1) AROUND.poll=slugs[0];
-        pollHtml+='<div class="seg pills polls" role="group" aria-label="Which poll">'+
-          polls.map(function(r){ return pollPill(r, pollSlug(r)===AROUND.poll); }).join("")+
-          "</div>";
-        polls.forEach(function(r){
-          pollHtml+='<div id="poll-'+pollSlug(r)+'"'+
-            (pollSlug(r)===AROUND.poll?"":" hidden")+">"+pollBody(r)+"</div>";
-        });
-        if(!polls.some(function(r){ return pollOrder(r)===0; })){
-          pollHtml+='<p class="pollnote">CFP rankings appear here automatically once the '+
-                'committee starts releasing them, and will sort to the front.</p>';
-        }
+      if(!polls.some(function(p){ return p.label==="CFP"; })){
+        pollHtml+='<p class="pollnote">CFP rankings appear here automatically once the '+
+              'committee starts releasing them, and will sort to the front.</p>';
       }
     }
 
     // ---- ranked games ----
-    if(sb&&sb.events){
-      var ranked=sb.events.filter(function(ev){
-        var c0=ev.competitions&&ev.competitions[0];
-        return !!c0 && (c0.competitors||[]).some(function(c){
-          return c.curatedRank&&c.curatedRank.current<26; });
-      }).sort(function(a,b){ return new Date(a.date)-new Date(b.date); });
+    if(res[1]){
+      var ranked=games.filter(function(lg){ return lg.home.rank||lg.away.rank; });
 
       gameCount=ranked.length;
       if(!ranked.length) gameHtml+='<p class="msg">No ranked teams are playing in this window.</p>';
       else gameHtml+='<ul class="plain">';
 
-      ranked.forEach(function(ev){
-        var pr=rankedParts(ev);
-        gameHtml+='<li class="row '+(pr.isND?"nd":"")+'" data-ev="'+esc(String(ev.id))+'">'+
-          dateChip(ev.date)+
+      ranked.forEach(function(lg){
+        var pr=rankedParts(lg);
+        gameHtml+='<li class="row '+(pr.isND?"nd":"")+'" data-ev="'+esc(lg.id)+'">'+
+          dateChip(lg.date)+
           '<span class="mid"><span class="team">'+pr.teams+"</span>"+
           '<span class="sub">'+pr.sub+"</span>"+pr.liveLine+"</span>"+
           '<span class="right">'+pr.right+"</span></li>";
@@ -1973,18 +1922,18 @@ var AUTO={ timer:null, every:30000, liveElsewhere:false };
 
 // One scoreboard fetch serves two jobs: telling us whether anything is live
 // (needed on first paint, before any tab is opened) and filling the Top 25 tab
-// instantly when it is opened.
-var SB={ data:null, at:0 };
+// instantly when it is opened. The payload is kept as fetched so the tab's
+// build sees the same input from here as from the worker's cache; the
+// LeagueGame[] beside it is what the page actually reads.
+var SB={ data:null, games:null, at:0 };
 
 function getScoreboard(maxAgeMs){
   var age=Date.now()-SB.at;
   if(SB.data && age < (maxAgeMs==null?30000:maxAgeMs)) return Promise.resolve(SB.data);
-  return get(ESPN+"/scoreboard?groups=80&limit=400").then(function(d){
+  return get(TeamOS.espn.scoreboardUrl()).then(function(d){
     SB.data=d; SB.at=Date.now();
-    AUTO.liveElsewhere = !!(d && d.events && d.events.some(function(ev){
-      var c0=ev.competitions&&ev.competitions[0];
-      return c0 && c0.status && c0.status.type && c0.status.type.state==="in";
-    }));
+    SB.games=TeamOS.espn.scoreboard(d, TEAM_CONFIG);
+    AUTO.liveElsewhere = SB.games.some(function(lg){ return lg.state==="in"; });
     startAuto();
     return d;
   });
@@ -2017,9 +1966,9 @@ function autoTick(){
   if(!$("panel-around").hidden){
     // Looking at the list. Patch the rows that moved rather than rebuilding the
     // tab, so scroll position, open folds and the pill selection all survive.
-    getScoreboard(0).then(function(sb){
+    getScoreboard(0).then(function(){
       if($("panel-around").hidden) return;
-      if(!patchRanked(sb)){
+      if(!patchRanked(SB.games)){
         var y=window.scrollY;
         $("panel-around").dataset.loaded="";
         loadAround();

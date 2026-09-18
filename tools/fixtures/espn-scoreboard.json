@@ -1,0 +1,65 @@
+{
+  "_comment": "Trimmed ESPN FBS scoreboard payload for tools/adaptercheck.js. Four events, deliberately out of date order: a ranked-vs-unranked future game with a TV broadcast and a line; an unranked live game (drives live-anywhere detection but is not a ranked game); a ranked-vs-ranked final; and the team's own future game with a placeholder kickoff and a streaming-only geoBroadcast. Only the keys TeamOS.espn reads are kept, in ESPN's real positions; the scoreboard files broadcasts as `names` arrays.",
+  "events": [
+    {
+      "id": "401858226",
+      "date": "2026-09-18T23:30Z",
+      "competitions": [{
+        "timeValid": true,
+        "venue": { "fullName": "Allegacy Federal Credit Union Stadium" },
+        "status": { "type": { "state": "pre", "shortDetail": "9/18 - 7:30 PM EDT" } },
+        "broadcasts": [ { "market": "national", "names": ["ESPN"] } ],
+        "geoBroadcasts": [],
+        "odds": [ { "details": "MIA -20.5", "overUnder": 56.5 } ],
+        "competitors": [
+          { "id": "154",  "homeAway": "home", "score": "0", "curatedRank": { "current": 99 }, "team": { "id": "154",  "shortDisplayName": "Wake Forest", "displayName": "Wake Forest Demon Deacons" } },
+          { "id": "2390", "homeAway": "away", "score": "0", "curatedRank": { "current": 5 },  "team": { "id": "2390", "shortDisplayName": "Miami",       "displayName": "Miami Hurricanes" } }
+        ]
+      }]
+    },
+    {
+      "id": "401858225",
+      "date": "2026-09-17T23:30Z",
+      "competitions": [{
+        "timeValid": true,
+        "venue": { "fullName": "Acrisure Stadium" },
+        "status": { "type": { "state": "in", "shortDetail": "3:23 - 2nd" } },
+        "broadcasts": [ { "market": "national", "names": ["ESPN"] } ],
+        "situation": { "lastPlay": { "text": "(03:28) #47 T.Woody kickoff 65 yards to the Pitt00 #24 T.Robinson return 20 yards to the Pitt20" }, "downDistanceText": "1st & 10 at PITT 20", "shortDownDistanceText": "1st & 10" },
+        "competitors": [
+          { "id": "221", "homeAway": "home", "score": "17", "curatedRank": { "current": 99 }, "team": { "id": "221", "shortDisplayName": "Pitt",     "displayName": "Pittsburgh Panthers" } },
+          { "id": "183", "homeAway": "away", "score": "7",  "curatedRank": { "current": 99 }, "team": { "id": "183", "shortDisplayName": "Syracuse", "displayName": "Syracuse Orange" } }
+        ]
+      }]
+    },
+    {
+      "id": "401858100",
+      "date": "2026-09-12T19:30Z",
+      "competitions": [{
+        "timeValid": true,
+        "venue": { "fullName": "Sanford Stadium" },
+        "status": { "type": { "state": "post", "shortDetail": "Final" } },
+        "broadcasts": [ { "market": "national", "names": ["ABC"] } ],
+        "competitors": [
+          { "id": "61",  "homeAway": "home", "score": "31", "curatedRank": { "current": 2 }, "team": { "id": "61",  "shortDisplayName": "Georgia",   "displayName": "Georgia Bulldogs" } },
+          { "id": "333", "homeAway": "away", "score": "24", "curatedRank": { "current": 9 }, "team": { "id": "333", "shortDisplayName": "Tennessee", "displayName": "Tennessee Volunteers" } }
+        ]
+      }]
+    },
+    {
+      "id": "401858460",
+      "date": "2026-09-26T04:00Z",
+      "competitions": [{
+        "timeValid": false,
+        "venue": { "fullName": "Ross-Ade Stadium" },
+        "status": { "type": { "state": "pre", "shortDetail": "9/26 - TBD" } },
+        "broadcasts": [],
+        "geoBroadcasts": [ { "type": { "shortName": "Streaming" }, "media": { "shortName": "Peacock" } } ],
+        "competitors": [
+          { "id": "2509", "homeAway": "home", "score": "0", "curatedRank": { "current": 99 }, "team": { "id": "2509", "shortDisplayName": "Purdue",     "displayName": "Purdue Boilermakers" } },
+          { "id": "87",   "homeAway": "away", "score": "0", "curatedRank": { "current": 3 },  "team": { "id": "87",   "shortDisplayName": "Notre Dame", "displayName": "Notre Dame Fighting Irish" } }
+        ]
+      }]
+    }
+  ]
+}

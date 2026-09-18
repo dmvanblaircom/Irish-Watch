@@ -32,7 +32,16 @@ ESPN team JSON    ->  TeamOS.espn.teamStatus(json)  ->  { rank, record }        
 
 `app.js` fetches `TeamOS.espn.rosterUrl()` / `teamUrl()` — unchanged URLs — and keeps the lazy load on fold open, the group pills, the search box and sorting.
 
-Everything else — scoreboard, rankings, game summaries, matchup preview, news, Kalshi odds, weather, depth chart — is unchanged and still provider-shaped in `app.js`. The Top 25 tab borrows three ESPN parsing helpers from the adapter rather than keeping its own copy; that is transitional.
+### The league paths (Phase 4A)
+
+```text
+ESPN scoreboard JSON  ->  TeamOS.espn.scoreboard(json, config)  ->  LeagueGame[]  ->  Top 25 games list; "is anything live" for the poller
+ESPN rankings JSON    ->  TeamOS.espn.rankings(json, config)    ->  Poll[]        ->  Top 25 rankings pills and lists
+```
+
+Both payloads reach the Top 25 build raw — from the worker's cache on first paint and from the network after — and cross into TeamOS at the top of the build, so the two paths see identical input. The scoreboard fetch is shared: the same payload feeds the tab and the live-anywhere check, and the application keeps the `LeagueGame[]` beside it for the in-place row patcher. The transitional helper exports from Phase 3A are gone.
+
+Everything else — game summaries, matchup preview, news, Kalshi odds, weather, depth chart — is unchanged and still provider-shaped in `app.js`.
 
 ## Target Flow
 

@@ -49,7 +49,7 @@ Represents a home or game venue and relevant location information.
 
 A team-perspective representation of a scheduled, live or completed game. **Implemented in Phase 3A**, produced only by the TeamOS ESPN adapter (`TeamOS.espn.schedule()` in `teamos/espn.js`).
 
-Game is provider-neutral: nothing in it names ESPN or carries an ESPN key. It is written from the team's point of view — `home`, `us`/`them`, `won` — because that is what a team's Suite renders. A neutral home/away Game for league-wide views does not exist yet and is not needed until the scoreboard is normalized.
+Game is provider-neutral: nothing in it names ESPN or carries an ESPN key. It is written from the team's point of view — `home`, `us`/`them`, `won` — because that is what a team's Suite renders. The neutral home/away form for league-wide views is `LeagueGame`, below; the two are kept distinct on purpose.
 
 Fields, in order:
 
@@ -78,7 +78,35 @@ Fields, in order:
 
 Games are plain objects and are not frozen; the application patches `odds` onto the next game once the pregame line arrives.
 
-Not yet modelled: season, weather (computed by the application from `venue`/`city`/`zip`), a neutral home/away form.
+Not yet modelled: season, weather (computed by the application from `venue`/`city`/`zip`).
+
+### LeagueGame
+
+A game in the league, seen from nowhere in particular. **Implemented in Phase 4A**, produced only by `TeamOS.espn.scoreboard()`. It is deliberately distinct from `Game`: `Game` answers "what is my team doing", `LeagueGame` answers "what is happening in the league this week". The two are not merged because every consumer of one would need conditionals to read the other.
+
+| Field | Meaning |
+|---|---|
+| `id` | the game's id (provider event id, opaque; rows are keyed on it) |
+| `date`, `timeSet` | kickoff and whether the time is real |
+| `state`, `detail` | `"pre"` / `"in"` / `"post"` and the status text |
+| `venue` | venue name |
+| `net` | broadcast network(s), or `""` |
+| `odds` | `{ line, total }` or `null` |
+| `home`, `away` | `{ name, rank, score }` — `rank` is `null` outside the top 25; `score` is the displayed string or `null` |
+| `mine` | the team is one of the two sides |
+| `live` | `{ downDistance, lastPlay }` while `state === "in"`, else `null` |
+
+The adapter returns every game the feed lists, oldest first; "ranked games" are the ones where either side has a rank, and "is anything live" is `some(state === "in")` — both derived by the application from the list.
+
+### Poll
+
+One ranking. **Implemented in Phase 4A**, produced by `TeamOS.espn.rankings()`, which also decides which polls matter (CFP, AP, Coaches — FCS and lower divisions dropped), orders them (CFP first) and keeps one per label when the feed publishes a poll twice.
+
+```
+{ key, label, name, asOf, ranks: [ { rank, team, record, previous, isNew, mine } ] }
+```
+
+`key` is the label with non-alphanumerics stripped (used for element ids and remembered selection); `label` ∈ `"CFP" | "AP" | "Coaches"` or a short name; `asOf` e.g. `"Week 3"`. In a rank, `previous` is the prior rank or `null`, and `isNew` is true for a team new to the poll — kept separate because the feed distinguishes "was unranked" from "no history".
 
 ### Player
 
@@ -108,7 +136,7 @@ Depth chart, availability and sport-specific lineup concepts. Not yet modelled: 
 
 ### Ranking
 
-Represents a ranking source, rank, and time/season context.
+See `Poll` above.
 
 ### News Item
 

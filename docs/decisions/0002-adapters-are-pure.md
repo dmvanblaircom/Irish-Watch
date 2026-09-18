@@ -44,7 +44,7 @@ On the `state` collision: the adapter is where the Game shape becomes a document
 - `app.js` no longer contains the ESPN schedule URL shape, `normalize()`, or its helpers (`timeIsSet`, `network`, `oddsOf`, `isNeutral`, `NEUTRAL_VENUES`, `seriesFor`, `fallbackNetwork`).
 - `app.js` still owns `get()`, `cachedJSON()`, `S.stale`, polling, `S.next` selection and rendering.
 - `Game` has 19 fields, documented in `docs/03_DOMAIN_MODEL.md`; `venueState` replaces the shadowed venue state.
-- The Top 25 tab, which still renders ESPN's scoreboard raw, calls `TeamOS.espn.timeIsSet/broadcast/odds` rather than keeping a copy. That export is transitional and is removed when the scoreboard gets its own object.
+- The Top 25 tab, which at the time still rendered ESPN's scoreboard raw, called `TeamOS.espn.timeIsSet/broadcast/odds` rather than keeping a copy. That transitional export was retired in Phase 4A once `LeagueGame` existed (`docs/decisions/0003-game-and-leaguegame-are-distinct.md`).
 - `tools/adaptercheck.js` runs in CI against `tools/fixtures/espn-schedule.json` and asserts the URL, the Game shape, perspective, neutral sites, broadcasts, series, and the absence of ESPN keys.
 - No generic adapter interface or registry exists. A second adapter, if one is justified, defines its own signature.
 

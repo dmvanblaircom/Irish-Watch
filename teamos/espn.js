@@ -1,7 +1,8 @@
 /* TeamOS - the ESPN adapter.
 
    Everything the platform knows about how ESPN shapes a college football
-   team's schedule, roster and record lives here, and nowhere else. The
+   team's schedule, roster and record, and the league's scoreboard and
+   rankings, lives here and nowhere else. The
    adapter is a pure transformation: it is handed ESPN's JSON (and, for the
    schedule, the Team and the team config) and it returns domain objects. It
    never fetches, never touches the page, never reads application state.
@@ -11,15 +12,14 @@
      schedule JSON + Team + TEAM_CONFIG  ->  TeamOS.espn.schedule()    ->  Game[]
      roster JSON                         ->  TeamOS.espn.roster()      ->  RosterGroup[] of Player
      team JSON                           ->  TeamOS.espn.teamStatus()  ->  { rank, record }
+     scoreboard JSON + TEAM_CONFIG       ->  TeamOS.espn.scoreboard()  ->  LeagueGame[]
+     rankings JSON + TEAM_CONFIG         ->  TeamOS.espn.rankings()    ->  Poll[]
 
-   All three are documented in docs/03_DOMAIN_MODEL.md. Game is written from
-   the team's point of view - us/them, home/away, won - because that is what
-   a team's Suite renders. Nothing in any of them names ESPN.
-
-   The three helpers at the foot of the exports (timeIsSet, broadcast, odds)
-   are transitional: the Top 25 tab still renders ESPN's scoreboard raw and
-   needs the same parsing. They are exported so the knowledge is not
-   duplicated; they go private once the scoreboard has its own object. */
+   All of these are documented in docs/03_DOMAIN_MODEL.md. Game is written
+   from the team's point of view - us/them, home/away, won - because that is
+   what a team's Suite renders; LeagueGame is a neutral home/away game for
+   league-wide views, and the two are deliberately distinct. Nothing in any
+   of them names ESPN. */
 
 var TeamOS = TeamOS || {};
 
@@ -171,8 +171,99 @@ TeamOS.espn = (function () {
     };
   }
 
-  /* ---------- team ---------- */
+  /* ---------- league: scoreboard and rankings ---------- */
   var TOP25 = 26;
+  var LEAGUE_GROUP = 80;                 // ESPN's group id for FBS
+
+  function rankOf(c){
+    return c && c.curatedRank && c.curatedRank.current<TOP25 ? c.curatedRank.current : null;
+  }
+  function leagueSide(c){
+    return {
+      name:  c && c.team ? str(c.team.shortDisplayName||c.team.displayName) : "opponent to be announced",
+      rank:  rankOf(c),
+      score: c && c.score!=null ? str(c.score) : null
+    };
+  }
+
+  // One ESPN scoreboard event -> one LeagueGame: neutral home/away, with a
+  // flag for the team's own game. `live` carries what the scoreboard already
+  // knows about the ball while the game is on.
+  function leagueGame(ev, config){
+    var teamId=config.sources.espn.teamId;
+    var comp=(ev.competitions&&ev.competitions[0])||{}, cs=comp.competitors||[];
+    var home=cs.filter(function(c){return c.homeAway==="home";})[0]||cs[0];
+    var away=cs.filter(function(c){return c.homeAway==="away";})[0]||cs[1];
+    var st=(comp.status&&comp.status.type)||{};
+    var sit=comp.situation||{};
+    var state=st.state||"pre";
+    return {
+      id:      str(ev.id),
+      date:    ev.date,
+      timeSet: timeIsSet(ev.date, comp),
+      state:   state,
+      detail:  str(st.shortDetail),
+      venue:   comp.venue ? str(comp.venue.fullName) : "",
+      net:     broadcast(comp),
+      odds:    odds(comp),
+      home:    leagueSide(home),
+      away:    leagueSide(away),
+      mine:    cs.some(function(c){ return String(c.id)===teamId; }),
+      live:    state==="in"
+                 ? { downDistance: str(sit.downDistanceText||sit.shortDownDistanceText),
+                     lastPlay:     str(sit.lastPlay&&sit.lastPlay.text) }
+                 : null
+    };
+  }
+
+  // Which poll leads. Once the committee starts releasing CFP rankings those
+  // are the only ones that decide anything, so they sort to the top.
+  function pollOrder(r){
+    var n=((r.shortName||"")+" "+(r.name||"")+" "+(r.type||"")).toLowerCase();
+    if(/cfp|playoff/.test(n))               return 0;
+    if(/\bap\b|associated press/.test(n))   return 1;
+    if(/coach|afca|usa today/.test(n))      return 2;
+    return 3;
+  }
+  // ESPN's rankings endpoint returns FCS, Division II and Division III polls
+  // alongside the FBS ones. Keep only the three that bear on an FBS team.
+  function isFBS(r){
+    var n=((r.shortName||"")+" "+(r.name||"")+" "+(r.type||"")+" "+
+           (r.headline||"")).toLowerCase();
+    if(/\bfcs\b|division\s*(ii|iii|2|3)\b|\bd-?ii+\b|\bd-?[23]\b|naia|juco|junior college/.test(n))
+      return false;
+    return pollOrder(r)<3;          // CFP, AP or FBS coaches only
+  }
+  function pollLabel(r){
+    var n=((r.shortName||"")+" "+(r.name||"")).toLowerCase();
+    if(/cfp|playoff/.test(n))             return "CFP";
+    if(/\bap\b|associated press/.test(n)) return "AP";
+    if(/coach|afca|usa today/.test(n))    return "Coaches";
+    return (r.shortName||r.name||"Poll").slice(0,10);
+  }
+  function poll(r, config){
+    var teamId=config.sources.espn.teamId, label=pollLabel(r);
+    return {
+      key:   label.replace(/[^A-Za-z0-9]/g,""),
+      label: label,
+      name:  str(r.name||"Poll"),
+      asOf:  r.occurrence ? str(r.occurrence.displayValue) : "",
+      ranks: (r.ranks||[]).map(function(x){
+        var t=x.team||{};
+        return {
+          rank:     x.current,
+          team:     str(t.nickname||t.name||t.location||t.shortDisplayName),
+          record:   str(x.recordSummary),
+          // ESPN's `previous` is a rank, 0 for a team new to the poll, or absent
+          previous: x.previous>0 ? x.previous : null,
+          isNew:    x.previous===0,
+          mine:     String(t.id)===teamId
+        };
+      })
+    };
+  }
+
+  /* ---------- team ---------- */
 
   return {
     // The URLs app.js fetches. Must not change shape: the service worker's
@@ -185,6 +276,12 @@ TeamOS.espn = (function () {
     },
     teamUrl: function(config){
       return SITE+"/teams/"+config.sources.espn.teamId;
+    },
+    scoreboardUrl: function(){
+      return SITE+"/scoreboard?groups="+LEAGUE_GROUP+"&limit=400";
+    },
+    rankingsUrl: function(){
+      return SITE+"/rankings";
     },
 
     // ESPN's roster payload -> RosterGroup[]: { key, label, players }. Either a
@@ -231,9 +328,22 @@ TeamOS.espn = (function () {
       return { line:pc.details||null, total:pc.overUnder!=null?pc.overUnder:null };
     },
 
-    // Transitional: the Top 25 tab still renders ESPN's scoreboard raw.
-    timeIsSet: timeIsSet,
-    broadcast: broadcast,
-    odds: odds
+    // ESPN's scoreboard payload (every game the league is showing this week) ->
+    // LeagueGame[], oldest first. Ranked games are the ones with a side rank.
+    scoreboard: function(json, config){
+      return ((json&&json.events)||[]).map(function(ev){ return leagueGame(ev, config); })
+        .sort(function(a,b){ return new Date(a.date)-new Date(b.date); });
+    },
+
+    // ESPN's rankings payload -> Poll[]: only the polls that bear on an FBS
+    // team, CFP first, one per label when ESPN publishes a poll twice.
+    rankings: function(json, config){
+      var seen={};
+      return ((json&&json.rankings)||[])
+        .filter(function(r){ return (r.ranks||[]).length && isFBS(r); })
+        .sort(function(a,b){ return pollOrder(a)-pollOrder(b); })
+        .filter(function(r){ var k=pollLabel(r); if(seen[k]) return false; seen[k]=1; return true; })
+        .map(function(r){ return poll(r, config); });
+    }
   };
 })();
