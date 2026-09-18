@@ -6,9 +6,9 @@
 
 Team configuration separates team identity and team-specific capabilities from generic Suite behavior.
 
-## Current Shape (Phase 2)
+## Current Shape (Phase 5B)
 
-A team is one file in `teams/` that defines `TEAM_CONFIG`, loaded by `index.html` before `teamos/team.js` and `app.js`. It has four sections, each owned by a different layer:
+A team is one file in `teams/` that defines `TEAM_CONFIG`, loaded by `index.html` before `teamos/team.js` and `app.js`. It has five sections, each owned by a different layer:
 
 ```js
 var TEAM_CONFIG = {
@@ -34,11 +34,21 @@ var TEAM_CONFIG = {
   series: [ /* [opponent regex, trophy name] */ ],
 
   // The team's own pages.
-  links: { roster: { url: "...", label: "..." } }
+  links: { roster: { url: "...", label: "..." } },
+
+  // The team-data files the Action writes for this team, by kind. A kind
+  // the team has no source for is left out, and the Suite shows that
+  // surface as unavailable instead of reading another team's file.
+  // Read through TeamOS.snapshots (Phase 5B, decision 0006).
+  snapshots: {
+    depth:       { file: "depth.json", history: "depth-history.json", label: "UHND" },
+    oddsHistory: { file: "odds-history.json" },
+    beatNews:    { file: "news.json" }
+  }
 };
 ```
 
-The real file is `teams/notre-dame.js`. Values shown here are abbreviated.
+The real files are `teams/notre-dame.js` and `teams/ohio-state.js` (which declares `snapshots: {}`). Values shown here are abbreviated.
 
 ## What Belongs in Configuration
 
@@ -46,8 +56,9 @@ The real file is `teams/notre-dame.js`. Values shown here are abbreviated.
 - `sources` — provider identifiers and provider-specific matching or fallback rules
 - `series` — team-specific schedule data no public feed carries
 - `links` — the team's official pages
+- `snapshots` — which of the Action-written team-data files this team has (the depth chart is a capability; the beat feed is a content source; the odds history is team-scoped) and where they are
 
-Not yet in configuration, pending a real need or a second team: branding/theme, capabilities, content sources (the RSS feeds and depth-chart source still live in `.github/workflows/odds.yml`), history.
+Not yet in configuration, pending a real need: branding/theme (Phase 6), history. The sources behind the snapshots — the RSS feed list and the depth-chart scrape — still live in `.github/workflows/odds.yml`; the config declares that the team has them, not yet how they are produced.
 
 ## What Does Not Belong in Configuration
 
@@ -66,6 +77,8 @@ Avoid fields such as:
 A second team should be addable by supplying a second configuration object and any required provider/source mappings.
 
 The Suite should not need to be duplicated.
+
+Run twice (Phase 5A, 5B — `docs/engineering/`): every ESPN-fed surface rendered Ohio State from configuration alone, and the three surfaces fed by the Action's Notre Dame files now show Ohio State an honest unavailable state because its config declares no snapshots.
 
 ## Exceptions
 
