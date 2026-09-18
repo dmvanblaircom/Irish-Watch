@@ -147,12 +147,73 @@ eq(TeamOS.espn.teamStatus({ team: { rank: 3 } }), { rank: 3, record: null }, "no
 eq(TeamOS.espn.teamStatus({}), { rank: null, record: null }, "empty payload");
 eq(Object.keys(TeamOS.espn.teamStatus(teamFixture)), ["rank","record"], "exactly rank and record");
 
-// ---- transitional helpers ----
-console.log("transitional helpers (Top 25 path)");
-eq(typeof TeamOS.espn.timeIsSet + typeof TeamOS.espn.broadcast + typeof TeamOS.espn.odds, "functionfunctionfunction", "timeIsSet, broadcast, odds exported");
+// ---- scoreboard ----
+var sbFixture = JSON.parse(read("tools/fixtures/espn-scoreboard.json"));
+var LG = ["id","date","timeSet","state","detail","venue","net","odds","home","away","mine","live"];
+var LGLEAK = /competitions|competitors|curatedRank|homeAway|shortDetail|situation|downDistanceText|geoBroadcasts|displayName|espn/i;
+
+console.log("scoreboardUrl / rankingsUrl");
+eq(TeamOS.espn.scoreboardUrl(),
+   "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&limit=400",
+   "scoreboard URL unchanged (SW cache key)");
+eq(TeamOS.espn.rankingsUrl(),
+   "https://site.api.espn.com/apis/site/v2/sports/football/college-football/rankings",
+   "rankings URL unchanged (SW cache key)");
+
+console.log("scoreboard()");
+var lgs = TeamOS.espn.scoreboard(sbFixture, TEAM_CONFIG);
+var lgById = {}; lgs.forEach(function (g) { lgById[g.id] = g; });
+eq(lgs.length, 4, "one LeagueGame per event, including unranked ones");
+eq(lgs.map(function (g) { return g.id; }), ["401858100","401858225","401858226","401858460"], "sorted oldest first");
+lgs.forEach(function (g) {
+  eq(Object.keys(g), LG, g.id + " has exactly the documented LeagueGame fields");
+  eq(Object.keys(g.home), ["name","rank","score"], g.id + " home side is {name, rank, score}");
+  eq(Object.keys(g.away), ["name","rank","score"], g.id + " away side is {name, rank, score}");
+  // `net` is the broadcaster's own name and can legitimately be "ESPN"; test everything else
+  ok(!LGLEAK.test(JSON.stringify(Object.assign({}, g, { net: "" }))), g.id + " carries no ESPN keys or names (outside the broadcaster's name)");
+  ok(typeof g.id === "string", g.id + " id is a string (rows are keyed on it)");
+});
+var mia = lgById["401858226"], pitt = lgById["401858225"], uga = lgById["401858100"], pur = lgById["401858460"];
+eq([mia.state, mia.timeSet, mia.detail, mia.venue], ["pre", true, "9/18 - 7:30 PM EDT", "Allegacy Federal Credit Union Stadium"], "future game: state, time, detail, venue");
+eq([mia.away, mia.home], [{ name:"Miami", rank:5, score:"0" }, { name:"Wake Forest", rank:null, score:"0" }], "sides: ranked away, unranked home, scores as strings");
+eq([mia.net, mia.odds, mia.mine, mia.live], ["ESPN", { line:"MIA -20.5", total:56.5 }, false, null], "broadcast from names[], odds, not ours, not live");
+eq([pitt.state, pitt.live], ["in", { downDistance:"1st & 10 at PITT 20", lastPlay:"(03:28) #47 T.Woody kickoff 65 yards to the Pitt00 #24 T.Robinson return 20 yards to the Pitt20" }], "live game carries down/distance and last play");
+eq([pitt.home.rank, pitt.away.rank], [null, null], "unranked on both sides (drives live-anywhere but not the ranked list)");
+eq([uga.state, uga.home.score, uga.away.score, uga.home.rank, uga.away.rank], ["post", "31", "24", 2, 9], "final: scores and both ranks");
+eq([pur.mine, pur.timeSet, pur.net, pur.away.rank], [true, false, "Peacock", 3], "the team's own game: mine, placeholder time, streaming-only broadcast");
+eq(lgs.some(function (g) { return g.state === "in"; }), true, "live-anywhere is derivable from LeagueGame[]");
+eq(lgs.filter(function (g) { return g.home.rank || g.away.rank; }).map(function (g) { return g.id; }),
+   ["401858100","401858226","401858460"], "ranked games are the ones with a side rank");
+eq(TeamOS.espn.scoreboard(null, TEAM_CONFIG), [], "no payload -> empty list");
+
+// ---- rankings ----
+var rkFixture = JSON.parse(read("tools/fixtures/espn-rankings.json"));
+var POLL = ["key","label","name","asOf","ranks"], RANK = ["rank","team","record","previous","isNew","mine"];
+var POLLLEAK = /rankings|occurrence|recordSummary|shortName|headline|nickname|location|current|espn/i;
+
+console.log("rankings()");
+var polls = TeamOS.espn.rankings(rkFixture, TEAM_CONFIG);
+eq(polls.map(function (p) { return p.key + ":" + p.label + ":" + p.ranks.length; }), ["AP:AP:5", "Coaches:Coaches:2"],
+   "AP before Coaches; FCS, the duplicate AP and the empty CFP dropped");
+polls.forEach(function (p) {
+  eq(Object.keys(p), POLL, p.key + " has exactly the documented Poll fields");
+  p.ranks.forEach(function (r) { eq(Object.keys(r), RANK, p.key + " #" + r.rank + " has exactly the documented rank fields"); });
+  ok(!POLLLEAK.test(JSON.stringify(p)), p.key + " carries no ESPN keys or names");
+});
+var ap = polls[0];
+eq([ap.name, ap.asOf], ["AP Top 25", "Week 3"], "poll name and as-of");
+eq(ap.ranks[0], { rank:1, team:"Texas", record:"2-0", previous:4, isNew:false, mine:false }, "moved up: previous kept");
+eq(ap.ranks[2], { rank:3, team:"Notre Dame", record:"2-0", previous:1, isNew:false, mine:true }, "the team's own entry: mine");
+eq([ap.ranks[3].previous, ap.ranks[3].isNew], [null, true], "previous 0 -> new to the poll");
+eq([ap.ranks[4].previous, ap.ranks[4].isNew, ap.ranks[4].team], [null, false, "Volunteers"], "no previous -> null and not new; team name falls back through nickname/name/location");
+eq(polls.some(function (p) { return p.label === "CFP"; }), false, "no CFP poll yet (the tab shows its note)");
+eq(TeamOS.espn.rankings({}, TEAM_CONFIG), [], "no payload -> empty list");
+
+// ---- exports ----
+console.log("exports");
 eq(Object.keys(TeamOS.espn).sort(),
-   ["broadcast","gameOdds","odds","roster","rosterUrl","schedule","scheduleUrl","teamStatus","teamUrl","timeIsSet"],
-   "and nothing else");
+   ["gameOdds","rankings","rankingsUrl","roster","rosterUrl","schedule","scheduleUrl","scoreboard","scoreboardUrl","teamStatus","teamUrl"],
+   "exactly the documented functions; the transitional timeIsSet/broadcast/odds are gone");
 
 console.log("\n" + (failures ? failures + " check(s) FAILED" : "all adapter checks passed"));
 process.exit(failures ? 1 : 0);

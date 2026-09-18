@@ -1,0 +1,43 @@
+{
+  "_comment": "Trimmed ESPN rankings payload for tools/adaptercheck.js. Five polls in ESPN's real order: the Coaches poll listed before AP (to prove CFP > AP > Coaches ordering), AP with a team that moved up, one that moved down, one new to the poll and one with no previous rank, a duplicate AP under a second name (dropped), an FCS poll (dropped), and an empty CFP poll (dropped because it has no ranks). Only the keys TeamOS.espn reads are kept.",
+  "rankings": [
+    {
+      "name": "AFCA Coaches Poll", "shortName": "AFCA Coaches Poll", "type": "usa",
+      "headline": "2026 NCAA Football Rankings - AFCA Coaches Poll Week 3",
+      "occurrence": { "displayValue": "Week 3" },
+      "ranks": [
+        { "current": 1, "previous": 1, "recordSummary": "2-0", "team": { "id": "251", "nickname": "Texas",      "name": "Longhorns",      "location": "Texas" } },
+        { "current": 2, "previous": 3, "recordSummary": "2-0", "team": { "id": "87",  "nickname": "Notre Dame", "name": "Fighting Irish", "location": "Notre Dame" } }
+      ]
+    },
+    {
+      "name": "AP Top 25", "shortName": "AP Poll", "type": "ap",
+      "headline": "2026 NCAA Football Rankings - AP Poll Week 3",
+      "occurrence": { "displayValue": "Week 3" },
+      "ranks": [
+        { "current": 1, "previous": 4, "recordSummary": "2-0", "team": { "id": "251", "nickname": "Texas",      "name": "Longhorns",      "location": "Texas" } },
+        { "current": 2, "previous": 2, "recordSummary": "2-0", "team": { "id": "61",  "nickname": "Georgia",    "name": "Bulldogs",       "location": "Georgia" } },
+        { "current": 3, "previous": 1, "recordSummary": "2-0", "team": { "id": "87",  "nickname": "Notre Dame", "name": "Fighting Irish", "location": "Notre Dame" } },
+        { "current": 4, "previous": 0, "recordSummary": "3-0", "team": { "id": "2390", "nickname": "Miami",     "name": "Hurricanes",     "location": "Miami" } },
+        { "current": 5,                "recordSummary": "2-0", "team": { "id": "333", "name": "Volunteers", "location": "Tennessee" } }
+      ]
+    },
+    {
+      "name": "Associated Press Poll", "shortName": "AP", "type": "ap",
+      "headline": "duplicate of the AP poll under a second name",
+      "occurrence": { "displayValue": "Week 3" },
+      "ranks": [ { "current": 1, "previous": 1, "recordSummary": "2-0", "team": { "id": "251", "nickname": "Texas" } } ]
+    },
+    {
+      "name": "FCS Coaches Poll", "shortName": "FCS Coaches Poll", "type": "fcs",
+      "headline": "2026 NCAA Football Rankings - FCS Coaches Poll Week 3",
+      "occurrence": { "displayValue": "Week 3" },
+      "ranks": [ { "current": 1, "previous": 1, "recordSummary": "3-0", "team": { "id": "2440", "nickname": "North Dakota St" } } ]
+    },
+    {
+      "name": "College Football Playoff Rankings", "shortName": "CFP Rankings", "type": "cfp",
+      "headline": "not yet released",
+      "ranks": []
+    }
+  ]
+}
