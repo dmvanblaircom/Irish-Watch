@@ -65,6 +65,8 @@ Add Ohio State using configuration and the same Suite/application code.
 
 This is the most important architectural proof point: determine whether the abstractions genuinely generalize without copying the application.
 
+Status: **5A run on 2026-09-18** — `teams/ohio-state.js` plus a one-line script swap rendered every ESPN-fed surface correctly with no application change; what leaked through was Notre Dame *data* the Action writes (depth chart, odds history, beat feeds) and the Notre Dame identity layer. Findings and the proposed 5B in `docs/engineering/phase-5a-ohio-state-proof.md`.
+
 Use the second-team implementation to identify what belongs in TeamOS, what belongs in Suite, and what was unnecessarily abstracted.
 
 ## Phase 6: Extract Team Identity / Theme
