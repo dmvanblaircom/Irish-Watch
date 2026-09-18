@@ -1,0 +1,865 @@
+{
+ "_comment": "Trimmed ESPN game summary for a final (Wisconsin at Notre Dame, Lambeau Field, 2026-09-06, ND 41-13): header with linescores, full-game team stats, three box-score categories per side (three players each), game leaders, the first four scoring plays, the last two win-probability points and the last drive. Only the keys TeamOS.espn reads are kept, in ESPN's real positions.",
+ "header": {
+  "id": "401858438",
+  "competitions": [
+   {
+    "id": "401858438",
+    "date": "2026-09-06T23:30Z",
+    "status": {
+     "type": {
+      "name": "STATUS_FINAL",
+      "state": "post",
+      "description": "Final",
+      "detail": "Final",
+      "shortDetail": "Final"
+     }
+    },
+    "competitors": [
+     {
+      "id": "87",
+      "homeAway": "home",
+      "score": "41",
+      "team": {
+       "id": "87",
+       "name": "Fighting Irish",
+       "displayName": "Notre Dame Fighting Irish",
+       "abbreviation": "ND"
+      },
+      "linescores": [
+       {
+        "displayValue": "10"
+       },
+       {
+        "displayValue": "3"
+       },
+       {
+        "displayValue": "14"
+       },
+       {
+        "displayValue": "14"
+       }
+      ]
+     },
+     {
+      "id": "275",
+      "homeAway": "away",
+      "score": "13",
+      "team": {
+       "id": "275",
+       "name": "Badgers",
+       "displayName": "Wisconsin Badgers",
+       "abbreviation": "WIS"
+      },
+      "linescores": [
+       {
+        "displayValue": "3"
+       },
+       {
+        "displayValue": "7"
+       },
+       {
+        "displayValue": "3"
+       },
+       {
+        "displayValue": "0"
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "pickcenter": [],
+ "boxscore": {
+  "teams": [
+   {
+    "team": {
+     "id": "275",
+     "abbreviation": "WIS",
+     "shortDisplayName": "Wisconsin"
+    },
+    "statistics": [
+     {
+      "name": "firstDowns",
+      "displayValue": "16",
+      "label": "1st Downs"
+     },
+     {
+      "name": "thirdDownEff",
+      "displayValue": "5-13",
+      "label": "3rd down efficiency"
+     },
+     {
+      "name": "fourthDownEff",
+      "displayValue": "1-1",
+      "label": "4th down efficiency"
+     },
+     {
+      "name": "totalYards",
+      "displayValue": "284",
+      "label": "Total Yards"
+     },
+     {
+      "name": "netPassingYards",
+      "displayValue": "217",
+      "label": "Passing"
+     },
+     {
+      "name": "completionAttempts",
+      "displayValue": "19/30",
+      "label": "Comp/Att"
+     },
+     {
+      "name": "yardsPerPass",
+      "displayValue": "7.2",
+      "label": "Yards per pass"
+     },
+     {
+      "name": "rushingYards",
+      "displayValue": "67",
+      "label": "Rushing"
+     },
+     {
+      "name": "rushingAttempts",
+      "displayValue": "31",
+      "label": "Rushing Attempts"
+     },
+     {
+      "name": "yardsPerRushAttempt",
+      "displayValue": "2.2",
+      "label": "Yards per rush"
+     },
+     {
+      "name": "totalPenaltiesYards",
+      "displayValue": "6-43",
+      "label": "Penalties"
+     },
+     {
+      "name": "turnovers",
+      "displayValue": "2",
+      "label": "Turnovers"
+     },
+     {
+      "name": "fumblesLost",
+      "displayValue": "1",
+      "label": "Fumbles lost"
+     },
+     {
+      "name": "interceptions",
+      "displayValue": "1",
+      "label": "Interceptions thrown"
+     },
+     {
+      "name": "possessionTime",
+      "displayValue": "28:24",
+      "label": "Possession"
+     }
+    ]
+   },
+   {
+    "team": {
+     "id": "87",
+     "abbreviation": "ND",
+     "shortDisplayName": "Notre Dame"
+    },
+    "statistics": [
+     {
+      "name": "firstDowns",
+      "displayValue": "20",
+      "label": "1st Downs"
+     },
+     {
+      "name": "thirdDownEff",
+      "displayValue": "3-9",
+      "label": "3rd down efficiency"
+     },
+     {
+      "name": "fourthDownEff",
+      "displayValue": "1-1",
+      "label": "4th down efficiency"
+     },
+     {
+      "name": "totalYards",
+      "displayValue": "350",
+      "label": "Total Yards"
+     },
+     {
+      "name": "netPassingYards",
+      "displayValue": "239",
+      "label": "Passing"
+     },
+     {
+      "name": "completionAttempts",
+      "displayValue": "19/29",
+      "label": "Comp/Att"
+     },
+     {
+      "name": "yardsPerPass",
+      "displayValue": "8.2",
+      "label": "Yards per pass"
+     },
+     {
+      "name": "rushingYards",
+      "displayValue": "111",
+      "label": "Rushing"
+     },
+     {
+      "name": "rushingAttempts",
+      "displayValue": "32",
+      "label": "Rushing Attempts"
+     },
+     {
+      "name": "yardsPerRushAttempt",
+      "displayValue": "3.5",
+      "label": "Yards per rush"
+     },
+     {
+      "name": "totalPenaltiesYards",
+      "displayValue": "4-41",
+      "label": "Penalties"
+     },
+     {
+      "name": "turnovers",
+      "displayValue": "0",
+      "label": "Turnovers"
+     },
+     {
+      "name": "fumblesLost",
+      "displayValue": "0",
+      "label": "Fumbles lost"
+     },
+     {
+      "name": "interceptions",
+      "displayValue": "0",
+      "label": "Interceptions thrown"
+     },
+     {
+      "name": "possessionTime",
+      "displayValue": "31:36",
+      "label": "Possession"
+     }
+    ]
+   }
+  ],
+  "players": [
+   {
+    "team": {
+     "id": "275",
+     "abbreviation": "WIS"
+    },
+    "statistics": [
+     {
+      "name": "passing",
+      "text": "Wisconsin Passing",
+      "labels": [
+       "C/ATT",
+       "YDS",
+       "AVG",
+       "TD",
+       "INT",
+       "QBR"
+      ],
+      "keys": [
+       "completions/passingAttempts",
+       "passingYards",
+       "yardsPerPassAttempt",
+       "passingTouchdowns",
+       "interceptions",
+       "adjQBR"
+      ],
+      "athletes": [
+       {
+        "athlete": {
+         "id": "5125715",
+         "displayName": "Colton Joseph",
+         "jersey": "1"
+        },
+        "stats": [
+         "19/30",
+         "217",
+         "7.2",
+         "1",
+         "1",
+         "70.5"
+        ]
+       }
+      ]
+     },
+     {
+      "name": "rushing",
+      "text": "Wisconsin Rushing",
+      "labels": [
+       "CAR",
+       "YDS",
+       "AVG",
+       "TD",
+       "LONG"
+      ],
+      "keys": [
+       "rushingAttempts",
+       "rushingYards",
+       "yardsPerRushAttempt",
+       "rushingTouchdowns",
+       "longRushing"
+      ],
+      "athletes": [
+       {
+        "athlete": {
+         "id": "5078005",
+         "displayName": "Abu Sama III",
+         "jersey": "3"
+        },
+        "stats": [
+         "15",
+         "49",
+         "3.3",
+         "0",
+         "7"
+        ]
+       },
+       {
+        "athlete": {
+         "id": "5079378",
+         "displayName": "Darrion Dupree",
+         "jersey": "6"
+        },
+        "stats": [
+         "4",
+         "15",
+         "3.8",
+         "0",
+         "8"
+        ]
+       },
+       {
+        "athlete": {
+         "id": "5125715",
+         "displayName": "Colton Joseph",
+         "jersey": "1"
+        },
+        "stats": [
+         "12",
+         "3",
+         "0.3",
+         "0",
+         "5"
+        ]
+       }
+      ]
+     },
+     {
+      "name": "receiving",
+      "text": "Wisconsin Receiving",
+      "labels": [
+       "REC",
+       "YDS",
+       "AVG",
+       "TD",
+       "LONG"
+      ],
+      "keys": [
+       "receptions",
+       "receivingYards",
+       "yardsPerReception",
+       "receivingTouchdowns",
+       "longReception"
+      ],
+      "athletes": [
+       {
+        "athlete": {
+         "id": "4917947",
+         "displayName": "Malachi Coleman",
+         "jersey": "4"
+        },
+        "stats": [
+         "4",
+         "76",
+         "19.0",
+         "1",
+         "28"
+        ]
+       },
+       {
+        "athlete": {
+         "id": "4714046",
+         "displayName": "Tyrell Henry",
+         "jersey": "0"
+        },
+        "stats": [
+         "4",
+         "42",
+         "10.5",
+         "0",
+         "17"
+        ]
+       },
+       {
+        "athlete": {
+         "id": "4917172",
+         "displayName": "Chris Brooks Jr.",
+         "jersey": "2"
+        },
+        "stats": [
+         "3",
+         "38",
+         "12.7",
+         "0",
+         "17"
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "team": {
+     "id": "87",
+     "abbreviation": "ND"
+    },
+    "statistics": [
+     {
+      "name": "passing",
+      "text": "Notre Dame Passing",
+      "labels": [
+       "C/ATT",
+       "YDS",
+       "AVG",
+       "TD",
+       "INT",
+       "QBR"
+      ],
+      "keys": [
+       "completions/passingAttempts",
+       "passingYards",
+       "yardsPerPassAttempt",
+       "passingTouchdowns",
+       "interceptions",
+       "adjQBR"
+      ],
+      "athletes": [
+       {
+        "athlete": {
+         "id": "5079369",
+         "displayName": "CJ Carr",
+         "jersey": "13"
+        },
+        "stats": [
+         "19/29",
+         "239",
+         "8.2",
+         "2",
+         "0",
+         "70.2"
+        ]
+       }
+      ]
+     },
+     {
+      "name": "rushing",
+      "text": "Notre Dame Rushing",
+      "labels": [
+       "CAR",
+       "YDS",
+       "AVG",
+       "TD",
+       "LONG"
+      ],
+      "keys": [
+       "rushingAttempts",
+       "rushingYards",
+       "yardsPerRushAttempt",
+       "rushingTouchdowns",
+       "longRushing"
+      ],
+      "athletes": [
+       {
+        "athlete": {
+         "id": "5079742",
+         "displayName": "Aneyas Williams",
+         "jersey": "22"
+        },
+        "stats": [
+         "20",
+         "90",
+         "4.5",
+         "2",
+         "16"
+        ]
+       },
+       {
+        "athlete": {
+         "id": "5189515",
+         "displayName": "Nolan James Jr.",
+         "jersey": "2"
+        },
+        "stats": [
+         "7",
+         "19",
+         "2.7",
+         "0",
+         "7"
+        ]
+       },
+       {
+        "athlete": {
+         "id": "5106301",
+         "displayName": "Kedren Young",
+         "jersey": "21"
+        },
+        "stats": [
+         "3",
+         "8",
+         "2.7",
+         "0",
+         "3"
+        ]
+       }
+      ]
+     },
+     {
+      "name": "receiving",
+      "text": "Notre Dame Receiving",
+      "labels": [
+       "REC",
+       "YDS",
+       "AVG",
+       "TD",
+       "LONG"
+      ],
+      "keys": [
+       "receptions",
+       "receivingYards",
+       "yardsPerReception",
+       "receivingTouchdowns",
+       "longReception"
+      ],
+      "athletes": [
+       {
+        "athlete": {
+         "id": "5150424",
+         "displayName": "Jordan Faison",
+         "jersey": "6"
+        },
+        "stats": [
+         "4",
+         "81",
+         "20.3",
+         "0",
+         "30"
+        ]
+       },
+       {
+        "athlete": {
+         "id": "5189515",
+         "displayName": "Nolan James Jr.",
+         "jersey": "2"
+        },
+        "stats": [
+         "4",
+         "67",
+         "16.8",
+         "1",
+         "28"
+        ]
+       },
+       {
+        "athlete": {
+         "id": "5079475",
+         "displayName": "Micah Gilbert",
+         "jersey": "14"
+        },
+        "stats": [
+         "3",
+         "34",
+         "11.3",
+         "0",
+         "18"
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "leaders": [
+  {
+   "team": {
+    "id": "87",
+    "abbreviation": "ND"
+   },
+   "leaders": [
+    {
+     "name": "passingYards",
+     "displayName": "Passing Yards",
+     "leaders": [
+      {
+       "displayValue": "19/29, 239 YDS, 2 TD",
+       "athlete": {
+        "id": "5079369",
+        "displayName": "CJ Carr",
+        "shortName": "C. Carr"
+       }
+      }
+     ]
+    },
+    {
+     "name": "rushingYards",
+     "displayName": "Rushing Yards",
+     "leaders": [
+      {
+       "displayValue": "20 CAR, 90 YDS, 2 TD",
+       "athlete": {
+        "id": "5079742",
+        "displayName": "Aneyas Williams",
+        "shortName": "A. Williams"
+       }
+      }
+     ]
+    },
+    {
+     "name": "receivingYards",
+     "displayName": "Receiving Yards",
+     "leaders": [
+      {
+       "displayValue": "4 REC, 81 YDS",
+       "athlete": {
+        "id": "5150424",
+        "displayName": "Jordan Faison",
+        "shortName": "J. Faison"
+       }
+      }
+     ]
+    },
+    {
+     "name": "sacks",
+     "displayName": "Sacks",
+     "leaders": [
+      {
+       "displayValue": "1",
+       "athlete": {
+        "id": "4871079",
+        "displayName": "Boubacar Traore",
+        "shortName": "B. Traore"
+       }
+      }
+     ]
+    },
+    {
+     "name": "totalTackles",
+     "displayName": "Tackles",
+     "leaders": [
+      {
+       "displayValue": "9",
+       "athlete": {
+        "id": "4870622",
+        "displayName": "Drayk Bowen",
+        "shortName": "D. Bowen"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "team": {
+    "id": "275",
+    "abbreviation": "WIS"
+   },
+   "leaders": [
+    {
+     "name": "passingYards",
+     "displayName": "Passing Yards",
+     "leaders": [
+      {
+       "displayValue": "19/30, 217 YDS, 1 TD, 1 INT",
+       "athlete": {
+        "id": "5125715",
+        "displayName": "Colton Joseph",
+        "shortName": "C. Joseph"
+       }
+      }
+     ]
+    },
+    {
+     "name": "rushingYards",
+     "displayName": "Rushing Yards",
+     "leaders": [
+      {
+       "displayValue": "15 CAR, 49 YDS",
+       "athlete": {
+        "id": "5078005",
+        "displayName": "Abu Sama III",
+        "shortName": "A. Sama III"
+       }
+      }
+     ]
+    },
+    {
+     "name": "receivingYards",
+     "displayName": "Receiving Yards",
+     "leaders": [
+      {
+       "displayValue": "4 REC, 76 YDS, 1 TD",
+       "athlete": {
+        "id": "4917947",
+        "displayName": "Malachi Coleman",
+        "shortName": "M. Coleman"
+       }
+      }
+     ]
+    },
+    {
+     "name": "sacks",
+     "displayName": "Sacks",
+     "leaders": [
+      {
+       "displayValue": "1",
+       "athlete": {
+        "id": "4685314",
+        "displayName": "Sebastian Cheeks",
+        "shortName": "S. Cheeks"
+       }
+      }
+     ]
+    },
+    {
+     "name": "totalTackles",
+     "displayName": "Tackles",
+     "leaders": [
+      {
+       "displayValue": "15",
+       "athlete": {
+        "id": "5195298",
+        "displayName": "Mason Posa",
+        "shortName": "M. Posa"
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "winprobability": [
+  {
+   "homeWinPercentage": 0.999,
+   "playId": "401858438750"
+  },
+  {
+   "homeWinPercentage": 1,
+   "playId": "401858438757"
+  }
+ ],
+ "scoringPlays": [
+  {
+   "id": "40185843894",
+   "text": "Gavin Lahm 27 Yd Field Goal  ",
+   "awayScore": 3,
+   "homeScore": 0,
+   "period": {
+    "number": 1
+   },
+   "clock": {
+    "displayValue": "6:32"
+   },
+   "team": {
+    "id": "275",
+    "abbreviation": "WIS"
+   },
+   "scoringType": {
+    "name": "field-goal"
+   }
+  },
+  {
+   "id": "401858438148",
+   "text": "Spencer Porath 52 Yd Field Goal  ",
+   "awayScore": 3,
+   "homeScore": 3,
+   "period": {
+    "number": 1
+   },
+   "clock": {
+    "displayValue": "1:31"
+   },
+   "team": {
+    "id": "87",
+    "abbreviation": "ND"
+   },
+   "scoringType": {
+    "name": "field-goal"
+   }
+  },
+  {
+   "id": "401858438180",
+   "text": "James Flanigan 3 Yd pass from CJ Carr (Spencer Porath Kick)",
+   "awayScore": 3,
+   "homeScore": 10,
+   "period": {
+    "number": 1
+   },
+   "clock": {
+    "displayValue": "0:22"
+   },
+   "team": {
+    "id": "87",
+    "abbreviation": "ND"
+   },
+   "scoringType": {
+    "name": "touchdown"
+   }
+  },
+  {
+   "id": "401858438240",
+   "text": "Malachi Coleman 28 Yd pass from Colton Joseph (Gavin Lahm Kick)",
+   "awayScore": 10,
+   "homeScore": 10,
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "displayValue": "12:36"
+   },
+   "team": {
+    "id": "275",
+    "abbreviation": "WIS"
+   },
+   "scoringType": {
+    "name": "touchdown"
+   }
+  }
+ ],
+ "drives": {
+  "previous": [
+   {
+    "id": "40185843832",
+    "description": "8 plays, 47 yards, 1:47",
+    "team": {
+     "abbreviation": "WIS"
+    },
+    "plays": [
+     {
+      "id": "401858438750",
+      "text": "(00:00) No Huddle-Shotgun #1 C.Joseph pass complete short left to #0 T.Henry caught at UND29, for 17 yards to the UND29, out of bounds at UND29",
+      "clock": {
+       "displayValue": "0:21"
+      },
+      "period": {
+       "number": 4
+      }
+     },
+     {
+      "id": "401858438757",
+      "text": "End of 4th quarter.",
+      "clock": {
+       "displayValue": "0:00"
+      },
+      "period": {
+       "number": 4
+      }
+     }
+    ]
+   }
+  ]
+ }
+}

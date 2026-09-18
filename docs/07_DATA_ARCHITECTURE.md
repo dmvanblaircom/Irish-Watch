@@ -41,7 +41,16 @@ ESPN rankings JSON    ->  TeamOS.espn.rankings(json, config)    ->  Poll[]      
 
 Both payloads reach the Top 25 build raw — from the worker's cache on first paint and from the network after — and cross into TeamOS at the top of the build, so the two paths see identical input. The scoreboard fetch is shared: the same payload feeds the tab and the live-anywhere check, and the application keeps the `LeagueGame[]` beside it for the in-place row patcher. The transitional helper exports from Phase 3A are gone.
 
-Everything else — game summaries, matchup preview, news, Kalshi odds, weather, depth chart — is unchanged and still provider-shaped in `app.js`.
+### The Game Center path (Phase 4B)
+
+```text
+ESPN summary JSON      ->  TeamOS.espn.gameDetail(json, team, config)  ->  GameDetail    ->  renderGame / patchGame / gameShape / boxTables / schedulePoll
+ESPN core stats JSON   ->  TeamOS.espn.seasonStats(json)               ->  SeasonStat[]  ->  renderPreview
+```
+
+`app.js` still fetches `TeamOS.espn.summaryUrl(id)` through `summaryFor()`, which keeps its in-memory copy, its Cache API store of final summaries (keyed on that unchanged URL) and its in-flight sharing, and converts the payload to `GameDetail` at the three call sites that render. The 25-second live poll, the rebuild-vs-patch decision (`gameShape`) and the in-place DOM patching are unchanged in behavior; they read `GameDetail` instead of the payload.
+
+Everything else — news, Kalshi odds, weather, depth chart — is unchanged and still provider-shaped in `app.js`.
 
 ## Target Flow
 

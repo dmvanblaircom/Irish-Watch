@@ -108,6 +108,46 @@ One ranking. **Implemented in Phase 4A**, produced by `TeamOS.espn.rankings()`, 
 
 `key` is the label with non-alphanumerics stripped (used for element ids and remembered selection); `label` ∈ `"CFP" | "AP" | "Coaches"` or a short name; `asOf` e.g. `"Week 3"`. In a rank, `previous` is the prior rank or `null`, and `isNew` is true for a team new to the poll — kept separate because the feed distinguishes "was unranked" from "no history".
 
+### GameDetail
+
+Everything the Game Center renders for one game. **Implemented in Phase 4B**, produced only by `TeamOS.espn.gameDetail(summary, team, config)`. It is a composite of small optional sections, each mirroring one block of the Game Center and `null` when the feed has nothing for it, so a missing section drops out rather than blanking the tab. Every field has a current Suite consumer; nothing is carried because the provider happens to send it.
+
+`Game`, `LeagueGame` and `GameDetail` are three distinct objects: my schedule, the league this week, and the one game on screen.
+
+```
+{ state, detail,
+  home: Side, away: Side,
+  lastPlay:  { text, possession, downDistance } | null,
+  winProb:   { homePct } | null,
+  linescore: { away: string[], home: string[] } | null,
+  teamStats: [ { label, away, home, better } ] | null,
+  leaders:   { away: [ { category, name, line } ], home: [...] } | null,
+  box:       { away: [ { title, labels, rows: [ { name, jersey, stats: string[] } ] } ], home: [...] } | null,
+  scoring:   [ { period, clock, teamAbbr, mine, text, awayScore, homeScore } ] | null }
+```
+
+| Section | Meaning |
+|---|---|
+| `state`, `detail` | `"pre"` / `"in"` / `"post"` and the status text (`"Final"`, `"3:23 - 2nd"`, the kickoff line) |
+| `home`, `away` | a `Side` each (below) |
+| `lastPlay` | the live situation's last play, else the last play of the current drive, else of the last drive; `possession` is the abbreviation of the side with the ball, `downDistance` e.g. `"2nd & 7 at WIS 34"` |
+| `winProb` | the latest home win probability, 0–1; the view shows it only while live |
+| `linescore` | per-period display values for each side; the view labels periods 1–4 and OT |
+| `teamStats` | the eight fixed rows (Total yards … Possession), values as displayed or `null`, and which side is `better` — `"away"`, `"home"` or `null`. Fewer turnovers and penalties win; penalties compare by count; `5-13` compares as a rate and `28:24` as seconds |
+| `leaders` | per side, one line per category (`Passing`, `Rushing`, `Receiving`, `Sacks`, `Tackles`, `Int`) |
+| `box` | per side, one table per category with its own column `labels` |
+| `scoring` | each scoring play in order, with the score after it and whether it was ours |
+
+There is no `id`: the Game Center keys on the `Game` it was opened from. There is no drive list, play-by-play, win-probability history or pregame line here: the line is `TeamOS.espn.gameOdds()` on the same payload, and the rest has no consumer.
+
+### Side
+
+One team in a `GameDetail`: `{ key, name, abbreviation, record, score, mine }`. `key` is an opaque correlation key (today the provider's team id, the same precedent as `Game.id`) whose only consumer is the matchup preview asking for that side's season stats; `score` is the displayed value or `null`; `mine` marks the selected team.
+
+### SeasonStat
+
+`{ label, value, rank, rankText }` — one row of the pregame matchup preview. **Implemented in Phase 4B**, produced by `TeamOS.espn.seasonStats(json)` as a fixed list of eight rows (Scoring offense … Third down) in order; `value` is `null` when the feed has the stat under none of the names that row is filed under, and the view skips a row null on both sides.
+
 ### Player
 
 A roster entry. **Implemented in Phase 3B**, produced only by `TeamOS.espn.roster()`. Provider-neutral; exactly the fields the roster view shows and searches, all strings, empty when the feed has nothing:

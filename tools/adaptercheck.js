@@ -209,11 +209,82 @@ eq([ap.ranks[4].previous, ap.ranks[4].isNew, ap.ranks[4].team], [null, false, "V
 eq(polls.some(function (p) { return p.label === "CFP"; }), false, "no CFP poll yet (the tab shows its note)");
 eq(TeamOS.espn.rankings({}, TEAM_CONFIG), [], "no payload -> empty list");
 
+// ---- game center ----
+var GD = ["state","detail","home","away","lastPlay","winProb","linescore","teamStats","leaders","box","scoring"];
+var SIDE = ["key","name","abbreviation","record","score","mine"];
+var GDLEAK = /competitions|competitors|homeAway|shortDetail|situation|drives|winprobability|homeWinPercentage|linescores|boxscore|scoringPlays|athlete|displayValue|shortDisplayName|pickcenter|espn/i;
+var sumPre = JSON.parse(read("tools/fixtures/espn-summary-pre.json"));
+var sumLive = JSON.parse(read("tools/fixtures/espn-summary-live.json"));
+var sumPost = JSON.parse(read("tools/fixtures/espn-summary-post.json"));
+
+console.log("summaryUrl / seasonStatsUrl");
+eq(TeamOS.espn.summaryUrl("401858438"),
+   "https://site.api.espn.com/apis/site/v2/sports/football/college-football/summary?event=401858438",
+   "summary URL unchanged (SW cache key and the final-summaries Cache API key)");
+eq(TeamOS.espn.seasonStatsUrl("87", 2026),
+   "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2026/types/2/teams/87/statistics",
+   "season-stats URL unchanged");
+
+console.log("gameDetail() - shape");
+var gdPre = TeamOS.espn.gameDetail(sumPre, team, TEAM_CONFIG), gdLive = TeamOS.espn.gameDetail(sumLive, team, TEAM_CONFIG), gdPost = TeamOS.espn.gameDetail(sumPost, team, TEAM_CONFIG);
+[["pre", gdPre], ["live", gdLive], ["post", gdPost]].forEach(function (pair) {
+  var g = pair[1], n = pair[0];
+  eq(Object.keys(g), GD, n + " has exactly the documented GameDetail sections");
+  eq(Object.keys(g.home), SIDE, n + " home side is a Side");
+  eq(Object.keys(g.away), SIDE, n + " away side is a Side");
+  ok(!GDLEAK.test(JSON.stringify(g)), n + " carries no ESPN keys or names");
+  ok(["pre","in","post"].indexOf(g.state) > -1, n + " state is a game status (" + g.state + ")");
+});
+
+console.log("gameDetail() - pregame");
+eq([gdPre.state, gdPre.detail], ["pre", "Sat, September 19th at 7:30 PM EDT"], "scheduled, long status text");
+eq(gdPre.home, { key:"87", name:"Notre Dame Fighting Irish", abbreviation:"ND", record:"", score:null, mine:true }, "home side: name falls back to displayName, no record or score yet, mine");
+eq(gdPre.away.mine, false, "away side is not ours");
+eq([gdPre.lastPlay, gdPre.winProb, gdPre.linescore, gdPre.box, gdPre.scoring], [null, null, null, null, null], "no play, win prob, linescore, box or scoring before kickoff");
+eq(gdPre.teamStats, null, "pregame per-game stat names match no Team-stats row -> null");
+eq(gdPre.leaders.home[0], { category:"Passing", name:"C. Carr", line:"35/49, 492 YDS, 6 TD" }, "season leaders still render pregame");
+eq(gdPre.leaders.away.length, 5, "five leader categories per side");
+
+console.log("gameDetail() - live");
+eq([gdLive.state, gdLive.detail, gdLive.home.score, gdLive.away.score], ["in", "3:23 - 2nd", "13", "10"], "in progress, clock, scores");
+eq(gdLive.lastPlay, { text:"Timeout Notre Dame, clock 08:53", possession:"ND", downDistance:"2nd & 7 at WIS 34" }, "last play from the live situation, with possession and down/distance");
+eq(gdLive.winProb, { homePct:0.78 }, "win probability is the latest point");
+eq(gdLive.linescore, { away:["3","7"], home:["10","3"] }, "two periods of linescores");
+eq(gdLive.teamStats.map(function (r) { return r.label; }), ["Total yards","Passing","Rushing","First downs","3rd down","Turnovers","Penalties","Possession"], "the eight Team-stats rows in order");
+eq(gdLive.teamStats[0], { label:"Total yards", away:"148", home:"211", better:"home" }, "more yards is better");
+eq(gdLive.teamStats[5], { label:"Turnovers", away:"0", home:"1", better:"away" }, "fewer turnovers is better");
+eq(gdLive.teamStats[4].better, "away", "3rd down compares the rate: 5-13 beats 3-9");
+eq(gdLive.teamStats[6].better, "home", "penalties compare the count: 4 beats 6");
+eq(gdLive.teamStats[7].better, "home", "possession compares seconds: 31:36 beats 28:24");
+eq(gdLive.scoring.length, 4, "four scoring plays so far");
+eq(gdLive.scoring[1], { period:1, clock:"1:31", teamAbbr:"ND", mine:true, text:"Spencer Porath 52 Yd Field Goal  ", awayScore:3, homeScore:3 }, "a scoring play, ours");
+eq(gdLive.scoring[0].mine, false, "a scoring play, theirs");
+
+console.log("gameDetail() - final");
+eq([gdPost.state, gdPost.detail, gdPost.home.score, gdPost.away.score], ["post", "Final", "41", "13"], "final score");
+eq(gdPost.lastPlay, { text:"End of 4th quarter.", possession:"", downDistance:"" }, "last play falls back to the last drive when there is no live situation");
+eq(gdPost.winProb, { homePct:1 }, "final win probability point kept (the view only shows it live)");
+eq(gdPost.linescore, { away:["3","7","3","0"], home:["10","3","14","14"] }, "four periods");
+eq(gdPost.box.home.map(function (t) { return t.title + ":" + t.labels.length + ":" + t.rows.length; }), ["Notre Dame Passing:6:1","Notre Dame Rushing:5:3","Notre Dame Receiving:5:3"], "box tables per side: title, column labels, rows");
+eq(gdPost.box.home[0].rows[0], { name:"CJ Carr", jersey:"13", stats:["19/29","239","8.2","2","0","70.2"] }, "a box row");
+eq(gdPost.leaders.away[4], { category:"Tackles", name:"M. Posa", line:"15" }, "leader category names are mapped, not ESPN's");
+eq(TeamOS.espn.gameDetail({}, team, TEAM_CONFIG).state, "post", "an empty payload is treated as final (no polling)");
+eq(TeamOS.espn.gameDetail({}, team, TEAM_CONFIG).home, { key:"", name:"TBA", abbreviation:"", record:"", score:null, mine:false }, "an empty side");
+
+console.log("seasonStats()");
+var stats = JSON.parse(read("tools/fixtures/espn-season-stats.json"));
+var nd = TeamOS.espn.seasonStats(stats.teams["87"]);
+eq(nd.map(function (r) { return r.label; }), ["Scoring offense","Total offense","Rushing offense","Passing offense","Scoring defense","Total defense","Turnover margin","Third down"], "the eight preview rows in order");
+nd.forEach(function (r) { eq(Object.keys(r), ["label","value","rank","rankText"], r.label + " is a SeasonStat"); });
+eq(nd[0], { label:"Scoring offense", value:"46.5", rank:21, rankText:"Tied-21st" }, "value, rank and ESPN's rank text from the first name it files the stat under");
+eq(nd[4], { label:"Scoring defense", value:null, rank:null, rankText:null }, "a row the feed has no name for -> null value");
+ok(!/splits|categories|rankDisplayValue|espn/i.test(JSON.stringify(nd)), "carries no ESPN keys or names");
+
 // ---- exports ----
 console.log("exports");
 eq(Object.keys(TeamOS.espn).sort(),
-   ["gameOdds","rankings","rankingsUrl","roster","rosterUrl","schedule","scheduleUrl","scoreboard","scoreboardUrl","teamStatus","teamUrl"],
-   "exactly the documented functions; the transitional timeIsSet/broadcast/odds are gone");
+   ["gameDetail","gameOdds","rankings","rankingsUrl","roster","rosterUrl","schedule","scheduleUrl","scoreboard","scoreboardUrl","seasonStats","seasonStatsUrl","summaryUrl","teamStatus","teamUrl"],
+   "exactly the documented functions");
 
 console.log("\n" + (failures ? failures + " check(s) FAILED" : "all adapter checks passed"));
 process.exit(failures ? 1 : 0);

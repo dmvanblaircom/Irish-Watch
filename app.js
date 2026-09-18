@@ -974,44 +974,17 @@ function loadHistory(){
 }
 
 /* ---------- game view: live line, box score, leaders ---------- */
-// Everything here comes from ESPN's summary endpoint, which is CORS-open, so
-// this is all client side. Field names vary by game state, so every read is
-// defensive — a missing section drops out rather than blanking the tab.
+// Everything here renders a GameDetail (docs/03_DOMAIN_MODEL.md), which
+// TeamOS.espn builds from ESPN's summary endpoint. Sections the feed did not
+// supply arrive as null and drop out rather than blanking the tab.
 
 // box: whether the full box score fold is open, remembered across the team
 // toggle and the 25-second live repaint.
 var G = { poll:null, id:null, side:null, box:false, pending:false };
 
-function pick(o, path, dflt){
-  var cur=o;
-  for(var i=0;i<path.length;i++){
-    if(cur==null) return dflt;
-    cur=cur[path[i]];
-  }
-  return cur==null ? dflt : cur;
-}
-function statVal(team, keys){
-  var st=(team&&team.statistics)||[];
-  for(var i=0;i<st.length;i++){
-    var n=String(st[i].name||"").toLowerCase(), l=String(st[i].label||"").toLowerCase();
-    for(var k=0;k<keys.length;k++){
-      var want=keys[k].toLowerCase();
-      if(n===want||l===want) return st[i].displayValue!=null?st[i].displayValue:st[i].value;
-    }
-  }
-  return null;
-}
 function numOf(v){ var n=parseFloat(String(v).replace(/[^0-9.\-]/g,"")); return isNaN(n)?null:n; }
 // "5-13" is a made/attempted pair, not the number 5. Compare the rate.
 // "28:24" is a clock, not 2824. Compare the seconds.
-function cmpVal(v){
-  var s=String(v==null?"":v).trim();
-  var m=s.match(/^(\d+)\s*[-/]\s*(\d+)$/);
-  if(m) return parseInt(m[2],10)===0 ? 0 : parseInt(m[1],10)/parseInt(m[2],10);
-  var t=s.match(/^(\d+):(\d{2})$/);
-  if(t) return parseInt(t[1],10)*60+parseInt(t[2],10);
-  return numOf(s);
-}
 
 // Which game to show: one in progress, else the most recent finished, else next up.
 // How long the Game tab keeps showing a finished game before swapping to the
@@ -1074,18 +1047,19 @@ function loadGame(force){
   if(el.dataset.loaded===g.id && !force) return;
   if(!el.dataset.loaded) el.innerHTML='<p class="loading">Loading the game…</p>';
 
-  summaryFor(g.id, g.state==="in").then(function(d){
-    var shape=gameShape(d);
+  summaryFor(g.id, g.state==="in").then(function(raw){
+    var gd=TeamOS.espn.gameDetail(raw, TEAM, TEAM_CONFIG);
+    var shape=gameShape(gd);
     if(el.dataset.loaded===g.id && el.dataset.shape===shape){
-      patchGame(d);                     // scores, clock and last play only
+      patchGame(gd);                    // scores, clock and last play only
     } else {
-      el.innerHTML=renderGame(d);
+      el.innerHTML=renderGame(gd);
       wireLeaderSwitch(el);
-      previewIfPre(d, el);
+      previewIfPre(gd, el);
       el.dataset.shape=shape;
     }
     el.dataset.loaded=g.id;
-    schedulePoll(d);
+    schedulePoll(gd);
   }).catch(function(){
     if(el.dataset.loaded) return;              // keep the last good render
     el.innerHTML='<p class="msg"><strong>Couldn\u2019t load the game.</strong>'+
@@ -1094,10 +1068,9 @@ function loadGame(force){
 }
 
 // Poll only while the ball is actually in play, and stop when the tab is hidden.
-function schedulePoll(d){
+function schedulePoll(gd){
   if(G.poll){ clearInterval(G.poll); G.poll=null; }
-  var state=pick(d,["header","competitions",0,"status","type","state"],"post");
-  if(state!=="in") return;
+  if(gd.state!=="in") return;
   G.poll=setInterval(function(){
     if(document.hidden) return;
     if($("panel-game").hidden) return;
@@ -1107,7 +1080,6 @@ function schedulePoll(d){
 document.addEventListener("visibilitychange", function(){
   if(!document.hidden && !$("panel-game").hidden) loadGame(true);
 });
-
 
 function wireLeaderSwitch(el){
   var btns=el.querySelectorAll(".seg button");
@@ -1130,23 +1102,18 @@ function wireLeaderSwitch(el){
 
 // If none of these change, nothing structural moved and the view can be patched
 // in place. A new score, a new quarter or a stat appearing forces a rebuild.
-function gameShape(d){
-  var comp=pick(d,["header","competitions",0],{})||{};
-  var cs=comp.competitors||[];
-  return [ (d.scoringPlays||[]).length,
-           (cs[0]&&cs[0].linescores?cs[0].linescores.length:0),
-           (pick(d,["boxscore","teams"],[])||[]).length,
-           (d.leaders||[]).length,
-           pick(comp,["status","type","state"],"") ].join("|");
+function gameShape(gd){
+  var ls=gd.linescore, ld=gd.leaders;
+  return [ (gd.scoring||[]).length,
+           ls ? Math.max(ls.away.length, ls.home.length) : 0,
+           gd.teamStats ? 2 : 0,
+           ld ? (ld.away.length?1:0)+(ld.home.length?1:0) : 0,
+           gd.state ].join("|");
 }
 
-function patchGame(d){
+function patchGame(gd){
   var el=$("panel-game");
-  var comp=pick(d,["header","competitions",0],{})||{};
-  var cs=comp.competitors||[];
-  var home=cs.filter(function(c){return c.homeAway==="home";})[0]||cs[0]||{};
-  var away=cs.filter(function(c){return c.homeAway==="away";})[0]||cs[1]||{};
-  var st=pick(comp,["status","type"],{})||{};
+  var home=gd.home, away=gd.away;
   function put(node, html){ if(node && node.innerHTML!==html) node.innerHTML=html; }
 
   [["away",away,home],["home",home,away]].forEach(function(t){
@@ -1158,72 +1125,46 @@ function patchGame(d){
   });
 
   var statusEl=el.querySelector("#gStatus span:not(.dot)");
-  put(statusEl, esc(st.detail||st.shortDetail||st.description||""));
+  put(statusEl, esc(gd.detail));
 
-  var sit=d.situation||comp.situation||{};
-  var lastText=pick(sit,["lastPlay","text"],null);
-  if(!lastText){
-    var cur=pick(d,["drives","current","plays"],null);
-    if(cur&&cur.length) lastText=cur[cur.length-1].text;
-  }
-  var lpEl=el.querySelector("#gLastPlay");
-  if(lpEl && lastText){
-    put(lpEl.querySelector(".t"), esc(lastText));
-    var dd=sit.downDistanceText||sit.shortDownDistanceText||"";
-    var poss=pick(sit,["lastPlay","team","abbreviation"],"")||"";
-    var meta=esc([poss,dd].filter(Boolean).join(" \u00B7 "));
+  var lp=gd.lastPlay, lpEl=el.querySelector("#gLastPlay");
+  if(lpEl && lp){
+    put(lpEl.querySelector(".t"), esc(lp.text));
+    var meta=esc([lp.possession,lp.downDistance].filter(Boolean).join(" \u00B7 "));
     var ddEl=lpEl.querySelector(".dd");
     if(meta && !ddEl) lpEl.insertAdjacentHTML("beforeend",'<div class="dd">'+meta+"</div>");
     else if(meta) put(ddEl, meta);
     else if(ddEl) ddEl.remove();
   }
 
-  var wp=d.winprobability, wpEl=el.querySelector("#gWinProb");
-  if(wpEl && wp && wp.length){
-    var hp=wp[wp.length-1].homeWinPercentage;
-    if(typeof hp==="number"){
-      var favHome=hp>=0.5, spans=wpEl.querySelectorAll(".v");
-      if(spans.length>1){
-        put(spans[0], Math.round((favHome?hp:1-hp)*100)+"%");
-        put(spans[1], esc(pick(favHome?home:away,["team","abbreviation"],"")||""));
-      }
+  var wpEl=el.querySelector("#gWinProb");
+  if(wpEl && gd.winProb){
+    var hp=gd.winProb.homePct, favHome=hp>=0.5, spans=wpEl.querySelectorAll(".v");
+    if(spans.length>1){
+      put(spans[0], Math.round((favHome?hp:1-hp)*100)+"%");
+      put(spans[1], esc((favHome?home:away).abbreviation));
     }
   }
 
-  var bt=pick(d,["boxscore","teams"],[])||[];
-  if(bt.length>=2){
-    var homeId=String(pick(home,["team","id"],"")), awayId=String(pick(away,["team","id"],""));
-    var bh=bt.filter(function(t){return String(pick(t,["team","id"],""))===homeId;})[0];
-    var ba=bt.filter(function(t){return String(pick(t,["team","id"],""))===awayId;})[0];
-    if(bh&&ba){
-      var keys={ "Total yards":["totalYards"], "Passing":["netPassingYards","passingYards"],
-        "Rushing":["rushingYards"], "First downs":["firstDowns"], "3rd down":["thirdDownEff"],
-        "Turnovers":["turnovers"], "Penalties":["totalPenaltiesYards"],
-        "Possession":["possessionTime"] };
-      el.querySelectorAll(".statrow[data-stat]").forEach(function(row){
-        var k=row.getAttribute("data-stat"), ks=keys[k]; if(!ks) return;
-        var av=statVal(ba,ks), hv=statVal(bh,ks);
-        var spans=row.querySelectorAll(".v"); if(spans.length<2) return;
-        put(spans[0], esc(String(av==null?"–":av)));
-        put(spans[1], esc(String(hv==null?"–":hv)));
-        var an=cmpVal(av), hn=cmpVal(hv);
-        if(k==="Penalties"){ an=numOf(av); hn=numOf(hv); }
-        var lower=(k==="Turnovers"||k==="Penalties");
-        var awin=(an!=null&&hn!=null&&an!==hn) ? (lower?an<hn:an>hn) : null;
-        spans[0].classList.toggle("win", awin===true);
-        spans[1].classList.toggle("win", awin===false);
-      });
-    }
+  if(gd.teamStats){
+    var byLabel={};
+    gd.teamStats.forEach(function(r){ byLabel[r.label]=r; });
+    el.querySelectorAll(".statrow[data-stat]").forEach(function(row){
+      var r=byLabel[row.getAttribute("data-stat")]; if(!r) return;
+      var spans=row.querySelectorAll(".v"); if(spans.length<2) return;
+      put(spans[0], esc(r.away==null?"\u2013":r.away));
+      put(spans[1], esc(r.home==null?"\u2013":r.home));
+      spans[0].classList.toggle("win", r.better==="away");
+      spans[1].classList.toggle("win", r.better==="home");
+    });
   }
 
-  var al=away.linescores||[], hl=home.linescores||[];
-  var trs=el.querySelectorAll(".linescore tbody tr");
-  if(trs.length===2){
-    [[al,away],[hl,home]].forEach(function(pair,ri){
+  var ls=gd.linescore, trs=el.querySelectorAll(".linescore tbody tr");
+  if(ls && trs.length===2){
+    [[ls.away,away],[ls.home,home]].forEach(function(pair,ri){
       var tds=trs[ri].querySelectorAll("td");
       for(var q=0;q<pair[0].length && q+1<tds.length-1;q++){
-        var v=pair[0][q];
-        put(tds[q+1], esc(String(v.displayValue!=null?v.displayValue:v.value)));
+        put(tds[q+1], esc(pair[0][q]));
       }
       if(tds.length) put(tds[tds.length-1], esc(String(pair[1].score!=null?pair[1].score:"")));
     });
@@ -1233,27 +1174,20 @@ function patchGame(d){
 // inline=true renders the same view for an expanded Schedule row: identical
 // markup minus the element ids, which exist only so the live poller can patch
 // the Game tab in place. Duplicating them would break that.
-function renderGame(d, inline){
-  var comp=pick(d,["header","competitions",0],{}) || {};
-  var cs=comp.competitors||[];
-  var home=cs.filter(function(c){return c.homeAway==="home";})[0]||cs[0]||{};
-  var away=cs.filter(function(c){return c.homeAway==="away";})[0]||cs[1]||{};
-  var st=pick(comp,["status","type"],{})||{};
-  var live=st.state==="in", done=st.state==="post";
+function renderGame(gd, inline){
+  var home=gd.home, away=gd.away;
+  var live=gd.state==="in", done=gd.state==="post";
   var html="";
 
   // ---- score line ----
   function side(c){
-    var t=c.team||{};
-    var nm=t.shortDisplayName||t.displayName||t.name||"TBA";
-    var isND=String(t.id)===TEAM_ID;
-    var rec=(c.records&&c.records[0]&&c.records[0].summary)||"";
+    var other = c===home ? away : home;
     var pts=c.score!=null?c.score:"";
-    var lead = done||live ? (numOf(pts)>numOf((c===home?away:home).score) ? " lead":"") : "";
+    var lead = done||live ? (numOf(pts)>numOf(other.score) ? " lead":"") : "";
     var sideKey=(c===home)?"home":"away";
     return '<div class="gscore'+lead+'" data-side="'+sideKey+'">'+
-      '<div class="side"><div class="nm">'+(isND?'<span class="rk">'+esc(TEAM.abbreviation)+'</span> ':"")+esc(nm)+"</div>"+
-      (rec?'<div class="rec">'+esc(rec)+"</div>":"")+"</div>"+
+      '<div class="side"><div class="nm">'+(c.mine?'<span class="rk">'+esc(TEAM.abbreviation)+'</span> ':"")+esc(c.name)+"</div>"+
+      (c.record?'<div class="rec">'+esc(c.record)+"</div>":"")+"</div>"+
       '<div class="pts">'+esc(String(pts))+"</div></div>";
   }
   html+=side(away)+side(home);
@@ -1263,7 +1197,7 @@ function renderGame(d, inline){
   // Schedule gets the same preview as the Game tab.
   if(!live && !done) html+='<div class="gpreview"'+(inline?"":' id="gPreview"')+"></div>";
   html+='<div class="gstatus"'+(inline?"":' id="gStatus"')+">"+(live?'<span class="dot" aria-hidden="true"></span>':"")+
-    "<span>"+esc(st.detail||st.shortDetail||st.description||"")+"</span></div>";
+    "<span>"+esc(gd.detail)+"</span></div>";
 
   // Each block below is built into `html` and then cut into a named section,
   // so the Game tab and the expanded Schedule row can order them differently
@@ -1273,57 +1207,39 @@ function renderGame(d, inline){
   cut("head");
 
   // ---- last play and down/distance ----
-  var sit=d.situation||comp.situation||{};
-  var lastText=pick(sit,["lastPlay","text"],null);
-  if(!lastText){
-    var cur=pick(d,["drives","current","plays"],null);
-    if(cur&&cur.length) lastText=cur[cur.length-1].text;
-  }
-  if(!lastText){
-    var prev=pick(d,["drives","previous"],null);
-    if(prev&&prev.length){
-      var pl=prev[prev.length-1].plays;
-      if(pl&&pl.length) lastText=pl[pl.length-1].text;
-    }
-  }
-  if(lastText && (live||done)){
-    var dd=sit.downDistanceText||sit.shortDownDistanceText||"";
-    var poss=pick(sit,["lastPlay","team","abbreviation"],"")||"";
+  var lp=gd.lastPlay;
+  if(lp && (live||done)){
+    var meta=[lp.possession,lp.downDistance].filter(Boolean).join(" \u00B7 ");
     html+='<div class="lastplay"'+(inline?"":' id="gLastPlay"')+'><div class="k">'+(live?"LAST PLAY":"FINAL PLAY")+"</div>"+
-      '<div class="t">'+esc(lastText)+"</div>"+
-      ((dd||poss)?'<div class="dd">'+esc([poss,dd].filter(Boolean).join(" · "))+"</div>":"")+
+      '<div class="t">'+esc(lp.text)+"</div>"+
+      (meta?'<div class="dd">'+esc(meta)+"</div>":"")+
       "</div>";
   }
   cut("play");
 
   // ---- win probability ----
-  var wp=d.winprobability;
-  if(live && wp && wp.length){
-    var last=wp[wp.length-1];
-    var hp=last.homeWinPercentage;
-    if(typeof hp==="number"){
-      var favIsHome=hp>=0.5;
-      var fav=favIsHome?home:away;
-      var pct=Math.round((favIsHome?hp:1-hp)*100);
-      html+='<div class="statrow"'+(inline?"":' id="gWinProb"')+'><span class="v">'+pct+'%</span>'+
-        '<span class="lbl">win probability</span>'+
-        '<span class="v r">'+esc(pick(fav,["team","abbreviation"],"")||"")+"</span></div>";
-    }
+  if(live && gd.winProb){
+    var hp=gd.winProb.homePct, favIsHome=hp>=0.5;
+    var fav=favIsHome?home:away;
+    var pct=Math.round((favIsHome?hp:1-hp)*100);
+    html+='<div class="statrow"'+(inline?"":' id="gWinProb"')+'><span class="v">'+pct+'%</span>'+
+      '<span class="lbl">win probability</span>'+
+      '<span class="v r">'+esc(fav.abbreviation)+"</span></div>";
   }
   cut("winprob");
 
   // ---- linescore by quarter ----
-  var al=away.linescores||[], hl=home.linescores||[];
-  if(al.length||hl.length){
-    var qn=Math.max(al.length,hl.length);
+  var ls=gd.linescore;
+  if(ls){
+    var qn=Math.max(ls.away.length,ls.home.length);
     html+='<h2 class="sec">By quarter</h2><table class="linescore"><thead><tr><th></th>';
     for(var q=0;q<qn;q++) html+="<th>"+(q<4?(q+1):"OT"+(q-3))+"</th>";
     html+="<th>T</th></tr></thead><tbody>";
-    [[away,al],[home,hl]].forEach(function(pair){
-      html+="<tr><td>"+esc(pick(pair[0],["team","abbreviation"],"")||"")+"</td>";
+    [[away,ls.away],[home,ls.home]].forEach(function(pair){
+      html+="<tr><td>"+esc(pair[0].abbreviation)+"</td>";
       for(var q=0;q<qn;q++){
         var v=pair[1][q];
-        html+="<td>"+(v?esc(String(v.displayValue!=null?v.displayValue:v.value)):"–")+"</td>";
+        html+="<td>"+(v!=null?esc(v):"\u2013")+"</td>";
       }
       html+='<td class="tot">'+esc(String(pair[0].score!=null?pair[0].score:""))+"</td></tr>";
     });
@@ -1332,91 +1248,42 @@ function renderGame(d, inline){
   cut("quarters");
 
   // ---- team stats, away on the left to match the score line ----
-  var bt=pick(d,["boxscore","teams"],[])||[];
-  if(bt.length>=2){
-    // Home always on the right, matched by team id. If ESPN ever omits the id,
-    // fall back to its own ordering rather than guessing.
-    var homeId=String(pick(home,["team","id"],""));
-    var awayId=String(pick(away,["team","id"],""));
-    var bh=bt.filter(function(t){return String(pick(t,["team","id"],""))===homeId;})[0];
-    var ba=bt.filter(function(t){return String(pick(t,["team","id"],""))===awayId;})[0];
-    if(!bh||!ba){ ba=bt[0]; bh=bt[1]; }
-    var rows=[
-      ["Total yards",["totalYards"]],
-      ["Passing",["netPassingYards","passingYards"]],
-      ["Rushing",["rushingYards"]],
-      ["First downs",["firstDowns"]],
-      ["3rd down",["thirdDownEff"]],
-      ["Turnovers",["turnovers"]],
-      ["Penalties",["totalPenaltiesYards"]],
-      ["Possession",["possessionTime"]]
-    ];
+  if(gd.teamStats){
     var body="";
-    rows.forEach(function(r){
-      var av=statVal(ba,r[1]), hv=statVal(bh,r[1]);
-      if(av==null&&hv==null) return;
-      var an=cmpVal(av), hn=cmpVal(hv);
-      var aw="", hw="";
-      if(an!=null&&hn!=null&&an!==hn){
-        var lowerWins = r[0]==="Turnovers"||r[0]==="Penalties";
-        if(r[0]==="Penalties"){ an=numOf(av); hn=numOf(hv); }   // count, not a rate
-        var awin = lowerWins ? an<hn : an>hn;
-        aw=awin?" win":""; hw=awin?"":" win";
-      }
-      body+='<div class="statrow" data-stat="'+esc(r[0])+'"><span class="v'+aw+'">'+esc(String(av==null?"–":av))+"</span>"+
-        '<span class="lbl">'+r[0]+"</span>"+
-        '<span class="v r'+hw+'">'+esc(String(hv==null?"–":hv))+"</span></div>";
+    gd.teamStats.forEach(function(r){
+      var aw=r.better==="away"?" win":"", hw=r.better==="home"?" win":"";
+      body+='<div class="statrow" data-stat="'+esc(r.label)+'"><span class="v'+aw+'">'+esc(r.away==null?"\u2013":r.away)+"</span>"+
+        '<span class="lbl">'+r.label+"</span>"+
+        '<span class="v r'+hw+'">'+esc(r.home==null?"\u2013":r.home)+"</span></div>";
     });
-    if(body){
-      var head=function(t,right){
-        var ab=pick(t,["team","abbreviation"],null)||pick(t,["team","shortDisplayName"],"")||"";
-        var isND=String(pick(t,["team","id"],""))===TEAM_ID;
-        return '<span class="v'+(right?" r":"")+(isND?" nd":"")+'">'+esc(ab)+"</span>";
-      };
-      html+='<h2 class="sec">Team stats</h2>'+
-        '<div class="statrow head">'+head(ba,false)+
-        '<span class="lbl">AWAY \u00B7 HOME</span>'+head(bh,true)+"</div>"+
-        body;
-    }
+    var head=function(c,right){
+      return '<span class="v'+(right?" r":"")+(c.mine?" nd":"")+'">'+esc(c.abbreviation)+"</span>";
+    };
+    html+='<h2 class="sec">Team stats</h2>'+
+      '<div class="statrow head">'+head(away,false)+
+      '<span class="lbl">AWAY \u00B7 HOME</span>'+head(home,true)+"</div>"+
+      body;
   }
   cut("stats");
 
   // ---- leaders and box score, one team at a time ----
-  var lead=d.leaders||[];
-  function catLabel(cat){
-    var n=String(cat.name||"").toLowerCase();
-    if(n.indexOf("passing")===0)   return "Passing";
-    if(n.indexOf("rushing")===0)   return "Rushing";
-    if(n.indexOf("receiving")===0) return "Receiving";
-    if(n.indexOf("sack")>-1)       return "Sacks";
-    if(n.indexOf("tackle")>-1)     return "Tackles";
-    if(n.indexOf("intercept")>-1)  return "Int";
-    return cat.shortDisplayName||cat.displayName||"";
-  }
-  function leaderRows(tl){
+  function leaderRows(list){
     var out="";
-    (tl.leaders||[]).forEach(function(cat){
-      var top=(cat.leaders||[])[0];
-      if(!top) return;
-      var nm=pick(top,["athlete","shortName"],null)||pick(top,["athlete","displayName"],"");
-      if(!nm) return;
-      out+='<div class="ldr"><span class="cat">'+esc(catLabel(cat))+"</span>"+
-        '<span class="who"><span class="nm">'+esc(nm)+"</span>"+
-        '<span class="line">'+esc(top.displayValue||"")+"</span></span></div>";
+    list.forEach(function(l){
+      out+='<div class="ldr"><span class="cat">'+esc(l.category)+"</span>"+
+        '<span class="who"><span class="nm">'+esc(l.name)+"</span>"+
+        '<span class="line">'+esc(l.line)+"</span></span></div>";
     });
     return out;
   }
-  var awayId2=String(pick(away,["team","id"],"")), homeId2=String(pick(home,["team","id"],""));
-  var la=lead.filter(function(t){return String(pick(t,["team","id"],""))===awayId2;})[0];
-  var lh=lead.filter(function(t){return String(pick(t,["team","id"],""))===homeId2;})[0];
-  if(!la&&!lh){ la=lead[0]; lh=lead[1]; }
-  var ra=la?leaderRows(la):"", rh=lh?leaderRows(lh):"";
-  var boxA=boxTables(d, awayId2), boxH=boxTables(d, homeId2);
+  var ld=gd.leaders, bx=gd.box;
+  var ra=ld?leaderRows(ld.away):"", rh=ld?leaderRows(ld.home):"";
+  var boxA=bx?boxTables(bx.away):"", boxH=bx?boxTables(bx.home):"";
   if(ra||rh||boxA||boxH){
-    // default to whichever side is Notre Dame, and remember the choice
-    // across the 25-second refresh
-    if(!G.side) G.side = homeId2===TEAM_ID ? "home" : "away";
-    var ab=function(c){ return esc(pick(c,["team","abbreviation"],null)||pick(c,["team","shortDisplayName"],"")||""); };
+    // default to whichever side is ours, and remember the choice across the
+    // 25-second refresh
+    if(!G.side) G.side = home.mine ? "home" : "away";
+    var ab=function(c){ return esc(c.abbreviation); };
     var toggle='<div class="seg" role="group" aria-label="Show which team">'+
         '<button type="button" data-side="away" aria-pressed="'+(G.side==="away")+'">'+
           ab(away)+'<span class="sub">away</span></button>'+
@@ -1448,20 +1315,11 @@ function renderGame(d, inline){
   cut("people");
 
   // ---- scoring summary ----
-  var sp=d.scoringPlays||[];
+  var sp=gd.scoring||[];
   if(sp.length){
     var sbody="";
-    var awayAb=pick(away,["team","abbreviation"],"")||"";
-    var homeAb=pick(home,["team","abbreviation"],"")||"";
-    var spAwayId=String(pick(away,["team","id"],""));   // team-stats block may not have run
+    var awayAb=away.abbreviation, homeAb=home.abbreviation;
     sp.forEach(function(p){
-      // who scored: match on team id, fall back to abbreviation
-      var pid=String(pick(p,["team","id"],""));
-      var pab=pick(p,["team","abbreviation"],null);
-      var scoredAway = pid ? pid===spAwayId : (pab ? pab===awayAb : false);
-      var ab = pab || (scoredAway?awayAb:homeAb);
-      var isND = pid ? pid===TEAM_ID : ab===TEAM.abbreviation;
-
       var a=p.awayScore, hs=p.homeScore;
       var an=typeof a==="number"?a:parseInt(a,10);
       var hn=typeof hs==="number"?hs:parseInt(hs,10);
@@ -1475,11 +1333,10 @@ function renderGame(d, inline){
         : an===hn ? " Tied "+an+" all."
         : " "+(an>hn?awayAb:homeAb)+" leads "+Math.max(an,hn)+" to "+Math.min(an,hn)+".";
 
-      sbody+='<div class="scorply '+(isND?"byus":"bythem")+'">'+
-        '<span class="qc">'+esc((p.period&&p.period.number?"Q"+p.period.number:"")+
-          (p.clock&&p.clock.displayValue?" "+p.clock.displayValue:""))+"</span>"+
-        '<span class="tm"><span class="sr-only">Scored by </span>'+esc(ab)+"</span>"+
-        '<span class="tx">'+esc(p.text||"")+"</span>"+
+      sbody+='<div class="scorply '+(p.mine?"byus":"bythem")+'">'+
+        '<span class="qc">'+esc((p.period?"Q"+p.period:"")+(p.clock?" "+p.clock:""))+"</span>"+
+        '<span class="tm"><span class="sr-only">Scored by </span>'+esc(p.teamAbbr)+"</span>"+
+        '<span class="tx">'+esc(p.text)+"</span>"+
         '<span class="sc"><span class="'+cls(an,hn)+'">'+esc(String(a==null?"":a))+"</span>"+
           "\u2013"+
           '<span class="'+cls(hn,an)+'">'+esc(String(hs==null?"":hs))+"</span>"+
@@ -1631,31 +1488,19 @@ function loadRoster(box){
   });
 }
 
-// ESPN's boxscore.players holds the complete per-player lines that `leaders`
-// only samples. Each category carries its own labels, so the table headers come
-// from the payload rather than being hardcoded.
-function boxTables(d, teamId){
-  var groups=pick(d,["boxscore","players"],[])||[];
-  var tm=groups.filter(function(g){
-    return String(pick(g,["team","id"],""))===String(teamId); })[0];
-  if(!tm) return "";
+// The full per-player lines for one side of a GameDetail, one table per
+// category. Each category carries its own column labels.
+function boxTables(tables){
   var html="";
-  (tm.statistics||[]).forEach(function(cat){
-    var labels=cat.labels||cat.keys||[];
-    var rows=cat.athletes||[];
-    if(!labels.length||!rows.length) return;
-    var title=cat.text||cat.name||"";
-    title=title.charAt(0).toUpperCase()+title.slice(1);
-    html+='<h3 class="boxcat">'+esc(title)+"</h3>"+
+  tables.forEach(function(cat){
+    html+='<h3 class="boxcat">'+esc(cat.title)+"</h3>"+
       '<div class="boxwrap"><table class="boxtable"><thead><tr><th scope="col">Player</th>'+
-      labels.map(function(l){ return '<th scope="col">'+esc(l)+"</th>"; }).join("")+
+      cat.labels.map(function(l){ return '<th scope="col">'+esc(l)+"</th>"; }).join("")+
       "</tr></thead><tbody>";
-    rows.forEach(function(a){
-      var nm=pick(a,["athlete","shortName"],null)||pick(a,["athlete","displayName"],"")||"";
-      var jersey=pick(a,["athlete","jersey"],"");
-      html+='<tr><th scope="row">'+(jersey?'<span class="jn">'+esc(String(jersey))+"</span> ":"")+
-        esc(nm)+"</th>"+
-        (a.stats||[]).map(function(s){ return "<td>"+esc(String(s))+"</td>"; }).join("")+
+    cat.rows.forEach(function(r){
+      html+='<tr><th scope="row">'+(r.jersey?'<span class="jn">'+esc(r.jersey)+"</span> ":"")+
+        esc(r.name)+"</th>"+
+        r.stats.map(function(v){ return "<td>"+esc(v)+"</td>"; }).join("")+
         "</tr>";
     });
     html+="</tbody></table></div>";
@@ -1664,79 +1509,44 @@ function boxTables(d, teamId){
 }
 
 /* ---------- matchup preview ---------- */
-// National ranks are not in the site API we use everywhere else — they live in
-// ESPN's core API, where each stat carries `rank` and `rankDisplayValue`.
-var CORE="https://sports.core.api.espn.com/v2/sports/football/leagues/college-football";
-var SEASON_STATS={};              // teamId -> flattened stat map, cached per session
+// Season-to-date figures with national ranks for both sides, as SeasonStat[]
+// from TeamOS.espn (docs/03_DOMAIN_MODEL.md).
+var SEASON_STATS={};              // side key -> SeasonStat[], cached per session
 
 function seasonYear(){
   var d=new Date();
   return d.getMonth()<6 ? d.getFullYear()-1 : d.getFullYear();   // Jan-Jun = last season
 }
 
-// Flatten every category into one map so lookups do not care where ESPN filed
-// a stat this year.
-function flattenStats(d){
-  var out={};
-  var cats=pick(d,["splits","categories"],[])||[];
-  cats.forEach(function(c){
-    (c.stats||[]).forEach(function(s){
-      if(!s||!s.name) return;
-      out[String(s.name).toLowerCase()]={
-        display: s.displayValue!=null?s.displayValue:s.value,
-        rank: typeof s.rank==="number" ? s.rank : null,
-        rankText: s.rankDisplayValue||null
-      };
-    });
-  });
-  return out;
-}
 
-function teamSeasonStats(teamId){
-  if(!teamId) return Promise.reject(new Error("no team"));
-  if(SEASON_STATS[teamId]) return Promise.resolve(SEASON_STATS[teamId]);
-  return get(CORE+"/seasons/"+seasonYear()+"/types/2/teams/"+teamId+"/statistics")
+function teamSeasonStats(key){
+  if(!key) return Promise.reject(new Error("no team"));
+  if(SEASON_STATS[key]) return Promise.resolve(SEASON_STATS[key]);
+  return get(TeamOS.espn.seasonStatsUrl(key, seasonYear()))
     .then(function(d){
-      var m=flattenStats(d);
-      SEASON_STATS[teamId]=m;
-      return m;
+      var rows=TeamOS.espn.seasonStats(d);
+      SEASON_STATS[key]=rows;
+      return rows;
     });
-}
-
-// Label, the stat names ESPN might use for it. Whichever is present wins.
-var PREVIEW_ROWS=[
-  ["Scoring offense",  ["totalpointspergame","pointspergame","avgpointsfor"]],
-  ["Total offense",    ["totalyardspergame","netttotalyardspergame","yardspergame","totalyards"]],
-  ["Rushing offense",  ["rushingyardspergame","netrushingyardspergame"]],
-  ["Passing offense",  ["netpassingyardspergame","passingyardspergame"]],
-  ["Scoring defense",  ["avgpointsagainst","opponenttotalpointspergame","pointsagainstpergame"]],
-  ["Total defense",    ["opponenttotalyardspergame","yardsallowedpergame"]],
-  ["Turnover margin",  ["turnoverdifferential","turnovermargin","totalturnoverdifferential"]],
-  ["Third down",       ["thirddownconvpct","thirddownconversionpct","thirddownpct"]]
-];
-
-function statPick(map, names){
-  for(var i=0;i<names.length;i++){ if(map[names[i]]) return map[names[i]]; }
-  return null;
 }
 
 function renderPreview(awayStats, homeStats, awayAb, homeAb){
   var body="";
-  PREVIEW_ROWS.forEach(function(r){
-    var a=statPick(awayStats,r[1]), b=statPick(homeStats,r[1]);
-    if(!a&&!b) return;
+  awayStats.forEach(function(a, i){
+    var b=homeStats[i];
+    if(a.value==null && b.value==null) return;
     // A lower rank number is better whatever the stat measures, so ranks can be
     // compared directly without knowing which direction is good.
-    var aw = (a&&a.rank&&b&&b.rank) ? (a.rank<b.rank) : null;
+    var aw = (a.rank&&b.rank) ? (a.rank<b.rank) : null;
     function cell(s,right){
-      if(!s) return '<span class="v'+(right?" r":"")+'">–</span>';
+      if(s.value==null) return '<span class="v'+(right?" r":"")+'">\u2013</span>';
       var rk=s.rankText||(s.rank?"#"+s.rank:"");
       return '<span class="v'+(right?" r":"")+
-        ((aw===null)?"":((right?!aw:aw)?" win":""))+'">'+esc(String(s.display))+
+        ((aw===null)?"":((right?!aw:aw)?" win":""))+'">'+esc(s.value)+
         (rk?'<span class="rk2">'+esc(rk)+"</span>":"")+"</span>";
     }
     body+='<div class="statrow prev">'+cell(a,false)+
-      '<span class="lbl">'+esc(r[0])+"</span>"+cell(b,true)+"</div>";
+      '<span class="lbl">'+esc(a.label)+"</span>"+cell(b,true)+"</div>";
   });
   if(!body) return "";
   return '<h2 class="sec">Matchup</h2>'+
@@ -1746,15 +1556,11 @@ function renderPreview(awayStats, homeStats, awayAb, homeAb){
     '<p class="stamp">Per-game figures and national ranks for the season to date.</p>';
 }
 
-// Kick off the preview for a summary payload that renderGame just painted into
+// Kick off the preview for a GameDetail that renderGame just painted into
 // `root`, if the game has not started.
-function previewIfPre(d, root){
-  var hc=pick(d,["header","competitions",0],{})||{};
-  if(pick(hc,["status","type","state"],"")!=="pre") return;
-  var cs=hc.competitors||[];
-  var home=cs.filter(function(c){return c.homeAway==="home";})[0]||cs[0]||{};
-  var away=cs.filter(function(c){return c.homeAway==="away";})[0]||cs[1]||{};
-  loadPreview(away, home, root);
+function previewIfPre(gd, root){
+  if(gd.state!=="pre") return;
+  loadPreview(gd.away, gd.home, root);
 }
 
 // Pre-game only: once there is a box score, that is the more useful thing.
@@ -1762,10 +1568,8 @@ function loadPreview(away, home, root){
   var slot=(root||$("panel-game")).querySelector(".gpreview");
   if(!slot) return;
   slot.innerHTML='<p class="loading">Loading the matchup…</p>';
-  var aId=pick(away,["team","id"],""), hId=pick(home,["team","id"],"");
-  Promise.all([teamSeasonStats(aId), teamSeasonStats(hId)]).then(function(r){
-    var html=renderPreview(r[0], r[1],
-      pick(away,["team","abbreviation"],"")||"", pick(home,["team","abbreviation"],"")||"");
+  Promise.all([teamSeasonStats(away.key), teamSeasonStats(home.key)]).then(function(r){
+    var html=renderPreview(r[0], r[1], away.abbreviation, home.abbreviation);
     slot.innerHTML=html;
   }).catch(function(){
     slot.innerHTML="";            // no ranks available, show nothing rather than a broken block
@@ -2125,7 +1929,7 @@ function gameById(id){
 }
 function summaryFor(id, live){
   id=String(id);
-  var url=ESPN+"/summary?event="+id;
+  var url=TeamOS.espn.summaryUrl(id);
   var g=gameById(id), isFinal=!!g && g.state==="post";
   var hit=SUM.mem[id];
   if(!live && hit && (hit.final || Date.now()-hit.at<60000)) return Promise.resolve(hit.d);
@@ -2202,11 +2006,12 @@ function openGame(id){
 
   var token=++DETAIL.seq;
   G.side=null;                        // default the team toggle to Notre Dame
-  summaryFor(id).then(function(d){
+  summaryFor(id).then(function(raw){
     if(token!==DETAIL.seq || DETAIL.open!==id) return;
-    slot.innerHTML=renderGame(d, true);
+    var gd=TeamOS.espn.gameDetail(raw, TEAM, TEAM_CONFIG);
+    slot.innerHTML=renderGame(gd, true);
     wireLeaderSwitch(slot);
-    previewIfPre(d, slot);
+    previewIfPre(gd, slot);
   }).catch(function(){
     if(token!==DETAIL.seq || DETAIL.open!==id) return;
     slot.innerHTML='<p class="msg"><strong>Couldn\u2019t load that game.</strong>'+

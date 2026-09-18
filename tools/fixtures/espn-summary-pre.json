@@ -1,0 +1,313 @@
+{
+ "_comment": "Trimmed ESPN game summary for a scheduled game (Michigan St at Notre Dame, 2026-09-19): header, pregame line, the season per-game team stats ESPN sends before kickoff (none of which match the Team-stats rows, so that section does not render), season leaders for both sides, and nothing else. Only the keys TeamOS.espn reads are kept, in ESPN's real positions.",
+ "header": {
+  "id": "401858453",
+  "competitions": [
+   {
+    "id": "401858453",
+    "date": "2026-09-19T23:30Z",
+    "status": {
+     "type": {
+      "name": "STATUS_SCHEDULED",
+      "state": "pre",
+      "description": "Scheduled",
+      "detail": "Sat, September 19th at 7:30 PM EDT",
+      "shortDetail": "9/19 - 7:30 PM EDT"
+     }
+    },
+    "competitors": [
+     {
+      "id": "87",
+      "homeAway": "home",
+      "team": {
+       "id": "87",
+       "name": "Fighting Irish",
+       "displayName": "Notre Dame Fighting Irish",
+       "abbreviation": "ND"
+      }
+     },
+     {
+      "id": "127",
+      "homeAway": "away",
+      "team": {
+       "id": "127",
+       "name": "Spartans",
+       "displayName": "Michigan State Spartans",
+       "abbreviation": "MSU"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "pickcenter": [
+  {
+   "details": "ND -29.5",
+   "overUnder": 52.5,
+   "spread": -29.5
+  }
+ ],
+ "boxscore": {
+  "teams": [
+   {
+    "team": {
+     "id": "127",
+     "abbreviation": "MSU",
+     "shortDisplayName": "Michigan St"
+    },
+    "statistics": [
+     {
+      "name": "totalPointsPerGame",
+      "displayValue": "32.5",
+      "label": "Points Per Game"
+     },
+     {
+      "name": "yardsPerGame",
+      "displayValue": "434.5",
+      "label": "Total Yards"
+     },
+     {
+      "name": "passingYardsPerGame",
+      "displayValue": "230.5",
+      "label": "Yards Passing"
+     },
+     {
+      "name": "rushingYardsPerGame",
+      "displayValue": "204.0",
+      "label": "Yards Rushing"
+     },
+     {
+      "name": "totalPointsPerGameAllowed",
+      "displayValue": "13.5",
+      "label": "Points Allowed Per Game"
+     },
+     {
+      "name": "yardsPerGameAllowed",
+      "displayValue": "246.0",
+      "label": "Yards Allowed"
+     },
+     {
+      "name": "passingYardsPerGameAllowed",
+      "displayValue": "157.0",
+      "label": "Pass Yards Allowed"
+     },
+     {
+      "name": "rushingYardsPerGameAllowed",
+      "displayValue": "89.0",
+      "label": "Rush Yards Allowed"
+     }
+    ]
+   },
+   {
+    "team": {
+     "id": "87",
+     "abbreviation": "ND",
+     "shortDisplayName": "Notre Dame"
+    },
+    "statistics": [
+     {
+      "name": "totalPointsPerGame",
+      "displayValue": "46.5",
+      "label": "Points Per Game"
+     },
+     {
+      "name": "yardsPerGame",
+      "displayValue": "414.0",
+      "label": "Total Yards"
+     },
+     {
+      "name": "passingYardsPerGame",
+      "displayValue": "299.5",
+      "label": "Yards Passing"
+     },
+     {
+      "name": "rushingYardsPerGame",
+      "displayValue": "114.5",
+      "label": "Yards Rushing"
+     },
+     {
+      "name": "totalPointsPerGameAllowed",
+      "displayValue": "6.5",
+      "label": "Points Allowed Per Game"
+     },
+     {
+      "name": "yardsPerGameAllowed",
+      "displayValue": "206.0",
+      "label": "Yards Allowed"
+     },
+     {
+      "name": "passingYardsPerGameAllowed",
+      "displayValue": "140.5",
+      "label": "Pass Yards Allowed"
+     },
+     {
+      "name": "rushingYardsPerGameAllowed",
+      "displayValue": "65.5",
+      "label": "Rush Yards Allowed"
+     }
+    ]
+   }
+  ],
+  "players": []
+ },
+ "leaders": [
+  {
+   "team": {
+    "id": "87",
+    "abbreviation": "ND"
+   },
+   "leaders": [
+    {
+     "name": "passingYards",
+     "displayName": "Passing Yards",
+     "leaders": [
+      {
+       "displayValue": "35/49, 492 YDS, 6 TD",
+       "athlete": {
+        "id": "5079369",
+        "displayName": "CJ Carr",
+        "shortName": "C. Carr"
+       }
+      }
+     ]
+    },
+    {
+     "name": "rushingYards",
+     "displayName": "Rushing Yards",
+     "leaders": [
+      {
+       "displayValue": "29 CAR, 119 YDS, 2 TD",
+       "athlete": {
+        "id": "5079742",
+        "displayName": "Aneyas Williams",
+        "shortName": "A. Williams"
+       }
+      }
+     ]
+    },
+    {
+     "name": "receivingYards",
+     "displayName": "Receiving Yards",
+     "leaders": [
+      {
+       "displayValue": "8 REC, 135 YDS, 2 TD",
+       "athlete": {
+        "id": "5150424",
+        "displayName": "Jordan Faison",
+        "shortName": "J. Faison"
+       }
+      }
+     ]
+    },
+    {
+     "name": "sacks",
+     "displayName": "Sacks",
+     "leaders": [
+      {
+       "displayValue": "1",
+       "athlete": {
+        "id": "4871079",
+        "displayName": "Boubacar Traore",
+        "shortName": "B. Traore"
+       }
+      }
+     ]
+    },
+    {
+     "name": "totalTackles",
+     "displayName": "Tackles",
+     "leaders": [
+      {
+       "displayValue": "12",
+       "athlete": {
+        "id": "4870589",
+        "displayName": "Jaiden Ausberry",
+        "shortName": "J. Ausberry"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "team": {
+    "id": "127",
+    "abbreviation": "MSU"
+   },
+   "leaders": [
+    {
+     "name": "passingYards",
+     "displayName": "Passing Yards",
+     "leaders": [
+      {
+       "displayValue": "38/54, 417 YDS, 3 TD",
+       "athlete": {
+        "id": "5146670",
+        "displayName": "Alessio Milivojevic",
+        "shortName": "A. Milivojevic"
+       }
+      }
+     ]
+    },
+    {
+     "name": "rushingYards",
+     "displayName": "Rushing Yards",
+     "leaders": [
+      {
+       "displayValue": "48 CAR, 250 YDS, 3 TD",
+       "athlete": {
+        "id": "5086034",
+        "displayName": "Cam Edwards",
+        "shortName": "C. Edwards"
+       }
+      }
+     ]
+    },
+    {
+     "name": "receivingYards",
+     "displayName": "Receiving Yards",
+     "leaders": [
+      {
+       "displayValue": "10 REC, 116 YDS, 1 TD",
+       "athlete": {
+        "id": "5260691",
+        "displayName": "Rodney Bullard Jr.",
+        "shortName": "R. Bullard Jr."
+       }
+      }
+     ]
+    },
+    {
+     "name": "sacks",
+     "displayName": "Sacks",
+     "leaders": [
+      {
+       "displayValue": "3",
+       "athlete": {
+        "id": "5297778",
+        "displayName": "Eli Coenen",
+        "shortName": "E. Coenen"
+       }
+      }
+     ]
+    },
+    {
+     "name": "totalTackles",
+     "displayName": "Tackles",
+     "leaders": [
+      {
+       "displayValue": "13",
+       "athlete": {
+        "id": "5124585",
+        "displayName": "Brady Pretzlaff",
+        "shortName": "B. Pretzlaff"
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "winprobability": [],
+ "scoringPlays": []
+}

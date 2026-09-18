@@ -66,6 +66,7 @@ TeamOS is a logical/domain layer inside the existing repository: two plain-scrip
 | `teamos/espn.js` | `TeamOS.espn.scheduleUrl(config)`, `TeamOS.espn.schedule(json, team, config)` → `Game[]`, `TeamOS.espn.gameOdds(summary)` | Phase 3A |
 | `teamos/espn.js` | `TeamOS.espn.rosterUrl(config)`, `TeamOS.espn.roster(json)` → `RosterGroup[]` of `Player`; `TeamOS.espn.teamUrl(config)`, `TeamOS.espn.teamStatus(json)` → `{ rank, record }` | Phase 3B |
 | `teamos/espn.js` | `TeamOS.espn.scoreboardUrl()`, `TeamOS.espn.scoreboard(json, config)` → `LeagueGame[]`; `TeamOS.espn.rankingsUrl()`, `TeamOS.espn.rankings(json, config)` → `Poll[]` | Phase 4A |
+| `teamos/espn.js` | `TeamOS.espn.summaryUrl(gameId)`, `TeamOS.espn.gameDetail(json, team, config)` → `GameDetail`; `TeamOS.espn.seasonStatsUrl(key, season)`, `TeamOS.espn.seasonStats(json)` → `SeasonStat[]` | Phase 4B |
 
 ### What TeamOS does now
 
@@ -73,6 +74,7 @@ TeamOS is a logical/domain layer inside the existing repository: two plain-scrip
 - Turns ESPN's schedule payload into provider-neutral `Game` objects (`docs/03_DOMAIN_MODEL.md`), applying the team config's `series` table and `sources.espn.broadcastFallback` along the way.
 - Turns ESPN's roster payload into `RosterGroup[]` of `Player`, and its team payload into `TeamStatus` (rank and record).
 - Turns ESPN's league scoreboard into `LeagueGame[]` (neutral home/away, with the team's own game flagged) and its rankings into `Poll[]`, deciding which polls bear on an FBS team and in what order.
+- Turns ESPN's game summary into `GameDetail` — the Game Center's score line, last play, win probability, linescore, team stats (including which side is ahead on each), leaders, box score and scoring plays — and its core-API season statistics into the matchup preview's `SeasonStat[]`.
 - Extracts the pregame line/total from ESPN's game summary.
 
 ### What TeamOS explicitly does not do yet
@@ -80,7 +82,7 @@ TeamOS is a logical/domain layer inside the existing repository: two plain-scrip
 - **Fetch.** The adapter is a pure transformation; `app.js` owns `fetch`, the cache-first paint, the offline/stale flag, polling and prefetching.
 - **Orchestrate.** Which game is "next", when a final rolls over, whether anything is live — all application logic.
 - **Cache or snapshot.** The service worker, the Cache API store of final summaries and `.github/workflows/odds.yml` are untouched.
-- **Normalize the Game Center, matchup preview or news yet** (Phase 4B/4C). Kalshi odds, weather and the depth chart are still consumed in their provider or snapshot shapes and are not part of Phase 4.
+- **Normalize news yet** (Phase 4C). Kalshi odds, weather and the depth chart are still consumed in their provider or snapshot shapes and are not part of Phase 4.
 - **Know about a second team, a second provider, or the fan.**
 
 TeamOS is not an application framework. It has no `load()`, no registry, no adapter interface; the next adapter, if one is justified, earns its own shape.

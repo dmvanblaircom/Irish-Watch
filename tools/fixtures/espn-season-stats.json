@@ -1,0 +1,301 @@
+{
+ "_comment": "Trimmed ESPN core-API season statistics for the two sides of the pre-game fixture (Notre Dame 87, Michigan State 127), 2026 regular season. Each keeps only the categories/stats the matchup preview looks up, plus one unrelated stat per team to prove filtering. Only the keys TeamOS.espn reads are kept, in ESPN's real positions.",
+ "teams": {
+  "87": {
+   "splits": {
+    "categories": [
+     {
+      "name": "general",
+      "stats": [
+       {
+        "name": "fumbles",
+        "displayValue": "1",
+        "value": 1,
+        "rank": 96,
+        "rankDisplayValue": "Tied-96th"
+       }
+      ]
+     },
+     {
+      "name": "passing",
+      "stats": [
+       {
+        "name": "netPassingYardsPerGame",
+        "displayValue": "299.5",
+        "value": 299.5,
+        "rank": 31,
+        "rankDisplayValue": "31st"
+       },
+       {
+        "name": "passingYardsPerGame",
+        "displayValue": "299.5",
+        "value": 299.5,
+        "rank": 25,
+        "rankDisplayValue": "25th"
+       },
+       {
+        "name": "totalPointsPerGame",
+        "displayValue": "46.5",
+        "value": 46.5,
+        "rank": 21,
+        "rankDisplayValue": "Tied-21st"
+       },
+       {
+        "name": "totalYards",
+        "displayValue": "828",
+        "value": 828,
+        "rank": 72,
+        "rankDisplayValue": "Tied-72nd"
+       },
+       {
+        "name": "yardsPerGame",
+        "displayValue": "414.0",
+        "value": 414,
+        "rank": 67,
+        "rankDisplayValue": "Tied-67th"
+       }
+      ]
+     },
+     {
+      "name": "rushing",
+      "stats": [
+       {
+        "name": "rushingYardsPerGame",
+        "displayValue": "114.5",
+        "value": 114.5,
+        "rank": 116,
+        "rankDisplayValue": "116th"
+       },
+       {
+        "name": "totalPointsPerGame",
+        "displayValue": "46.5",
+        "value": 46.5,
+        "rank": 21,
+        "rankDisplayValue": "Tied-21st"
+       },
+       {
+        "name": "totalYards",
+        "displayValue": "828",
+        "value": 828,
+        "rank": 72,
+        "rankDisplayValue": "Tied-72nd"
+       },
+       {
+        "name": "yardsPerGame",
+        "displayValue": "414.0",
+        "value": 414,
+        "rank": 67,
+        "rankDisplayValue": "Tied-67th"
+       }
+      ]
+     },
+     {
+      "name": "receiving",
+      "stats": [
+       {
+        "name": "totalPointsPerGame",
+        "displayValue": "46.5",
+        "value": 46.5,
+        "rank": 21,
+        "rankDisplayValue": "Tied-21st"
+       },
+       {
+        "name": "totalYards",
+        "displayValue": "828",
+        "value": 828,
+        "rank": 72,
+        "rankDisplayValue": "Tied-72nd"
+       },
+       {
+        "name": "yardsPerGame",
+        "displayValue": "414.0",
+        "value": 414,
+        "rank": 67,
+        "rankDisplayValue": "Tied-67th"
+       }
+      ]
+     },
+     {
+      "name": "scoring",
+      "stats": [
+       {
+        "name": "totalPointsPerGame",
+        "displayValue": "46.5",
+        "value": 46.5,
+        "rank": 21,
+        "rankDisplayValue": "Tied-21st"
+       }
+      ]
+     },
+     {
+      "name": "miscellaneous",
+      "stats": [
+       {
+        "name": "thirdDownConvPct",
+        "displayValue": "47.62",
+        "value": 47.61905,
+        "rank": 1,
+        "rankDisplayValue": "Tied-1st"
+       },
+       {
+        "name": "turnOverDifferential",
+        "displayValue": "6",
+        "value": 6,
+        "rank": 4,
+        "rankDisplayValue": "Tied-4th"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  "127": {
+   "splits": {
+    "categories": [
+     {
+      "name": "general",
+      "stats": [
+       {
+        "name": "fumbles",
+        "displayValue": "2",
+        "value": 2,
+        "rank": 65,
+        "rankDisplayValue": "Tied-65th"
+       }
+      ]
+     },
+     {
+      "name": "passing",
+      "stats": [
+       {
+        "name": "netPassingYardsPerGame",
+        "displayValue": "230.5",
+        "value": 230.5,
+        "rank": 101,
+        "rankDisplayValue": "101st"
+       },
+       {
+        "name": "passingYardsPerGame",
+        "displayValue": "230.5",
+        "value": 230.5,
+        "rank": 66,
+        "rankDisplayValue": "66th"
+       },
+       {
+        "name": "totalPointsPerGame",
+        "displayValue": "32.5",
+        "value": 32.5,
+        "rank": 62,
+        "rankDisplayValue": "Tied-62nd"
+       },
+       {
+        "name": "totalYards",
+        "displayValue": "869",
+        "value": 869,
+        "rank": 58,
+        "rankDisplayValue": "58th"
+       },
+       {
+        "name": "yardsPerGame",
+        "displayValue": "434.5",
+        "value": 434.5,
+        "rank": 51,
+        "rankDisplayValue": "51st"
+       }
+      ]
+     },
+     {
+      "name": "rushing",
+      "stats": [
+       {
+        "name": "rushingYardsPerGame",
+        "displayValue": "204.0",
+        "value": 204,
+        "rank": 40,
+        "rankDisplayValue": "40th"
+       },
+       {
+        "name": "totalPointsPerGame",
+        "displayValue": "32.5",
+        "value": 32.5,
+        "rank": 62,
+        "rankDisplayValue": "Tied-62nd"
+       },
+       {
+        "name": "totalYards",
+        "displayValue": "869",
+        "value": 869,
+        "rank": 58,
+        "rankDisplayValue": "58th"
+       },
+       {
+        "name": "yardsPerGame",
+        "displayValue": "434.5",
+        "value": 434.5,
+        "rank": 51,
+        "rankDisplayValue": "51st"
+       }
+      ]
+     },
+     {
+      "name": "receiving",
+      "stats": [
+       {
+        "name": "totalPointsPerGame",
+        "displayValue": "32.5",
+        "value": 32.5,
+        "rank": 62,
+        "rankDisplayValue": "Tied-62nd"
+       },
+       {
+        "name": "totalYards",
+        "displayValue": "869",
+        "value": 869,
+        "rank": 58,
+        "rankDisplayValue": "58th"
+       },
+       {
+        "name": "yardsPerGame",
+        "displayValue": "434.5",
+        "value": 434.5,
+        "rank": 51,
+        "rankDisplayValue": "51st"
+       }
+      ]
+     },
+     {
+      "name": "scoring",
+      "stats": [
+       {
+        "name": "totalPointsPerGame",
+        "displayValue": "32.5",
+        "value": 32.5,
+        "rank": 62,
+        "rankDisplayValue": "Tied-62nd"
+       }
+      ]
+     },
+     {
+      "name": "miscellaneous",
+      "stats": [
+       {
+        "name": "thirdDownConvPct",
+        "displayValue": "48.48",
+        "value": 48.484848,
+        "rank": 1,
+        "rankDisplayValue": "Tied-1st"
+       },
+       {
+        "name": "turnOverDifferential",
+        "displayValue": "0",
+        "value": 0,
+        "rank": 88,
+        "rankDisplayValue": "Tied-88th"
+       }
+      ]
+     }
+    ]
+   }
+  }
+ }
+}
