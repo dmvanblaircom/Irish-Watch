@@ -773,9 +773,11 @@ function loadStrip(){
   loadSparklines();
 }
 
-// The Action appends Notre Dame's price to odds-history.json whenever it
-// moves. Two points or more and each card gets the season drawn under the
-// number - the shape of the market, not just today's reading.
+// The Action appends the team's price to its odds-history snapshot whenever
+// it moves. Two points or more and each card gets the season drawn under
+// the number - the shape of the market, not just today's reading. A team
+// with no history declared, or a file that belongs to another team, gets
+// the number alone.
 function sparkline(vals){
   var n=vals.length, W=100, H=24, PAD=2;
   var lo=Math.min.apply(null,vals), hi=Math.max.apply(null,vals);
@@ -790,7 +792,10 @@ function sparkline(vals){
     '<polyline points="'+pts.join(" ")+'"/></svg>';
 }
 function loadSparklines(){
-  get("odds-history.json?t="+Date.now()).then(function(d){
+  var snap=TeamOS.snapshots.get(TEAM_CONFIG,"oddsHistory");
+  if(!snap) return;
+  get(snap.file+"?t="+Date.now()).then(function(d){
+    if(!TeamOS.snapshots.owned(TEAM,d)) return;
     var pts=(d.points||[]).filter(function(p){ return p&&p.t; });
     [["title","btnTitle"],["playoff","btnPlayoff"]].forEach(function(pair){
       var vals=pts.map(function(p){ return p[pair[0]]; }).filter(function(v){ return typeof v==="number"; });
@@ -807,26 +812,43 @@ function loadSparklines(){
 }
 
 /* ---------- depth chart and availability ---------- */
-// depth.json is written by the GitHub Action, which parses UHND's weekly
-// depth chart post. Same-origin, so no CORS involved.
+// The depth chart is a team capability: the team's config declares its
+// snapshot (written by the GitHub Action from the team's own source) or it
+// has none, and then the tab is the roster plus a plain statement of that.
+// The snapshot is same-origin, so no CORS involved.
 function loadDepth(){
   var el=$("panel-depth");
   if(el.dataset.loaded) return;
+  var snap=TeamOS.snapshots.get(TEAM_CONFIG,"depth");
+  if(!snap){
+    // No depth-chart source for this team: the roster still stands on
+    // its own. Nothing to fetch, so the state is final for this load.
+    unavailable('<strong>No depth chart.</strong>'+esc(TEAM.name)+
+      ' has no depth chart source in this Suite yet. The full roster is above.');
+    el.dataset.loaded="1";
+    return;
+  }
   if(!LAST_HTML[el.id]) el.innerHTML='<p class="loading">Loading the two-deep…</p>';
   var outCount=0;
 
-  cachedThenFresh(el, ["depth.json"], get("depth.json?t="+Date.now()).then(function(d){ return [d]; }),
+  cachedThenFresh(el, [snap.file], get(snap.file+"?t="+Date.now()).then(function(d){ return [d]; }),
     build, wire
   ).catch(function(){
     if(LAST_HTML[el.id]) return;         // the cached paint stands
+    unavailable('<strong>No depth chart yet.</strong>'+
+      'The scheduled job writes '+esc(snap.file)+' from '+esc(snap.label||"the source")+'’s weekly post. '+
+      'If this stays empty, check the Actions log.');
+  });
+
+  // The roster fold with a message under it, for every state that has no
+  // two-deep to show.
+  function unavailable(msg){
     el.innerHTML='<details class="fold" id="rosterFold"><summary>Full roster'+
       '<span class="count">every player</span></summary>'+
       '<div class="foldbody" id="rosterBody"></div></details>'+
-      '<p class="msg"><strong>No depth chart yet.</strong>'+
-      'The scheduled job writes depth.json from UHND’s weekly post. '+
-      'If this stays empty, check the Actions log.</p>';
+      '<p class="msg">'+msg+'</p>';
     wireRosterFold(el);      // the roster is independent of the depth chart
-  });
+  }
 
   function wire(el, res, fromCache, unchanged){
     if(!unchanged){ wireRosterFold(el); loadHistory(); }
@@ -834,7 +856,7 @@ function loadDepth(){
   }
 
   function build(res){
-    var d=res[0]; if(!d) return "";
+    var d=res[0]; if(!TeamOS.snapshots.owned(TEAM,d)) return "";   // not ours: nothing to show
     var html="", av=d.availability||{out:[],questionable:[]};
     outCount=av.out.length;
     var mmdd=function(iso){ return esc((iso||"").replace(/^\d{4}-/,"").replace("-","/")); };
@@ -847,8 +869,8 @@ function loadDepth(){
     var groupNames=Object.keys(d.groups||{});
     if(groupNames.length){
       html+='<h2 class="sec">Depth chart</h2>'+
-        '<p class="asof">Week of '+mmdd(d.date)+', from '+srcLink(d.source, d.title||"UHND")+
-        '. Notre Dame publishes a new two-deep most Tuesdays.</p>';
+        '<p class="asof">Week of '+mmdd(d.date)+', from '+srcLink(d.source, d.title||snap.label||"the source")+
+        '. '+esc(TEAM.name)+' publishes a new two-deep most Tuesdays.</p>';
     }
     groupNames.forEach(function(label, gi){
       var body="", posCount=0;
@@ -890,15 +912,16 @@ function loadDepth(){
     // ---- 3. the injury report: this week's list, then week by week ----
     html+='<h2 class="sec">Injury report</h2>';
     if(av.carried_from){
-      // UHND posted the chart without ND's availability report. The Action
-      // carries the last one forward rather than pretending everyone is fit.
+      // The source posted the chart without the team's availability report.
+      // The Action carries the last one forward rather than pretending
+      // everyone is fit.
       html+='<p class="asof">No availability report was published with the '+mmdd(d.date)+
-        ' chart ('+srcLink(d.source,"see the article")+'), so this is Notre Dame\u2019s '+
-        mmdd(av.carried_from)+' report, from '+srcLink(av.carried_source,"UHND")+
+        ' chart ('+srcLink(d.source,"see the article")+'), so this is '+esc(TEAM.name)+'\u2019s '+
+        mmdd(av.carried_from)+' report, from '+srcLink(av.carried_source,snap.label||"the source")+
         '. Beat writers often update it later in the week \u2014 anything newer is flagged below.</p>';
     } else {
-      html+='<p class="asof">Notre Dame\u2019s official report, released '+mmdd(d.date)+
-        ', from '+srcLink(d.source,"UHND")+
+      html+='<p class="asof">'+esc(TEAM.name)+'\u2019s official report, released '+mmdd(d.date)+
+        ', from '+srcLink(d.source,snap.label||"the source")+
         '. Beat writers often update it later in the week \u2014 anything newer is flagged below.</p>';
     }
     if(av.out.length||av.questionable.length){
@@ -925,7 +948,7 @@ function loadDepth(){
     } else {
       html+='<p class="msg">Nobody is listed out or questionable.</p>';
     }
-    // week-by-week history lands here once depth-history.json arrives
+    // week-by-week history lands here once the history snapshot arrives
     html+='<div id="depthHistory"></div>';
 
     if(!groupNames.length && !av.out.length) return '<p class="msg">The depth chart file is empty.</p>';
@@ -939,10 +962,14 @@ function loadDepth(){
   }
 }
 
-// Every depth chart UHND has posted this season, newest first, each collapsed
-// to its diff against the week before.
+// Every depth chart the team's source has posted this season, newest first,
+// each collapsed to its diff against the week before. Only for a team whose
+// depth snapshot declares a history file.
 function loadHistory(){
-  get("depth-history.json?t="+Date.now()).then(function(d){
+  var snap=TeamOS.snapshots.get(TEAM_CONFIG,"depth");
+  if(!snap || !snap.history) return;
+  get(snap.history+"?t="+Date.now()).then(function(d){
+    if(!TeamOS.snapshots.owned(TEAM,d)) return;
     var snaps=(d.snapshots||[]).slice().reverse();
     var slot=$("panel-depth").querySelector("#depthHistory");
     if(!slot || snaps.length<2) return;
@@ -962,7 +989,7 @@ function loadHistory(){
                return "<li>"+esc(c)+"</li>"; }).join("")+"</ul>"
              : '<p class="chg" style="color:var(--dim)">Nothing moved on the two-deep.</p>';
       html+='<p class="weeksrc">Source: <a href="'+esc(s.source||"#")+
-        '" target="_blank" rel="noopener">'+esc(s.title||"UHND")+
+        '" target="_blank" rel="noopener">'+esc(s.title||snap.label||"the source")+
         '<span class="sr-only"> (opens in a new tab)</span></a></p>';
       html+="</details>";
     });
@@ -1576,9 +1603,10 @@ function loadPreview(away, home, root){
 
 /* ---------- news ---------- */
 // Two sources merged: ESPN's own feed, which arrives as NewsItem[] from
-// TeamOS.espn, and the beat-writer RSS that the GitHub Action fetches
-// server-side and commits as news.json. RSS sites send no CORS header, so the
-// browser can never read them directly.
+// TeamOS.espn, and - for a team that declares one - the beat-writer RSS
+// that the GitHub Action fetches server-side and commits as the team's
+// beat-news snapshot. RSS sites send no CORS header, so the browser can
+// never read them directly. A team without beat feeds gets ESPN alone.
 
 // news.json is this project's own snapshot (docs/03_DOMAIN_MODEL.md, NewsItem):
 // the same fields, with the date as ISO text and never an image.
@@ -1593,14 +1621,16 @@ function loadNews(){
   var count=0, sources=0;
 
   var espnUrl=TeamOS.espn.newsUrl(TEAM_CONFIG);
-  cachedThenFresh(el, [espnUrl, "news.json"],
+  var beatSnap=TeamOS.snapshots.get(TEAM_CONFIG,"beatNews");
+  cachedThenFresh(el, [espnUrl, beatSnap ? beatSnap.file : null],
     Promise.all([get(espnUrl).catch(function(){ return null; }),
-                 get("news.json?t="+Date.now()).catch(function(){ return null; })]),
+                 beatSnap ? get(beatSnap.file+"?t="+Date.now()).catch(function(){ return null; }) : Promise.resolve(null)]),
     build, wire
   ).catch(function(){
     if(LAST_HTML[el.id]) return;         // the cached paint stands
     el.innerHTML='<p class="msg"><strong>No stories right now.</strong>'+
-      'Neither ESPN nor the beat feeds returned anything. Choose Refresh to try again.</p>';
+      (beatSnap ? 'Neither ESPN nor the beat feeds returned anything.' : 'ESPN returned nothing.')+
+      ' Choose Refresh to try again.</p>';
   });
 
   function wire(el, res, fromCache, unchanged){
@@ -1619,7 +1649,7 @@ function loadNews(){
   // reads NewsItem.
   function build(res){
     var espn=TeamOS.espn.news(res[0]);
-    var beat=((res[1]&&res[1].items)||[]).map(beatItem);
+    var beat=(TeamOS.snapshots.owned(TEAM,res[1]) ? (res[1].items||[]) : []).map(beatItem);
     var all=espn.concat(beat).filter(function(a){ return a.link&&a.title; });
 
     // same story from two outlets: keep the first

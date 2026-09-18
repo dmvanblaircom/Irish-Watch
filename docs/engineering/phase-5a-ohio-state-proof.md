@@ -51,6 +51,8 @@ Nothing else surfaced. In particular the neutral-site rule, the `won`/lead logic
 
 ## Recommended Phase 5B (needs product decisions)
 
+*Decided and implemented 2026-09-18 — see `docs/engineering/phase-5b-data-ownership.md` and `docs/decisions/0006-snapshots-are-owned-by-declaration.md`. Findings 1–3 are closed; 4–6 stand as written.*
+
 Make the three data files honest for a second team, without touching the Action yet:
 
 1. **Depth chart as a declared capability.** The Depth tab shows depth data only when the team's config says it has a source; otherwise a defined empty state. *Decision needed: what the empty state says or whether the tab hides.*

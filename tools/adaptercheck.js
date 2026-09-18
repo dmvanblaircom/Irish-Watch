@@ -1,13 +1,15 @@
 #!/usr/bin/env node
 /* Check the TeamOS ESPN adapter against a fixture.
 
-   Loads the same three files the page loads - the team config, the Team
-   model, the ESPN adapter - into a bare Node scope with no window, no
-   document and no fetch, so the adapter cannot quietly depend on any of
-   them. Then runs the fixtures in tools/fixtures/ through it and checks what
-   comes out: Games (shape, the team's point of view, neutral sites,
-   broadcasts and the fallback, series), roster groups and Players, the
-   team's rank and record - and that nothing ESPN-shaped leaks through.
+   Loads the same four files the page loads - the team config, the Team
+   model, snapshot ownership, the ESPN adapter - into a bare Node scope with
+   no window, no document and no fetch, so the adapter cannot quietly depend
+   on any of them. Then runs the fixtures in tools/fixtures/ through it and
+   checks what comes out: Games (shape, the team's point of view, neutral
+   sites, broadcasts and the fallback, series), roster groups and Players,
+   the team's rank and record - and that nothing ESPN-shaped leaks through.
+   A second context loads the Ohio State config and checks that the two
+   teams get different answers from TeamOS.snapshots down the same code.
 
    Usage:  node tools/adaptercheck.js
    Exit status is 1 if anything fails, so it can gate a push. */
@@ -18,10 +20,14 @@ var root = path.join(__dirname, "..");
 function read(p) { return fs.readFileSync(path.join(root, p), "utf8"); }
 
 // A context with nothing but the two globals the scripts define.
-var ctx = vm.createContext({});
-["teams/notre-dame.js", "teamos/team.js", "teamos/espn.js"].forEach(function (f) {
-  vm.runInContext(read(f), ctx, { filename: f });
-});
+function load(teamFile) {
+  var c = vm.createContext({});
+  [teamFile, "teamos/team.js", "teamos/snapshots.js", "teamos/espn.js"].forEach(function (f) {
+    vm.runInContext(read(f), c, { filename: f });
+  });
+  return c;
+}
+var ctx = load("teams/notre-dame.js");
 var TEAM_CONFIG = ctx.TEAM_CONFIG, TeamOS = ctx.TeamOS;
 var fixture = JSON.parse(read("tools/fixtures/espn-schedule.json"));
 
@@ -317,6 +323,52 @@ console.log("exports");
 eq(Object.keys(TeamOS.espn).sort(),
    ["gameDetail","gameOdds","news","newsUrl","rankings","rankingsUrl","roster","rosterUrl","schedule","scheduleUrl","scoreboard","scoreboardUrl","seasonStats","seasonStatsUrl","summaryUrl","teamStatus","teamUrl"],
    "exactly the documented functions");
+
+// ---- snapshot ownership: the same questions, two teams, two answers ----
+console.log("teamos/snapshots.js");
+var snapSrc = read("teamos/snapshots.js");
+ok(!/\bfetch\s*\(/.test(snapSrc),                                        "does not call fetch()");
+ok(!/\b(document|window|navigator|localStorage|caches)\b/.test(snapSrc),   "does not touch the DOM or browser storage");
+ok(!/\bTEAM_ID\b|\bS\.\w|\bTEAM\b(?!_CONFIG)/.test(snapSrc), "does not read application globals (TEAM, TEAM_ID, S)");
+ok(!/notre|irish|ohio|buckeye/i.test(snapSrc.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, "")), "names no team in code");
+eq(Object.keys(TeamOS.snapshots).sort(), ["get","owned"], "exactly the documented functions");
+
+var osu = load("teams/ohio-state.js");
+var ND = TeamOS.createTeam(TEAM_CONFIG.team), OSU = osu.TeamOS.createTeam(osu.TEAM_CONFIG.team);
+var ndFiles = { depth: JSON.parse(read("depth.json")), history: JSON.parse(read("depth-history.json")),
+                odds: JSON.parse(read("odds-history.json")), news: JSON.parse(read("news.json")) };
+
+console.log(" notre-dame");
+eq(TeamOS.snapshots.get(TEAM_CONFIG, "depth"),       { file:"depth.json", history:"depth-history.json", label:"UHND" }, "declares a depth chart");
+eq(TeamOS.snapshots.get(TEAM_CONFIG, "oddsHistory"), { file:"odds-history.json" }, "declares an odds history");
+eq(TeamOS.snapshots.get(TEAM_CONFIG, "beatNews"),    { file:"news.json" },         "declares beat news");
+ok(TeamOS.snapshots.owned(ND, ndFiles.depth),   "owns the committed depth.json");
+ok(TeamOS.snapshots.owned(ND, ndFiles.history), "owns the committed depth-history.json");
+ok(TeamOS.snapshots.owned(ND, ndFiles.odds),    "owns the committed odds-history.json");
+ok(TeamOS.snapshots.owned(ND, ndFiles.news),    "owns the committed news.json");
+ok(ndFiles.depth.team == null && ndFiles.odds.team == null && ndFiles.news.team == null,
+   "(the committed files carry no team field - ownership rests on the declaration; see decision 0006)");
+
+console.log(" ohio-state");
+eq(osu.TeamOS.snapshots.get(osu.TEAM_CONFIG, "depth"),       null, "declares no depth chart");
+eq(osu.TeamOS.snapshots.get(osu.TEAM_CONFIG, "oddsHistory"), null, "declares no odds history");
+eq(osu.TeamOS.snapshots.get(osu.TEAM_CONFIG, "beatNews"),    null, "declares no beat news");
+eq(TeamOS.snapshots.get({ team: osu.TEAM_CONFIG.team }, "depth"), null, "a config with no snapshots section declares nothing");
+
+console.log(" a stamped file");
+var stamped = { team: "notre-dame", points: [] };
+ok(TeamOS.snapshots.owned(ND, stamped),   "a file stamped notre-dame is Notre Dame's");
+ok(!TeamOS.snapshots.owned(OSU, stamped), "and is refused for Ohio State even if declared");
+ok(!TeamOS.snapshots.owned(ND, null),     "no payload is not owned");
+ok(!TeamOS.snapshots.owned(ND, "text"),   "a non-object payload is not owned");
+ok(TeamOS.snapshots.owned(OSU, { points: [] }), "an unstamped file is owned by whoever declared it (the documented limitation)");
+
+console.log(" malformed declarations fail loudly");
+function throws(fn, what) { try { fn(); ok(false, what); } catch (e) { ok(true, what + " (" + e.message + ")"); } }
+throws(function () { TeamOS.snapshots.get(TEAM_CONFIG, "depthChart"); }, "an unknown kind throws");
+throws(function () { TeamOS.snapshots.get({ snapshots: { depth: { history: "x.json" } } }, "depth"); }, "a declaration without a file throws");
+throws(function () { TeamOS.snapshots.get({ snapshots: { depth: "depth.json" } }, "depth"); }, "a bare string throws");
+eq(TeamOS.snapshots.get({ snapshots: { oddsHistory: { file: "x.json" } } }, "oddsHistory"), { file: "x.json" }, "a minimal declaration passes through");
 
 console.log("\n" + (failures ? failures + " check(s) FAILED" : "all adapter checks passed"));
 process.exit(failures ? 1 : 0);

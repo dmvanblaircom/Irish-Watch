@@ -45,5 +45,11 @@ var TEAM_CONFIG = {
 
   links: {
     roster: { url: "https://ohiostatebuckeyes.com/sports/football/roster", label: "ohiostatebuckeyes.com" }
-  }
+  },
+
+  // No Action writes anything for Ohio State yet: no depth-chart source,
+  // no price history, no beat feeds. Declaring none is what keeps Notre
+  // Dame's files off this page (Phase 5B); each kind appears here when a
+  // source for it exists.
+  snapshots: {}
 };

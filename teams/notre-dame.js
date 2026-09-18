@@ -16,6 +16,11 @@
      series   trophy games, matched by opponent name. Schedule data, headed
               for the normalized Game in Phase 3.
      links    the team's own pages, for the official word.
+     snapshots
+              the team-data files the Action writes for this team, by
+              kind. A team that has no source for a kind leaves it out and
+              the Suite shows that kind as unavailable rather than reading
+              another team's file. Read through TeamOS.snapshots.
 
    Only what the application actually uses today is here. Add a field when
    the application needs it, not before. */
@@ -81,5 +86,18 @@ var TEAM_CONFIG = {
   // The team's own pages, where the app points readers for the official word.
   links: {
     roster: { url: "https://fightingirish.com/sports/football/roster", label: "fightingirish.com" }
+  },
+
+  // The snapshots .github/workflows/odds.yml commits for this team. Each
+  // is a capability the team has because a source exists for it: the
+  // two-deep comes from UHND's weekly post (label = how the source is named
+  // when the file does not say), the price history from the Kalshi
+  // markets above, the beat stories from six Notre Dame RSS feeds. The
+  // files do not yet carry a team field, so declaring one here is what
+  // says it is ours (docs/decisions/0006-snapshots-are-owned-by-declaration.md).
+  snapshots: {
+    depth:       { file: "depth.json", history: "depth-history.json", label: "UHND" },
+    oddsHistory: { file: "odds-history.json" },
+    beatNews:    { file: "news.json" }
   }
 };
