@@ -57,6 +57,8 @@ Normalized Domain Model
 Irish Watch
 ```
 
+Status: **complete for ESPN** as of 4C. Milestones 4A (league view: `LeagueGame`, `Poll`), 4B (Game Center: `GameDetail`, `SeasonStat`) and 4C (news: `NewsItem`) moved every ESPN payload the Suite consumes behind `teamos/espn.js`; `app.js` no longer carries an ESPN URL, id or key name. A 4D milestone for the two remaining small providers — Kalshi odds (`Market`) and the Open-Meteo forecast (`Forecast`) — is defined but deferred until a concrete product or architectural reason calls for it.
+
 ## Phase 5: Add Ohio State
 
 Add Ohio State using configuration and the same Suite/application code.

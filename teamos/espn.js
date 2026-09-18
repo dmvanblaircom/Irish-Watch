@@ -1,8 +1,8 @@
 /* TeamOS - the ESPN adapter.
 
    Everything the platform knows about how ESPN shapes a college football
-   team's schedule, roster and record, a game's summary, and the league's
-   scoreboard and rankings, lives here and nowhere else. The
+   team's schedule, roster, record and news, a game's summary, and the
+   league's scoreboard and rankings, lives here and nowhere else. The
    adapter is a pure transformation: it is handed ESPN's JSON (and, for the
    schedule, the Team and the team config) and it returns domain objects. It
    never fetches, never touches the page, never reads application state.
@@ -16,6 +16,7 @@
      rankings JSON + TEAM_CONFIG         ->  TeamOS.espn.rankings()    ->  Poll[]
      summary JSON + Team + TEAM_CONFIG   ->  TeamOS.espn.gameDetail()  ->  GameDetail
      season stats JSON                   ->  TeamOS.espn.seasonStats() ->  SeasonStat[]
+     news JSON                           ->  TeamOS.espn.news()        ->  NewsItem[]
 
    All of these are documented in docs/03_DOMAIN_MODEL.md. Game is written
    from the team's point of view - us/them, home/away, won - because that is
@@ -530,6 +531,9 @@ TeamOS.espn = (function () {
     summaryUrl: function(gameId){
       return SITE+"/summary?event="+gameId;
     },
+    newsUrl: function(config){
+      return SITE+"/news?team="+config.sources.espn.teamId+"&limit=30";
+    },
     // National ranks are not in the site API; they live in ESPN's core API.
     // `key` is a GameDetail side's opaque key; `season` the season year.
     seasonStatsUrl: function(key, season){
@@ -603,6 +607,22 @@ TeamOS.espn = (function () {
 
     // ESPN's game summary -> GameDetail (docs/03_DOMAIN_MODEL.md).
     gameDetail: gameDetail,
+
+    // ESPN's team news -> NewsItem[], in the feed's own order (ESPN does not
+    // sort it; the view does). Articles with no headline or no web link are
+    // dropped here - nothing could be shown for them.
+    news: function(json){
+      return ((json&&json.articles)||[]).map(function(a){
+        var t=a.published ? Date.parse(a.published) : NaN;
+        return {
+          title:       str(a.headline),
+          link:        a.links&&a.links.web&&a.links.web.href ? str(a.links.web.href) : null,
+          image:       a.images&&a.images[0]&&a.images[0].url ? str(a.images[0].url) : "",
+          source:      "ESPN",
+          publishedAt: isNaN(t) ? null : t
+        };
+      }).filter(function(n){ return n.link && n.title; });
+    },
 
     // ESPN's core-API season statistics for one team -> SeasonStat[]: the
     // eight matchup-preview rows in a fixed order, value null where the feed

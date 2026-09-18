@@ -53,7 +53,7 @@ Two further nuances are recorded as equivalent, not changed: `patchGame` now upd
 - `app.js` no longer reads `header.competitions`, `competitors`, `homeAway`, `status.type.*`, `situation`, `drives`, `winprobability`, `linescores`, `boxscore.teams/players`, `leaders`, `scoringPlays`, `athlete`, `splits.categories` or `rankDisplayValue`; `pick`, `statVal`, `cmpVal`, `flattenStats`, `statPick`, `PREVIEW_ROWS` and the `CORE` URL are gone from it.
 - `app.js` still owns `summaryFor()` (memory, Cache API, in-flight sharing), the 25-second poll, `gameToShow`/`justFinished`, `G` state and all markup.
 - `TeamOS.espn` exports `summaryUrl`, `gameDetail`, `seasonStatsUrl`, `seasonStats`; `tools/adaptercheck.js` asserts the export list, the exact shapes, and the absence of ESPN keys against three summary fixtures (pre, live, final) and a season-stats fixture.
-- The ESPN base URL and `TEAM_ID` remain in `app.js` for one reader each — the news path — which Phase 4C removes.
+- The ESPN base URL and `TEAM_ID` remained in `app.js` for one reader each — the news path — until Phase 4C removed both.
 
 ## Owner
 

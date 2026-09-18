@@ -280,10 +280,42 @@ eq(nd[0], { label:"Scoring offense", value:"46.5", rank:21, rankText:"Tied-21st"
 eq(nd[4], { label:"Scoring defense", value:null, rank:null, rankText:null }, "a row the feed has no name for -> null value");
 ok(!/splits|categories|rankDisplayValue|espn/i.test(JSON.stringify(nd)), "carries no ESPN keys or names");
 
+// ---- news ----
+var newsFixture = JSON.parse(read("tools/fixtures/espn-news.json"));
+var NEWS = ["title","link","image","source","publishedAt"];
+var NEWSLEAK = /articles|headline|links|href|images|published\b|categories|description|byline|espncdn|api\.espn/i;
+
+console.log("newsUrl");
+eq(TeamOS.espn.newsUrl(TEAM_CONFIG),
+   "https://site.api.espn.com/apis/site/v2/sports/football/college-football/news?team=87&limit=30",
+   "news URL unchanged (SW cache key)");
+
+console.log("news()");
+var items = TeamOS.espn.news(newsFixture);
+eq(items.length, 4, "one NewsItem per article");
+items.forEach(function (n, i) {
+  eq(Object.keys(n), NEWS, "item " + i + " has exactly the documented NewsItem fields");
+  // `link` and `image` are ESPN URLs and `source` is the outlet's name; test the keys and the rest
+  ok(!NEWSLEAK.test(JSON.stringify({ title: n.title, source: n.source, publishedAt: n.publishedAt })), "item " + i + " carries no ESPN keys or names outside its URLs");
+  ok(typeof n.publishedAt === "number", "item " + i + " publishedAt is epoch milliseconds");
+});
+eq(items.map(function (n) { return new Date(n.publishedAt).toISOString(); }),
+   ["2026-09-15T10:40:51.000Z","2026-09-18T10:11:31.000Z","2026-09-07T04:18:07.000Z","2026-09-17T13:51:53.000Z"],
+   "kept in the feed's own order - the view sorts, the adapter does not");
+eq(items[1], { title:"College football Week 3 preview: Can Ole Miss take down LSU?",
+               link:"https://www.espn.com/college-football/story/_/id/49965321/college-football-week-3-preview-ole-miss-revenge-lsu",
+               image:"https://a.espncdn.com/photo/2026/0917/r1718150_608x342_16-9.jpg",
+               source:"ESPN", publishedAt: Date.parse("2026-09-18T10:11:31Z") },
+   "a full article: headline, web link, first image, source label, timestamp");
+eq(TeamOS.espn.news({ articles: [{ headline:"No picture", published:"2026-09-01T00:00:00Z", links:{ web:{ href:"https://x/y" } } }] })[0].image, "", "no image -> empty string (the view skips the <img>)");
+eq(TeamOS.espn.news({ articles: [{ headline:"No date", links:{ web:{ href:"https://x/y" } } }] })[0].publishedAt, null, "no date -> null (the view shows no date and sorts it last)");
+eq(TeamOS.espn.news({ articles: [{ headline:"No link" }, { links:{ web:{ href:"https://x/y" } } }] }), [], "no web link or no headline -> dropped");
+eq(TeamOS.espn.news(null), [], "no payload -> empty list");
+
 // ---- exports ----
 console.log("exports");
 eq(Object.keys(TeamOS.espn).sort(),
-   ["gameDetail","gameOdds","rankings","rankingsUrl","roster","rosterUrl","schedule","scheduleUrl","scoreboard","scoreboardUrl","seasonStats","seasonStatsUrl","summaryUrl","teamStatus","teamUrl"],
+   ["gameDetail","gameOdds","news","newsUrl","rankings","rankingsUrl","roster","rosterUrl","schedule","scheduleUrl","scoreboard","scoreboardUrl","seasonStats","seasonStatsUrl","summaryUrl","teamStatus","teamUrl"],
    "exactly the documented functions");
 
 console.log("\n" + (failures ? failures + " check(s) FAILED" : "all adapter checks passed"));

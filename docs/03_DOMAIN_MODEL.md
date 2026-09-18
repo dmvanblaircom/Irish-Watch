@@ -178,19 +178,23 @@ Depth chart, availability and sport-specific lineup concepts. Not yet modelled: 
 
 See `Poll` above.
 
-### News Item
+### NewsItem
 
-A normalized article/content item:
+One story in the News tab. **Implemented in Phase 4C**, produced by `TeamOS.espn.news(json)` for ESPN's team feed; the beat-writer snapshot the Action commits as `news.json` carries the same fields (`title`, `link`, `source`, `published` as ISO text, never an image) and is converted by a three-line helper in the application, because it is this project's own format, not a provider's.
 
-- id
-- title
-- summary
-- source
-- url
-- publishedAt
-- image
-- team association
-- sport/league association
+```
+{ title, link, image, source, publishedAt }
+```
+
+| Field | Meaning |
+|---|---|
+| `title` | headline |
+| `link` | the article's web URL |
+| `image` | thumbnail URL, or `""` |
+| `source` | the outlet's display name — `"ESPN"`, `"One Foot Down"`, … — which the view also uses to style ESPN stories differently |
+| `publishedAt` | epoch milliseconds, or `null` when the feed gave no usable date |
+
+Exactly the fields the News tab shows. Not modelled: id, summary, byline, categories, team/league association. Merging the two sources, dropping duplicate headlines, ordering newest-first and the "show more" fold are presentation and stay in the application; ESPN does not deliver its feed in date order, so that sort is load-bearing.
 
 ### Media Item
 
