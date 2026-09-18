@@ -1,0 +1,35 @@
+{
+  "_comment": "Trimmed ESPN team-roster payload for tools/adaptercheck.js. Real group keys and positions, including two empty units ESPN always sends and one player with no state in birthPlace. Only the keys TeamOS.espn reads are kept, in ESPN's real positions.",
+  "athletes": [
+    { "position": "offense", "items": [
+      { "id": "4917976", "displayName": "Sullivan Absher", "fullName": "Sullivan Absher", "jersey": "75",
+        "position": { "abbreviation": "OL", "name": "Offensive Lineman" },
+        "displayHeight": "6' 7\"", "displayWeight": "320 lbs",
+        "experience": { "years": 4, "displayValue": "Senior", "abbreviation": "SR" },
+        "birthPlace": { "city": "Belmont", "state": "NC", "country": "USA" } },
+      { "id": "5083000", "displayName": "CJ Carr", "fullName": "Christopher Carr", "jersey": "13",
+        "position": { "abbreviation": "QB", "name": "Quarterback" },
+        "displayHeight": "6' 2\"", "displayWeight": "215 lbs",
+        "experience": { "years": 3, "displayValue": "Junior", "abbreviation": "JR" },
+        "birthPlace": { "city": "Saline", "state": "MI", "country": "USA" } }
+    ] },
+    { "position": "defense", "items": [
+      { "id": "4870000", "displayName": "Leonard Moore", "fullName": "Leonard Moore", "jersey": "15",
+        "position": { "abbreviation": "CB", "name": "Cornerback" },
+        "displayHeight": "6' 2\"", "displayWeight": "197 lbs",
+        "experience": { "years": 3, "displayValue": "Junior", "abbreviation": "JR" },
+        "birthPlace": { "city": "Round Rock", "state": "TX", "country": "USA" } }
+    ] },
+    { "position": "specialTeam", "items": [
+      { "id": "5329697", "displayName": "Jasper Scaife", "fullName": "Jasper Scaife", "jersey": "39",
+        "position": { "abbreviation": "P", "name": "Punter" },
+        "displayHeight": "6' 6\"", "displayWeight": "222 lbs",
+        "experience": { "years": 1, "displayValue": "Freshman", "abbreviation": "FR" },
+        "birthPlace": { "city": "West Perth", "country": "Australia" } },
+      { "id": "0000001", "displayName": "Walk On", "fullName": "Walk On",
+        "position": { "name": "Long Snapper" } }
+    ] },
+    { "position": "injuredReserveOrOut", "items": [] },
+    { "position": "practiceSquad", "items": [] }
+  ]
+}

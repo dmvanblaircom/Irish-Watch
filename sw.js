@@ -13,12 +13,13 @@
    Bump VERSION whenever the shell changes shape enough that an old cached
    copy must not linger; the activate step throws away every other cache. */
 
-var VERSION = "iw-2026-09-16k";
+var VERSION = "iw-2026-09-18b";
 var SHELL   = VERSION + "-shell";
 var DATA    = VERSION + "-data";
 
 var SHELL_FILES = [
-  "./", "./index.html", "./app.css", "./app.js", "./manifest.json",
+  "./", "./index.html", "./app.css", "./app.js", "./teams/notre-dame.js", "./teamos/team.js", "./teamos/espn.js",
+  "./manifest.json",
   "./favicon.svg", "./irish-watch-favicon-32.png", "./irish-watch-favicon-64.png",
   "./irish-watch-icon-180.png", "./irish-watch-icon-192.png"
 ];
