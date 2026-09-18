@@ -1,8 +1,8 @@
 /* TeamOS - the ESPN adapter.
 
    Everything the platform knows about how ESPN shapes a college football
-   team's schedule, roster and record, and the league's scoreboard and
-   rankings, lives here and nowhere else. The
+   team's schedule, roster and record, a game's summary, and the league's
+   scoreboard and rankings, lives here and nowhere else. The
    adapter is a pure transformation: it is handed ESPN's JSON (and, for the
    schedule, the Team and the team config) and it returns domain objects. It
    never fetches, never touches the page, never reads application state.
@@ -14,6 +14,8 @@
      team JSON                           ->  TeamOS.espn.teamStatus()  ->  { rank, record }
      scoreboard JSON + TEAM_CONFIG       ->  TeamOS.espn.scoreboard()  ->  LeagueGame[]
      rankings JSON + TEAM_CONFIG         ->  TeamOS.espn.rankings()    ->  Poll[]
+     summary JSON + Team + TEAM_CONFIG   ->  TeamOS.espn.gameDetail()  ->  GameDetail
+     season stats JSON                   ->  TeamOS.espn.seasonStats() ->  SeasonStat[]
 
    All of these are documented in docs/03_DOMAIN_MODEL.md. Game is written
    from the team's point of view - us/them, home/away, won - because that is
@@ -263,6 +265,251 @@ TeamOS.espn = (function () {
     };
   }
 
+  /* ---------- game center: the summary ---------- */
+  var CORE = "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football";
+
+  function pick(o, path, dflt){
+    var cur=o;
+    for(var i=0;i<path.length;i++){
+      if(cur==null) return dflt;
+      cur=cur[path[i]];
+    }
+    return cur==null ? dflt : cur;
+  }
+  function numOf(v){ var n=parseFloat(String(v).replace(/[^0-9.\-]/g,"")); return isNaN(n)?null:n; }
+  // "5-13" is a made/attempted pair, not the number 5. Compare the rate.
+  // "28:24" is a clock, not 2824. Compare the seconds.
+  function cmpVal(v){
+    var s=String(v==null?"":v).trim();
+    var m=s.match(/^(\d+)\s*[-/]\s*(\d+)$/);
+    if(m) return parseInt(m[2],10)===0 ? 0 : parseInt(m[1],10)/parseInt(m[2],10);
+    var t=s.match(/^(\d+):(\d{2})$/);
+    if(t) return parseInt(t[1],10)*60+parseInt(t[2],10);
+    return numOf(s);
+  }
+  // A team's stat by any of the names ESPN has filed it under.
+  function statVal(team, keys){
+    var st=(team&&team.statistics)||[];
+    for(var i=0;i<st.length;i++){
+      var n=String(st[i].name||"").toLowerCase(), l=String(st[i].label||"").toLowerCase();
+      for(var k=0;k<keys.length;k++){
+        var want=keys[k].toLowerCase();
+        if(n===want||l===want) return st[i].displayValue!=null?st[i].displayValue:st[i].value;
+      }
+    }
+    return null;
+  }
+  // The team-stat rows the Game Center shows, and the ESPN stat names each
+  // might be filed under. Turnovers and penalties are the two where fewer
+  // is better; penalties compare as a count ("6-43" -> 6), not a rate.
+  var TEAM_STAT_ROWS=[
+    ["Total yards",["totalYards"]],
+    ["Passing",["netPassingYards","passingYards"]],
+    ["Rushing",["rushingYards"]],
+    ["First downs",["firstDowns"]],
+    ["3rd down",["thirdDownEff"]],
+    ["Turnovers",["turnovers"]],
+    ["Penalties",["totalPenaltiesYards"]],
+    ["Possession",["possessionTime"]]
+  ];
+  function betterSide(label, av, hv){
+    var an=cmpVal(av), hn=cmpVal(hv);
+    if(label==="Penalties"){ an=numOf(av); hn=numOf(hv); }
+    if(an==null||hn==null||an===hn) return null;
+    var lowerWins = label==="Turnovers"||label==="Penalties";
+    return (lowerWins ? an<hn : an>hn) ? "away" : "home";
+  }
+  // ESPN names leader categories "passingYards", "totalTackles" and so on.
+  function leaderCategory(cat){
+    var n=String(cat.name||"").toLowerCase();
+    if(n.indexOf("passing")===0)   return "Passing";
+    if(n.indexOf("rushing")===0)   return "Rushing";
+    if(n.indexOf("receiving")===0) return "Receiving";
+    if(n.indexOf("sack")>-1)       return "Sacks";
+    if(n.indexOf("tackle")>-1)     return "Tackles";
+    if(n.indexOf("intercept")>-1)  return "Int";
+    return str(cat.shortDisplayName||cat.displayName);
+  }
+  function leaderRows(tl){
+    var out=[];
+    (tl.leaders||[]).forEach(function(cat){
+      var top=(cat.leaders||[])[0];
+      if(!top) return;
+      var nm=pick(top,["athlete","shortName"],null)||pick(top,["athlete","displayName"],"");
+      if(!nm) return;
+      out.push({ category:leaderCategory(cat), name:nm, line:str(top.displayValue) });
+    });
+    return out;
+  }
+  // ESPN's boxscore.players holds the complete per-player lines that
+  // `leaders` only samples. Each category carries its own labels.
+  function boxTables(d, teamId){
+    var groups=pick(d,["boxscore","players"],[])||[];
+    var tm=groups.filter(function(g){ return String(pick(g,["team","id"],""))===String(teamId); })[0];
+    if(!tm) return [];
+    var out=[];
+    (tm.statistics||[]).forEach(function(cat){
+      var labels=cat.labels||cat.keys||[];
+      var rows=cat.athletes||[];
+      if(!labels.length||!rows.length) return;
+      var title=str(cat.text||cat.name);
+      out.push({
+        title: title.charAt(0).toUpperCase()+title.slice(1),
+        labels: labels.map(str),
+        rows: rows.map(function(a){
+          return { name: str(pick(a,["athlete","shortName"],null)||pick(a,["athlete","displayName"],"")),
+                   jersey: str(pick(a,["athlete","jersey"],"")),
+                   stats: (a.stats||[]).map(str) };
+        })
+      });
+    });
+    return out;
+  }
+  function detailSide(c, teamId){
+    var t=c.team||{};
+    return {
+      key:          str(t.id),
+      name:         str(t.shortDisplayName||t.displayName||t.name||"TBA"),
+      abbreviation: str(t.abbreviation||t.shortDisplayName),
+      record:       str(c.records&&c.records[0]&&c.records[0].summary),
+      score:        c.score!=null ? c.score : null,
+      mine:         String(t.id)===teamId
+    };
+  }
+  function linescoreOf(c){
+    return (c.linescores||[]).map(function(v){ return str(v.displayValue!=null?v.displayValue:v.value); });
+  }
+
+  // ESPN's game summary -> GameDetail: the sections the Game Center renders,
+  // each null when the payload has nothing for it. Field names vary by game
+  // state, so every read is defensive; a missing section drops out rather
+  // than blanking the tab.
+  function gameDetail(d, team, config){
+    var teamId=config.sources.espn.teamId;
+    var comp=pick(d,["header","competitions",0],{})||{};
+    var cs=comp.competitors||[];
+    var homeC=cs.filter(function(c){return c.homeAway==="home";})[0]||cs[0]||{};
+    var awayC=cs.filter(function(c){return c.homeAway==="away";})[0]||cs[1]||{};
+    var st=pick(comp,["status","type"],{})||{};
+    var home=detailSide(homeC, teamId), away=detailSide(awayC, teamId);
+
+    // last play: the live situation, else the current drive, else the last drive
+    var sit=d.situation||comp.situation||{};
+    var lastText=pick(sit,["lastPlay","text"],null);
+    if(!lastText){
+      var cur=pick(d,["drives","current","plays"],null);
+      if(cur&&cur.length) lastText=cur[cur.length-1].text;
+    }
+    if(!lastText){
+      var prev=pick(d,["drives","previous"],null);
+      if(prev&&prev.length){
+        var pl=prev[prev.length-1].plays;
+        if(pl&&pl.length) lastText=pl[pl.length-1].text;
+      }
+    }
+    var lastPlay = lastText ? {
+      text:         str(lastText),
+      possession:   str(pick(sit,["lastPlay","team","abbreviation"],"")),
+      downDistance: str(sit.downDistanceText||sit.shortDownDistanceText)
+    } : null;
+
+    var wp=d.winprobability, hp=wp&&wp.length ? wp[wp.length-1].homeWinPercentage : null;
+    var winProb = typeof hp==="number" ? { homePct: hp } : null;
+
+    var al=linescoreOf(awayC), hl=linescoreOf(homeC);
+    var linescore = (al.length||hl.length) ? { away:al, home:hl } : null;
+
+    // team stats: home always on the right, matched by team id; if ESPN ever
+    // omits the id, fall back to its own ordering rather than guessing
+    var teamStats=null;
+    var bt=pick(d,["boxscore","teams"],[])||[];
+    if(bt.length>=2){
+      var bh=bt.filter(function(t){return String(pick(t,["team","id"],""))===home.key;})[0];
+      var ba=bt.filter(function(t){return String(pick(t,["team","id"],""))===away.key;})[0];
+      if(!bh||!ba){ ba=bt[0]; bh=bt[1]; }
+      var rows=[];
+      TEAM_STAT_ROWS.forEach(function(r){
+        var av=statVal(ba,r[1]), hv=statVal(bh,r[1]);
+        if(av==null&&hv==null) return;
+        rows.push({ label:r[0], away:av==null?null:str(av), home:hv==null?null:str(hv), better:betterSide(r[0],av,hv) });
+      });
+      if(rows.length) teamStats=rows;
+    }
+
+    var lead=d.leaders||[];
+    var la=lead.filter(function(t){return String(pick(t,["team","id"],""))===away.key;})[0];
+    var lh=lead.filter(function(t){return String(pick(t,["team","id"],""))===home.key;})[0];
+    if(!la&&!lh){ la=lead[0]; lh=lead[1]; }
+    var leaders = lead.length ? { away: la?leaderRows(la):[], home: lh?leaderRows(lh):[] } : null;
+
+    var boxA=boxTables(d, away.key), boxH=boxTables(d, home.key);
+    var box = (boxA.length||boxH.length) ? { away:boxA, home:boxH } : null;
+
+    var sp=d.scoringPlays||[], scoring=null;
+    if(sp.length){
+      scoring=sp.map(function(p){
+        // who scored: match on team id, fall back to abbreviation
+        var pid=String(pick(p,["team","id"],""));
+        var pab=pick(p,["team","abbreviation"],null);
+        var scoredAway = pid ? pid===away.key : (pab ? pab===away.abbreviation : false);
+        var ab = pab || (scoredAway?away.abbreviation:home.abbreviation);
+        return {
+          period:    pick(p,["period","number"],null),
+          clock:     str(pick(p,["clock","displayValue"],"")),
+          teamAbbr:  str(ab),
+          mine:      pid ? pid===teamId : ab===team.abbreviation,
+          text:      str(p.text),
+          awayScore: p.awayScore==null ? null : p.awayScore,
+          homeScore: p.homeScore==null ? null : p.homeScore
+        };
+      });
+    }
+
+    return {
+      state:     str(st.state||"post"),
+      detail:    str(st.detail||st.shortDetail||st.description),
+      home:      home,
+      away:      away,
+      lastPlay:  lastPlay,
+      winProb:   winProb,
+      linescore: linescore,
+      teamStats: teamStats,
+      leaders:   leaders,
+      box:       box,
+      scoring:   scoring
+    };
+  }
+
+  /* ---------- matchup preview: season stats ---------- */
+  // Label, then the stat names ESPN might use for it; whichever is present wins.
+  var PREVIEW_ROWS=[
+    ["Scoring offense",  ["totalpointspergame","pointspergame","avgpointsfor"]],
+    ["Total offense",    ["totalyardspergame","netttotalyardspergame","yardspergame","totalyards"]],
+    ["Rushing offense",  ["rushingyardspergame","netrushingyardspergame"]],
+    ["Passing offense",  ["netpassingyardspergame","passingyardspergame"]],
+    ["Scoring defense",  ["avgpointsagainst","opponenttotalpointspergame","pointsagainstpergame"]],
+    ["Total defense",    ["opponenttotalyardspergame","yardsallowedpergame"]],
+    ["Turnover margin",  ["turnoverdifferential","turnovermargin","totalturnoverdifferential"]],
+    ["Third down",       ["thirddownconvpct","thirddownconversionpct","thirddownpct"]]
+  ];
+  // Flatten every category into one map so lookups do not care where ESPN
+  // filed a stat this year.
+  function flattenStats(d){
+    var out={};
+    var cats=pick(d,["splits","categories"],[])||[];
+    cats.forEach(function(c){
+      (c.stats||[]).forEach(function(s){
+        if(!s||!s.name) return;
+        out[String(s.name).toLowerCase()]={
+          display: s.displayValue!=null?s.displayValue:s.value,
+          rank: typeof s.rank==="number" ? s.rank : null,
+          rankText: s.rankDisplayValue||null
+        };
+      });
+    });
+    return out;
+  }
+
   /* ---------- team ---------- */
 
   return {
@@ -279,6 +526,14 @@ TeamOS.espn = (function () {
     },
     scoreboardUrl: function(){
       return SITE+"/scoreboard?groups="+LEAGUE_GROUP+"&limit=400";
+    },
+    summaryUrl: function(gameId){
+      return SITE+"/summary?event="+gameId;
+    },
+    // National ranks are not in the site API; they live in ESPN's core API.
+    // `key` is a GameDetail side's opaque key; `season` the season year.
+    seasonStatsUrl: function(key, season){
+      return CORE+"/seasons/"+season+"/types/2/teams/"+key+"/statistics";
     },
     rankingsUrl: function(){
       return SITE+"/rankings";
@@ -344,6 +599,24 @@ TeamOS.espn = (function () {
         .sort(function(a,b){ return pollOrder(a)-pollOrder(b); })
         .filter(function(r){ var k=pollLabel(r); if(seen[k]) return false; seen[k]=1; return true; })
         .map(function(r){ return poll(r, config); });
+    },
+
+    // ESPN's game summary -> GameDetail (docs/03_DOMAIN_MODEL.md).
+    gameDetail: gameDetail,
+
+    // ESPN's core-API season statistics for one team -> SeasonStat[]: the
+    // eight matchup-preview rows in a fixed order, value null where the feed
+    // has nothing under any of the names that row is filed under.
+    seasonStats: function(json){
+      var map=flattenStats(json);
+      return PREVIEW_ROWS.map(function(r){
+        var hit=null;
+        for(var i=0;i<r[1].length&&!hit;i++) hit=map[r[1][i]]||null;
+        return { label:r[0],
+                 value: hit ? str(hit.display) : null,
+                 rank: hit ? hit.rank : null,
+                 rankText: hit ? hit.rankText : null };
+      });
     }
   };
 })();
