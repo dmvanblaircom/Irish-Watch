@@ -1,0 +1,134 @@
+{
+ "_comment": "Trimmed ESPN team-news payload for tools/adaptercheck.js: four real articles of three types, deliberately not in date order (ESPN does not sort the feed; the view does). Each keeps the keys TeamOS.espn reads - headline, links.web.href, images[0].url, published - plus a few real neighbours (id, type, description, categories, premium, links.api) to prove they are ignored.",
+ "header": "NCAAF News",
+ "articles": [
+  {
+   "id": 49941998,
+   "type": "Story",
+   "headline": "Heisman of the week: Drew Mestemaker can run now, too?",
+   "description": "We'll hand out some hardware every week -- and the winner for Week 2 is Oklahoma",
+   "published": "2026-09-15T10:40:51Z",
+   "lastModified": "2026-09-15T10:40:51Z",
+   "premium": false,
+   "links": {
+    "web": {
+     "href": "https://www.espn.com/college-football/story/_/id/49941998/heisman-week-drew-mestemaker-oklahoma-state"
+    },
+    "api": {
+     "self": {
+      "href": "https://content.core.api.espn.com/v1/sports/news/49941998"
+     }
+    }
+   },
+   "images": [
+    {
+     "url": "https://a.espncdn.com/photo/2026/0914/r1716659_608x342_16-9.jpg",
+     "width": 608,
+     "height": 342
+    }
+   ],
+   "categories": [
+    {
+     "type": "league",
+     "description": "NCAA Football"
+    }
+   ]
+  },
+  {
+   "id": 49965321,
+   "type": "Story",
+   "headline": "College football Week 3 preview: Can Ole Miss take down LSU?",
+   "description": "This weekend's schedule has plenty of intriguing matchups beyond the little tuss",
+   "published": "2026-09-18T10:11:31Z",
+   "lastModified": "2026-09-18T10:11:31Z",
+   "premium": false,
+   "links": {
+    "web": {
+     "href": "https://www.espn.com/college-football/story/_/id/49965321/college-football-week-3-preview-ole-miss-revenge-lsu"
+    },
+    "api": {
+     "self": {
+      "href": "https://content.core.api.espn.com/v1/sports/news/49965321"
+     }
+    }
+   },
+   "images": [
+    {
+     "url": "https://a.espncdn.com/photo/2026/0917/r1718150_608x342_16-9.jpg",
+     "width": 608,
+     "height": 342
+    }
+   ],
+   "categories": [
+    {
+     "type": "league",
+     "description": "NCAA Football"
+    }
+   ]
+  },
+  {
+   "id": 49855215,
+   "type": "HeadlineNews",
+   "headline": "Brauntae Johnson, Jason Onye injured in Notre Dame's victory",
+   "description": "No. 4 Notre Dame saw two defensive starters leave Sunday's season-opening 41-12 ",
+   "published": "2026-09-07T04:18:07Z",
+   "lastModified": "2026-09-07T04:18:07Z",
+   "premium": false,
+   "links": {
+    "web": {
+     "href": "https://www.espn.com/college-football/story/_/id/49855215/brauntae-johnson-jason-onye-exit-notre-dame-opener-early"
+    },
+    "api": {
+     "self": {
+      "href": "https://content.core.api.espn.com/v1/sports/news/49855215"
+     }
+    }
+   },
+   "images": [
+    {
+     "url": "https://a.espncdn.com/photo/2026/0907/r1712620_600x600_1-1.jpg",
+     "width": 600,
+     "height": 600
+    }
+   ],
+   "categories": [
+    {
+     "type": "topic",
+     "description": "news"
+    }
+   ]
+  },
+  {
+   "id": 49815495,
+   "type": "Story",
+   "headline": "Top 25 betting lines: Ole Miss favored at home against LSU in Kiffin's return",
+   "description": "This week's odds and FPI predictions for Ole Miss-LSU, Louisville-SMU and every ",
+   "published": "2026-09-17T13:51:53Z",
+   "lastModified": "2026-09-17T13:51:53Z",
+   "premium": false,
+   "links": {
+    "web": {
+     "href": "https://www.espn.com/espn/betting/story/_/id/49815495/2026-college-football-top-25-betting-lines-odds"
+    },
+    "api": {
+     "self": {
+      "href": "https://content.core.api.espn.com/v1/sports/news/49815495"
+     }
+    }
+   },
+   "images": [
+    {
+     "url": "https://a.espncdn.com/photo/2026/0914/r1716592_1296x729_16-9.jpg",
+     "width": 1296,
+     "height": 729
+    }
+   ],
+   "categories": [
+    {
+     "type": "league",
+     "description": "NCAA Football"
+    }
+   ]
+  }
+ ]
+}

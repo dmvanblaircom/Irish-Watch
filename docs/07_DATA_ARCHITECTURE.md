@@ -50,7 +50,16 @@ ESPN core stats JSON   ->  TeamOS.espn.seasonStats(json)               ->  Seaso
 
 `app.js` still fetches `TeamOS.espn.summaryUrl(id)` through `summaryFor()`, which keeps its in-memory copy, its Cache API store of final summaries (keyed on that unchanged URL) and its in-flight sharing, and converts the payload to `GameDetail` at the three call sites that render. The 25-second live poll, the rebuild-vs-patch decision (`gameShape`) and the in-place DOM patching are unchanged in behavior; they read `GameDetail` instead of the payload.
 
-Everything else — news, Kalshi odds, weather, depth chart — is unchanged and still provider-shaped in `app.js`.
+### The news path (Phase 4C)
+
+```text
+ESPN news JSON  ->  TeamOS.espn.news(json)   ->  NewsItem[]                                                                 ->  merge, dedupe, sort newest-first, "show more"  ->  News tab
+news.json       ->  beatItem() in app.js     ->  NewsItem[]  /
+```
+
+`news.json` is this project's own snapshot, written by `.github/workflows/odds.yml` from the beat-writer RSS feeds; it is already NewsItem-shaped and is converted in the application rather than treated as a provider. Both fetches, the cache-first paint and the cache keys are unchanged.
+
+With 4C every ESPN payload the Suite consumes crosses `teamos/espn.js`, and `app.js` no longer carries the ESPN base URL or the ESPN team id. What remains provider-shaped in `app.js` — Kalshi odds and the Open-Meteo forecast — is the deferred Phase 4D; the depth chart is the project's own snapshot.
 
 ## Target Flow
 

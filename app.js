@@ -1,15 +1,13 @@
 (function(){
 "use strict";
 
-var ESPN = "https://site.api.espn.com/apis/site/v2/sports/football/college-football";
 // The team this Suite is built around. index.html loads teams/<team>.js and
 // teamos/*.js before this file; TeamOS turns the config's `team` section
-// into a validated, frozen, provider-neutral Team. The schedule comes through
-// TeamOS.espn as Game objects (docs/03_DOMAIN_MODEL.md); the ESPN id below is
-// read only by the paths that still render ESPN's own shapes - scoreboard,
-// summary, roster, news - and by teamMarket() for Kalshi.
+// into a validated, frozen, provider-neutral Team, and everything ESPN
+// knows about it arrives as domain objects (docs/03_DOMAIN_MODEL.md). The
+// only provider config this file still reads is TEAM_CONFIG.sources.kalshi,
+// in teamMarket().
 var TEAM = TeamOS.createTeam(TEAM_CONFIG.team);
-var TEAM_ID = TEAM_CONFIG.sources.espn.teamId;     // ESPN's id for the team, as a string
 // Kalshi serves public market data without a key, but sends no CORS header, so
 // a browser cannot read it directly. Each entry below is a way to reach them;
 // they are tried in order until one works.
@@ -1577,16 +1575,24 @@ function loadPreview(away, home, root){
 }
 
 /* ---------- news ---------- */
-// Two sources merged: ESPN's own feed, and the beat-writer RSS that the
-// GitHub Action fetches server-side and commits as news.json. RSS sites send
-// no CORS header, so the browser can never read them directly.
+// Two sources merged: ESPN's own feed, which arrives as NewsItem[] from
+// TeamOS.espn, and the beat-writer RSS that the GitHub Action fetches
+// server-side and commits as news.json. RSS sites send no CORS header, so the
+// browser can never read them directly.
+
+// news.json is this project's own snapshot (docs/03_DOMAIN_MODEL.md, NewsItem):
+// the same fields, with the date as ISO text and never an image.
+function beatItem(i){
+  var t=i.published ? Date.parse(i.published) : NaN;
+  return { title:i.title, link:i.link, image:"", source:i.source, publishedAt: isNaN(t) ? null : t };
+}
 function loadNews(){
   var el=$("panel-news");
   if(el.dataset.loaded) return;
   if(!LAST_HTML[el.id]) el.innerHTML='<p class="loading">Loading '+esc(TEAM.name)+' news…</p>';
   var count=0, sources=0;
 
-  var espnUrl=ESPN+"/news?team="+TEAM_ID+"&limit=30";
+  var espnUrl=TeamOS.espn.newsUrl(TEAM_CONFIG);
   cachedThenFresh(el, [espnUrl, "news.json"],
     Promise.all([get(espnUrl).catch(function(){ return null; }),
                  get("news.json?t="+Date.now()).catch(function(){ return null; })]),
@@ -1609,20 +1615,11 @@ function loadNews(){
     if(!fromCache) say("News loaded, "+count+" stories from "+sources+" sources.");
   }
 
+  // Both payloads arrive raw and become NewsItem[] here; everything below
+  // reads NewsItem.
   function build(res){
-    var espn=((res[0]&&res[0].articles)||[]).map(function(a){
-      return {
-        title: a.headline,
-        link: a.links&&a.links.web ? a.links.web.href : null,
-        img: a.images&&a.images[0] ? a.images[0].url : "",
-        source: "ESPN",
-        ts: a.published ? Date.parse(a.published) : 0
-      };
-    });
-    var beat=((res[1]&&res[1].items)||[]).map(function(i){
-      return { title:i.title, link:i.link, img:"", source:i.source,
-               ts: i.published ? Date.parse(i.published) : 0 };
-    });
+    var espn=TeamOS.espn.news(res[0]);
+    var beat=((res[1]&&res[1].items)||[]).map(beatItem);
     var all=espn.concat(beat).filter(function(a){ return a.link&&a.title; });
 
     // same story from two outlets: keep the first
@@ -1632,7 +1629,7 @@ function loadNews(){
       if(seen[k]) return;
       seen[k]=1; list.push(a);
     });
-    list.sort(function(a,b){ return b.ts-a.ts; });
+    list.sort(function(a,b){ return (b.publishedAt||0)-(a.publishedAt||0); });
     if(!list.length) return "";
     count=list.length;
     var srcs={}; list.forEach(function(a){ srcs[a.source]=1; });
@@ -1641,10 +1638,10 @@ function loadNews(){
     var FIRST=15;
     var html='<h2 class="sr-only">Latest '+esc(TEAM.name)+' stories</h2><ul class="plain">';
     list.forEach(function(a,idx){
-      var when=a.ts ? new Date(a.ts).toLocaleDateString([],{month:"long",day:"numeric"}) : "";
+      var when=a.publishedAt ? new Date(a.publishedAt).toLocaleDateString([],{month:"long",day:"numeric"}) : "";
       html+='<li'+(idx>=FIRST?' class="extra" hidden':"")+'><a class="art'+(a.source==="ESPN"?"":" beat")+'" href="'+esc(a.link)+
         '" target="_blank" rel="noopener">'+
-        (a.img?'<img src="'+esc(a.img)+'" alt="" loading="lazy">':"")+
+        (a.image?'<img src="'+esc(a.image)+'" alt="" loading="lazy">':"")+
         '<span><span class="hl">'+esc(a.title)+"</span>"+
         '<span class="meta"><span class="src">'+esc(a.source)+"</span>"+
         (when?" · "+when:"")+
