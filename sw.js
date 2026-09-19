@@ -13,15 +13,18 @@
    Bump VERSION whenever the shell changes shape enough that an old cached
    copy must not linger; the activate step throws away every other cache. */
 
-var VERSION = "iw-2026-09-18c";
+var VERSION = "iw-2026-09-18d";
 var SHELL   = VERSION + "-shell";
 var DATA    = VERSION + "-data";
 
 var SHELL_FILES = [
-  "./", "./index.html", "./app.css", "./app.js", "./teams/notre-dame.js", "./teamos/team.js", "./teamos/snapshots.js", "./teamos/espn.js",
-  "./manifest.json",
-  "./favicon.svg", "./irish-watch-favicon-32.png", "./irish-watch-favicon-64.png",
-  "./irish-watch-icon-180.png", "./irish-watch-icon-192.png"
+  "./", "./index.html", "./app.css", "./app.js", "./teams/notre-dame.js", "./teamos/team.js", "./teamos/snapshots.js", "./teamos/identity.js", "./teamos/espn.js",
+  // The team's own manifest and artwork, at the paths its identity
+  // declares. A second team's shell names its own folder here; making that
+  // selection automatic is the Phase 7 question, not this one.
+  "./assets/notre-dame/manifest.json",
+  "./assets/notre-dame/favicon.svg", "./assets/notre-dame/favicon-32.png", "./assets/notre-dame/favicon-64.png",
+  "./assets/notre-dame/icon-180.png", "./assets/notre-dame/icon-192.png"
 ];
 
 // The files the Action commits. Seeded at install so the very first visit is

@@ -16,6 +16,8 @@
      series   trophy games, matched by opponent name. Schedule data, headed
               for the normalized Game in Phase 3.
      links    the team's own pages, for the official word.
+     identity how the team is presented: product name, head copy, colours,
+              type and artwork. Read through TeamOS.identity.
      snapshots
               the team-data files the Action writes for this team, by
               kind. A team that has no source for a kind leaves it out and
@@ -86,6 +88,69 @@ var TEAM_CONFIG = {
   // The team's own pages, where the app points readers for the official word.
   links: {
     roster: { url: "https://fightingirish.com/sports/football/roster", label: "fightingirish.com" }
+  },
+
+  // How this team is presented: the product's name for it, the words in the
+  // document head, its colours and type, and its artwork. Read through
+  // TeamOS.identity, applied by paintIdentity() in app.js. Every value here
+  // was authored into index.html, manifest.json or app.css before Phase 6.
+  identity: {
+    productName:  "Irish Watch",
+    programLabel: "NOTRE DAME FOOTBALL",
+
+    // The head and the share cards read slightly differently, as they
+    // always have; a team that makes no distinction gives one of each.
+    title:            "Irish Watch \u2014 Notre Dame football",
+    shareTitle:       "Irish Watch \u2014 Notre Dame Football",
+    description:      "Irish Watch \u2014 a Notre Dame football game-day dashboard.",
+    shareDescription: "Game day. Every day.",
+
+    // The 2026 team motto. A team thing, not a platform tagline: a team
+    // without one says null and the Suite leaves the line out.
+    motto: "Leave No Doubt",
+
+    // The rule above the News tab. Unchanged wording.
+    newsLabel: "LATEST FROM SOUTH BEND",
+
+    manifest: "assets/notre-dame/manifest.json",
+
+    // Notre Dame Athletics navy and gold - the values fightingirish.com
+    // uses. accent is the fill; accentText is the same gold because it
+    // clears 6.65:1 on surfaceDeep, which a darker team colour would not.
+    // The surface scale is the page itself: abyss at the gradient ends,
+    // deep as the foundation, surface for cards and the header, raise for
+    // hovers and insets.
+    colors: {
+      accent:         "#C99700",
+      accentText:     "#C99700",
+      accentInk:      "#07192F",
+      accentSoft:     "#D8B84F",
+      accentSoft:     "#D8B84F",
+      accentTint:     "#FFE38A",
+      accentTintSoft: "#FFF7D6",
+      focus:          "#FFD966",
+
+      surface:        "#0C2340",
+      surfaceDeep:    "#07192F",
+      surfaceAbyss:   "#061525",
+      surfaceRaise:   "#143865"
+    },
+
+    // ui carries body copy, display the condensed athletic voice, headline
+    // the motto. Unchanged from the stylesheet that shipped.
+    fonts: {
+      ui:       "'Barlow',system-ui,-apple-system,sans-serif",
+      display:  "'Barlow Condensed',sans-serif",
+      headline: "'Grenze Gotisch','Barlow Condensed',serif"
+    },
+
+    assets: {
+      favicon:    "assets/notre-dame/favicon.svg",
+      icon32:     "assets/notre-dame/favicon-32.png",
+      icon64:     "assets/notre-dame/favicon-64.png",
+      appleTouch: "assets/notre-dame/icon-180.png",
+      og:         "assets/notre-dame/og-1200x630.png"
+    }
   },
 
   // The snapshots .github/workflows/odds.yml commits for this team. Each

@@ -61,6 +61,104 @@ var S = { games:null, next:null, tick:null, oddsTried:null, stale:null };
 function $(id){ return document.getElementById(id); }
 function say(msg){ $("live").textContent = msg; }
 
+/* ---------- identity ---------- */
+// Everything that says whose product this is: the document head, the header
+// lockup, the motto, and the team tokens the stylesheet reads. Before Phase 6
+// all of it was authored into index.html, manifest.json and app.css, so a
+// second team's page still called itself by the first team's name, in
+// the first team's colours (phase-5a-ohio-state-proof.md, finding 4). It is
+// object from the team config, applied once, here.
+//
+// Artwork is optional and independent: a team that declares no icon gets no
+// icon tag rather than a link to a file that is not there.
+var ID = TeamOS.identity.create(TEAM_CONFIG, TEAM);
+
+function paintIdentity(){
+  var head = document.head;
+
+  // A head tag is set when the team has a value for it and removed when it
+  // does not, so the document never points at missing artwork.
+  function tag(sel, make, attr, value){
+    var el = head.querySelector(sel);
+    if(value == null){ if(el) el.parentNode.removeChild(el); return; }
+    if(!el){ el = make(); head.appendChild(el); }
+    el.setAttribute(attr, value);
+  }
+  function meta(key, value, prop){
+    var a = prop ? "property" : "name";
+    tag("meta["+a+'="'+key+'"]', function(){
+      var m = document.createElement("meta"); m.setAttribute(a, key); return m;
+    }, "content", value);
+  }
+  function icon(sel, rel, sizes, type, value){
+    tag(sel, function(){
+      var l = document.createElement("link");
+      l.setAttribute("rel", rel);
+      if(sizes) l.setAttribute("sizes", sizes);
+      if(type)  l.setAttribute("type", type);
+      return l;
+    }, "href", value);
+  }
+  function text(sel, value){
+    var el = document.querySelector(sel); if(el) el.textContent = value;
+  }
+
+  // ---- the document ----
+  document.title = ID.title;
+  meta("description", ID.description);
+  meta("theme-color", ID.colors.surface);
+  meta("application-name", ID.productName);
+  meta("apple-mobile-web-app-title", ID.productName);
+  meta("og:title", ID.shareTitle, true);
+  meta("og:description", ID.shareDescription, true);
+  meta("twitter:title", ID.shareTitle);
+  meta("twitter:description", ID.shareDescription);
+  // The share image and its dimensions stand or fall together.
+  meta("og:image", ID.assets.og, true);
+  meta("og:image:width",  ID.assets.og ? "1200" : null, true);
+  meta("og:image:height", ID.assets.og ? "630"  : null, true);
+  meta("twitter:image", ID.assets.og);
+  meta("twitter:card", ID.assets.og ? "summary_large_image" : null);
+
+  icon('link[rel="icon"][type="image/svg+xml"]', "icon", null,    "image/svg+xml", ID.assets.favicon);
+  icon('link[rel="icon"][sizes="32x32"]',        "icon", "32x32", "image/png",     ID.assets.icon32);
+  icon('link[rel="icon"][sizes="64x64"]',        "icon", "64x64", "image/png",     ID.assets.icon64);
+  icon('link[rel="apple-touch-icon"]', "apple-touch-icon", "180x180", null,        ID.assets.appleTouch);
+  icon('link[rel="manifest"]', "manifest", null, null, ID.manifest);
+
+  // ---- the page ----
+  text(".brand-kicker", ID.programLabel);
+  text(".bar h1", ID.productName);
+  text("#heroHead", "Next "+TEAM.name+" game");
+  text("#dataHead", TEAM.name+" and national football data");
+  var m = $("motto");
+  // A team without a motto does not get an empty line where one would be.
+  if(m){ if(ID.motto) m.textContent = ID.motto; else m.parentNode.removeChild(m); }
+
+  // ---- the stylesheet ----
+  // app.css declares these with this team's values already, so for Notre
+  // Dame every line below is a no-op; for any other config it is what makes
+  // the whole sheet that team's.
+  var r = document.documentElement.style, c = ID.colors;
+  [["--t-accent",c.accent], ["--t-accent-rgb",c.accentRgb], ["--t-accent-text",c.accentText],
+   ["--t-accent-ink",c.accentInk], ["--t-accent-soft",c.accentSoft], ["--t-accent-tint",c.accentTint],
+   ["--t-accent-tint-soft",c.accentTintSoft], ["--t-focus",c.focus],
+   ["--t-surface",c.surface], ["--t-surface-rgb",c.surfaceRgb],
+   ["--t-deep",c.surfaceDeep], ["--t-deep-rgb",c.surfaceDeepRgb],
+   ["--t-abyss",c.surfaceAbyss], ["--t-abyss-rgb",c.surfaceAbyssRgb],
+   ["--t-raise",c.surfaceRaise], ["--t-raise-rgb",c.surfaceRaiseRgb],
+   // a CSS content string carries its own quotes
+   ["--t-news-label", JSON.stringify(ID.newsLabel)],
+   ["--t-font-ui",ID.fonts.ui], ["--t-font-display",ID.fonts.display],
+   ["--t-font-headline",ID.fonts.headline]].forEach(function(p){ r.setProperty(p[0], p[1]); });
+  // Optional: a team whose surface needs a different text neutral than the
+  // Suite's own. Left undeclared, the stylesheet's values stand.
+  if(c.text)    r.setProperty("--paper", c.text);
+  if(c.textDim) r.setProperty("--dim",   c.textDim);
+}
+paintIdentity();
+
+
 function get(url){
   return fetch(url,{cache:"no-store"}).then(function(r){
     if(!r.ok) throw new Error("HTTP "+r.status);
@@ -72,7 +170,7 @@ function get(url){
 
 // Offline shell. sw.js keeps the page itself and the last good copy of every
 // data call, so it opens in the stadium with no signal. Registered relative to
-// the page, so it works at / on localhost and at /Irish-Watch/ on Pages.
+// the page, so it works at / on localhost and under /<repo>/ on Pages.
 if("serviceWorker" in navigator){
   window.addEventListener("load", function(){
     navigator.serviceWorker.register("sw.js").catch(function(){});
@@ -409,13 +507,13 @@ function paintSchedule(games){
 }
 
 /* ---------- top 25 ---------- */
-// The pill carries the poll name and Notre Dame's place in it, so the options
+// The pill carries the poll name and this team's place in it, so the options
 // and the one number you care about are both visible without tapping.
 function pollPill(p, active){
-  var nd=p.ranks.filter(function(x){ return x.mine; })[0];
+  var mine=p.ranks.filter(function(x){ return x.mine; })[0];
   return '<button type="button" data-poll="'+p.key+'" aria-pressed="'+active+'">'+
     esc(p.label)+
-    (nd ? '<span class="n">#'+nd.rank+"</span>"
+    (mine ? '<span class="n">#'+mine.rank+"</span>"
         : '<span class="n">NR</span>')+
     "</button>";
 }
@@ -428,7 +526,7 @@ function pollBody(p){
     var move = mv>0 ? '<span class="up"><span class="sr-only">up '+mv+'</span><span aria-hidden="true">\u25B2'+mv+"</span></span>"
              : mv<0 ? '<span class="down"><span class="sr-only">down '+Math.abs(mv)+'</span><span aria-hidden="true">\u25BC'+Math.abs(mv)+"</span></span>"
              : (x.isNew ? '<span class="up"><span class="sr-only">new</span><span aria-hidden="true">NEW</span></span>' : "");
-    html+='<li class="row '+(x.mine?"nd":"")+'" style="padding:.45rem .15rem">'+
+    html+='<li class="row '+(x.mine?"mine":"")+'" style="padding:.45rem .15rem">'+
       '<span class="date" style="width:2rem"><span class="sr-only">Rank </span>'+
       '<span class="d">'+x.rank+"</span></span>"+
       '<span class="mid"><span class="team">'+esc(x.team)+"</span></span>"+
@@ -498,7 +596,7 @@ function rankedParts(lg){
     +(lg.state!=="pre"&&net?" \u00B7 "+esc(net):"")
     +(o&&o.line?" \u00B7 line "+esc(o.line):"")
     +(o&&o.total!=null?" \u00B7 over-under "+o.total:"");
-  return { isND:lg.mine, teams:nm(lg.away)+' <span class="pre">at</span> '+nm(lg.home),
+  return { mine:lg.mine, teams:nm(lg.away)+' <span class="pre">at</span> '+nm(lg.home),
            sub:sub, liveLine:liveLine, right:right };
 }
 
@@ -602,7 +700,7 @@ function loadAround(){
 
       ranked.forEach(function(lg){
         var pr=rankedParts(lg);
-        gameHtml+='<li class="row '+(pr.isND?"nd":"")+'" data-ev="'+esc(lg.id)+'">'+
+        gameHtml+='<li class="row '+(pr.mine?"mine":"")+'" data-ev="'+esc(lg.id)+'">'+
           dateChip(lg.date)+
           '<span class="mid"><span class="team">'+pr.teams+"</span>"+
           '<span class="sub">'+pr.sub+"</span>"+pr.liveLine+"</span>"+
@@ -677,8 +775,8 @@ function kalshiHelp(){
 var BOARD={ open:null, seq:0 };
 
 function oddsBar(m, top, rank){
-  var isND=teamMarket(m.ticker, m.name);
-  return '<li class="obar '+(isND?"nd":"")+'">'+
+  var mine=teamMarket(m.ticker, m.name);
+  return '<li class="obar '+(mine?"mine":"")+'">'+
     '<span class="orank" aria-hidden="true">'+rank+"</span>"+
     '<span class="nm">'+esc(m.name)+"</span>"+
     '<span class="track" aria-hidden="true"><span class="fill" style="width:'+
@@ -690,10 +788,10 @@ function oddsBar(m, top, rank){
 function renderBoard(ms, heading){
   ms.forEach(function(m,i){ m.rank=i+1; });
   var top=ms[0].p||1;
-  function isND(m){ return teamMarket(m.ticker, m.name); }
+  function isMine(m){ return teamMarket(m.ticker, m.name); }
   var lead=ms.slice(0,10), tail=ms.slice(10);
-  if(!lead.some(isND)){
-    var mine=tail.filter(isND)[0];
+  if(!lead.some(isMine)){
+    var mine=tail.filter(isMine)[0];
     if(mine){ lead.push(mine); tail=tail.filter(function(m){return m!==mine;}); }
   }
   var html='<h2 class="sec">'+esc(heading)+"</h2>"+
@@ -752,7 +850,7 @@ function toggleBoard(kind){
 
 function loadStrip(){
   // Two separate event queries, each the same shape as the title board that we
-  // know works. Notre Dame is picked out of each payload by ticker or by name.
+  // know works. The team is picked out of each payload by ticker or by name.
   [{ ev: TITLE_EVENT,   cell: "mTitle"   },
    { ev: PLAYOFF_EVENT, cell: "mPlayoff" }].forEach(function(q){
     kalshi("/markets?event_ticker="+q.ev+"&limit=200&status=open").then(function(d){
@@ -1282,7 +1380,7 @@ function renderGame(gd, inline){
         '<span class="v r'+hw+'">'+esc(r.home==null?"\u2013":r.home)+"</span></div>";
     });
     var head=function(c,right){
-      return '<span class="v'+(right?" r":"")+(c.mine?" nd":"")+'">'+esc(c.abbreviation)+"</span>";
+      return '<span class="v'+(right?" r":"")+(c.mine?" mine":"")+'">'+esc(c.abbreviation)+"</span>";
     };
     html+='<h2 class="sec">Team stats</h2>'+
       '<div class="statrow head">'+head(away,false)+
@@ -2032,7 +2130,7 @@ function openGame(id){
   li.parentNode.insertBefore(slot, li.nextSibling);
 
   var token=++DETAIL.seq;
-  G.side=null;                        // default the team toggle to Notre Dame
+  G.side=null;                        // default the team toggle to our side
   summaryFor(id).then(function(raw){
     if(token!==DETAIL.seq || DETAIL.open!==id) return;
     var gd=TeamOS.espn.gameDetail(raw, TEAM, TEAM_CONFIG);
