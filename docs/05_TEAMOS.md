@@ -80,8 +80,8 @@ TeamOS is a logical/domain layer inside the existing repository: four plain-scri
 - Turns ESPN's game summary into `GameDetail` — the Game Center's score line, last play, win probability, linescore, team stats (including which side is ahead on each), leaders, box score and scoring plays — and its core-API season statistics into the matchup preview's `SeasonStat[]`.
 - Turns ESPN's team news feed into `NewsItem[]`.
 - Extracts the pregame line/total from ESPN's game summary.
-- Answers which of the Action-written team-data snapshots a team has (the first explicit capability: a team either has a depth chart or it does not) and whether a loaded snapshot belongs to it (`docs/decisions/0006-snapshots-are-owned-by-declaration.md`).
-- Defines how a team is presented — product name, head copy, colours, type, artwork — and **refuses a team whose text would be unreadable on its own surface**, naming the measured contrast ratio. It never derives a colour on a team's behalf (`docs/decisions/0007-identity-is-team-data.md`).
+- Answers which of the Action-written team-data snapshots a team has (the first explicit capability: a team either has a depth chart or it does not) and whether a loaded snapshot belongs to it (`docs/decisions/0008-snapshots-are-owned-by-declaration.md`).
+- Defines how a team is presented — product name, head copy, colours, type, artwork — and **refuses a team whose text would be unreadable on its own surface**, naming the measured contrast ratio. It never derives a colour on a team's behalf (`docs/decisions/0009-identity-is-team-data.md`).
 
 ### What TeamOS explicitly does not do yet
 

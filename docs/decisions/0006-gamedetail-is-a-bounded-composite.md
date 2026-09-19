@@ -63,5 +63,5 @@ David (decision) / Claude Code (proposal and implementation)
 
 - `docs/03_DOMAIN_MODEL.md` — GameDetail, Side, SeasonStat
 - `docs/07_DATA_ARCHITECTURE.md` — the Game Center path
-- `docs/decisions/0002-adapters-are-pure.md`, `docs/decisions/0003-game-and-leaguegame-are-distinct.md`
+- `docs/decisions/0004-adapters-are-pure.md`, `docs/decisions/0005-game-and-leaguegame-are-distinct.md`
 - `teamos/espn.js`, `tools/adaptercheck.js`, `tools/fixtures/espn-summary-{pre,live,post}.json`, `tools/fixtures/espn-season-stats.json`

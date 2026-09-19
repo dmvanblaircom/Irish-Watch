@@ -77,5 +77,5 @@ David (decision) / Claude Code (proposal and implementation)
 - `docs/engineering/phase-5a-ohio-state-proof.md` — finding 4, which this closes
 - `docs/04_TEAM_CONFIG.md` — the `identity` section
 - `docs/05_TEAMOS.md`, `docs/06_SUITE.md` — the boundary
-- `docs/decisions/0006-snapshots-are-owned-by-declaration.md` — the same shape, for data
+- `docs/decisions/0008-snapshots-are-owned-by-declaration.md` — the same shape, for data
 - `teamos/identity.js`, `tools/adaptercheck.js`

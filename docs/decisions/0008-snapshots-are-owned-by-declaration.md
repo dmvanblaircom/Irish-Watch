@@ -71,5 +71,5 @@ David (decision) / Claude Code (proposal and implementation)
 - `docs/engineering/phase-5b-data-ownership.md` — what was done and how it was validated
 - `docs/04_TEAM_CONFIG.md` — the `snapshots` section
 - `docs/05_TEAMOS.md`, `docs/07_DATA_ARCHITECTURE.md` — the snapshot paths
-- `docs/decisions/0005-newsitem-and-the-snapshot-boundary.md` — why the snapshot is not a provider
+- `docs/decisions/0007-newsitem-and-the-snapshot-boundary.md` — why the snapshot is not a provider
 - `teamos/snapshots.js`, `tools/adaptercheck.js`

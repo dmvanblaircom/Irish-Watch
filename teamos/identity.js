@@ -14,7 +14,7 @@
                                        document head, header, :root colour tokens
 
    The rules this file enforces, so that a team config cannot ship a page
-   nobody can read (docs/decisions/0007-identity-is-team-data.md):
+   nobody can read (docs/decisions/0009-identity-is-team-data.md):
 
      - every colour is a #rrggbb string
      - accentText on the team's deepest surface is at least 4.5:1

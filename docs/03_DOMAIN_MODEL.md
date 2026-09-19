@@ -25,7 +25,7 @@ Fields (all required):
 - `league`
 - `venue.name`, `venue.lat`, `venue.lon` — the home field
 
-Team is provider-neutral: it carries no ESPN, Kalshi or other provider identifiers. Those live in the team config's `sources` section (see `docs/04_TEAM_CONFIG.md` and `docs/decisions/0001-team-is-provider-neutral.md`).
+Team is provider-neutral: it carries no ESPN, Kalshi or other provider identifiers. Those live in the team config's `sources` section (see `docs/04_TEAM_CONFIG.md` and `docs/decisions/0003-team-is-provider-neutral.md`).
 
 Not yet modelled, pending a real need: `shortName`, conference/division, history. Identity is a separate object (below); capabilities arrived in Phase 5B as snapshot declarations.
 
@@ -85,7 +85,7 @@ Fields, in order:
 | `us`, `them` | scores as displayed, or `null` before kickoff |
 | `won` | `true` when the team won; `false` otherwise, including before kickoff |
 
-`state` and `venueState` are distinct on purpose. Before Phase 3A both meanings were written to one `state` key and the game status won, so the venue's state was never available; `venueState` corrects that (see `docs/decisions/0002-adapters-are-pure.md`).
+`state` and `venueState` are distinct on purpose. Before Phase 3A both meanings were written to one `state` key and the game status won, so the venue's state was never available; `venueState` corrects that (see `docs/decisions/0004-adapters-are-pure.md`).
 
 Games are plain objects and are not frozen; the application patches `odds` onto the next game once the pregame line arrives.
 

@@ -53,5 +53,5 @@ David (decision) / Claude Code (proposal and implementation)
 
 - `docs/03_DOMAIN_MODEL.md` — Game, LeagueGame, Poll
 - `docs/07_DATA_ARCHITECTURE.md` — the league paths
-- `docs/decisions/0002-adapters-are-pure.md`
+- `docs/decisions/0004-adapters-are-pure.md`
 - `teamos/espn.js`, `tools/adaptercheck.js`, `tools/fixtures/espn-scoreboard.json`, `tools/fixtures/espn-rankings.json`

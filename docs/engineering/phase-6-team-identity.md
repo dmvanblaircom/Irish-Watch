@@ -1,6 +1,6 @@
 # Phase 6 — Team identity, and the Buckeye Watch proof
 
-**Date:** 2026-09-18 · **Branched from:** `5f5baf4` (Phase 5B merged) · **Branch:** `lnd/phase-6-team-identity` · **Decision:** `docs/decisions/0007-identity-is-team-data.md`
+**Date:** 2026-09-18 · **Branched from:** `5f5baf4` (Phase 5B merged) · **Branch:** `lnd/phase-6-team-identity` · **Decision:** `docs/decisions/0009-identity-is-team-data.md`
 
 ## What this closes
 
