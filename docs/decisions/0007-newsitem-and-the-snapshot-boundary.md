@@ -57,5 +57,5 @@ David (decision) / Claude Code (proposal and implementation)
 - `docs/03_DOMAIN_MODEL.md` — NewsItem
 - `docs/07_DATA_ARCHITECTURE.md` — the news path
 - `docs/08_BUILD_PLAN.md` — Phase 4 status
-- `docs/decisions/0002-adapters-are-pure.md`, `0003`, `0004`
+- `docs/decisions/0004-adapters-are-pure.md`, `0005`, `0006`
 - `teamos/espn.js`, `tools/adaptercheck.js`, `tools/fixtures/espn-news.json`

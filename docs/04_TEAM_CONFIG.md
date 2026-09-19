@@ -39,7 +39,7 @@ var TEAM_CONFIG = {
   // The team-data files the Action writes for this team, by kind. A kind
   // the team has no source for is left out, and the Suite shows that
   // surface as unavailable instead of reading another team's file.
-  // Read through TeamOS.snapshots (Phase 5B, decision 0006).
+  // Read through TeamOS.snapshots (Phase 5B, decision 0008).
   snapshots: {
     depth:       { file: "depth.json", history: "depth-history.json", label: "UHND" },
     oddsHistory: { file: "odds-history.json" },
@@ -48,7 +48,7 @@ var TEAM_CONFIG = {
 
   // How the team is presented: the product's name for it, the head copy, its
   // colours, its type and its artwork. Read through TeamOS.identity, applied
-  // by paintIdentity() in app.js (Phase 6, decision 0007).
+  // by paintIdentity() in app.js (Phase 6, decision 0009).
   identity: {
     productName: "Irish Watch", programLabel: "NOTRE DAME FOOTBALL",
     title: "...", description: "...", motto: "Leave No Doubt",
@@ -76,7 +76,7 @@ The real files are `teams/notre-dame.js` and `teams/ohio-state.js` (which declar
 (`accentText`), because a team's crest colour is not always legible on a dark page:
 Notre Dame's gold reaches 6.65:1 and Ohio State's scarlet only 2.88:1. TeamOS refuses
 a config whose text colours fall below 4.5:1 rather than inventing a lighter tone
-(`docs/decisions/0007-identity-is-team-data.md`).
+(`docs/decisions/0009-identity-is-team-data.md`).
 
 Not yet in configuration, pending a real need: history. The sources behind the snapshots — the RSS feed list and the depth-chart scrape — still live in `.github/workflows/odds.yml`; the config declares that the team has them, not yet how they are produced.
 

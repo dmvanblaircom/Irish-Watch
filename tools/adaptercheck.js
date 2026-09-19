@@ -347,7 +347,7 @@ ok(TeamOS.snapshots.owned(ND, ndFiles.history), "owns the committed depth-histor
 ok(TeamOS.snapshots.owned(ND, ndFiles.odds),    "owns the committed odds-history.json");
 ok(TeamOS.snapshots.owned(ND, ndFiles.news),    "owns the committed news.json");
 ok(ndFiles.depth.team == null && ndFiles.odds.team == null && ndFiles.news.team == null,
-   "(the committed files carry no team field - ownership rests on the declaration; see decision 0006)");
+   "(the committed files carry no team field - ownership rests on the declaration; see decision 0008)");
 
 console.log(" ohio-state");
 eq(osu.TeamOS.snapshots.get(osu.TEAM_CONFIG, "depth"),       null, "declares no depth chart");

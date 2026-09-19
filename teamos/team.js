@@ -4,7 +4,7 @@
    data comes from: nothing here names ESPN, Kalshi or any other provider.
    Provider identifiers and matching rules live in the team config's
    `sources` section (see teams/notre-dame.js and
-   docs/decisions/0001-team-is-provider-neutral.md).
+   docs/decisions/0003-team-is-provider-neutral.md).
 
    createTeam() checks that a config's `team` section has every required
    field, copies it, and freezes the result so nothing downstream can

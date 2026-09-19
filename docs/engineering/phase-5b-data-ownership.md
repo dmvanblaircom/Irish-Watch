@@ -1,6 +1,6 @@
 # Phase 5B — Second-team data ownership
 
-**Date:** 2026-09-18 · **Branched from:** `66a77c6` (Phase 5A tip) · **Branch:** `lnd/phase-5b-data-ownership` · **Decision:** `docs/decisions/0006-snapshots-are-owned-by-declaration.md`
+**Date:** 2026-09-18 · **Branched from:** `66a77c6` (Phase 5A tip) · **Branch:** `lnd/phase-5b-data-ownership` · **Decision:** `docs/decisions/0008-snapshots-are-owned-by-declaration.md`
 
 ## What this resolves
 
@@ -33,7 +33,7 @@ There is no team name anywhere in `app.js` or `teamos/snapshots.js` code (the ad
 | `index.html` | one `<script>` tag for `teamos/snapshots.js` |
 | `sw.js` | `teamos/snapshots.js` in `SHELL_FILES`; `VERSION` `iw-2026-09-18b` → `iw-2026-09-18c` |
 | `tools/adaptercheck.js` | loads `snapshots.js` in the existing Notre Dame context and in a second Ohio State context; 26 new checks (233 total) |
-| docs | 04, 05, 07, 08, the 5A report's status, decision 0006, this report |
+| docs | 04, 05, 07, 08, the 5A report's status, decision 0008, this report |
 
 Not changed: `.github/workflows/odds.yml`, `manifest.json`, `app.css`, the snapshot files, `teamos/espn.js`, `teamos/team.js`.
 
@@ -70,7 +70,7 @@ All of it on the same code path for both teams; the only difference between the 
 | 5 | Service worker: shell list names the Notre Dame config; shell + HTTP cache pinned the swapped `index.html` across two loads until cleared | **deferred to Phase 7**, reproduced again this phase (caches had to be cleared to switch teams in both directions). Not fixed, by instruction |
 | 6 | "Playing for the …" copy assumes every series name is a trophy | deferred, unchanged |
 | new | `sw.js` `DATA_FILES` precaches the six Notre Dame data files for whichever team is loaded. Harmless today — a team that declares nothing never requests them — but it is the same Phase 7 question as #5 | **noted**, Phase 7 |
-| new | The committed snapshot files carry no `team` field, so `owned()` rests on the declaration alone until the Action stamps them | **documented limitation**, decision 0006; Action work is out of 5B scope |
+| new | The committed snapshot files carry no `team` field, so `owned()` rests on the declaration alone until the Action stamps them | **documented limitation**, decision 0008; Action work is out of 5B scope |
 | new | The Phase 5A branch was never merged into `project-lnd-platform`; 5B branches from its tip, so merging 5B brings 5A (the Ohio State config and report) with it | for David |
 
 ## Recommendation

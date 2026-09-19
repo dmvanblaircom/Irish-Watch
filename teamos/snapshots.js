@@ -31,7 +31,7 @@
    `team` field matching the Team's id. The Action does not write that
    field today (Phase 5B left the Action alone), so a file without one is
    trusted on the strength of the declaration - the limitation is recorded
-   in docs/decisions/0006-snapshots-are-owned-by-declaration.md. When the
+   in docs/decisions/0008-snapshots-are-owned-by-declaration.md. When the
    Action starts stamping files, a stamped file for another team is refused
    here without any change in app.js. */
 

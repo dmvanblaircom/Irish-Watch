@@ -159,7 +159,7 @@ var TEAM_CONFIG = {
   // when the file does not say), the price history from the Kalshi
   // markets above, the beat stories from six Notre Dame RSS feeds. The
   // files do not yet carry a team field, so declaring one here is what
-  // says it is ours (docs/decisions/0006-snapshots-are-owned-by-declaration.md).
+  // says it is ours (docs/decisions/0008-snapshots-are-owned-by-declaration.md).
   snapshots: {
     depth:       { file: "depth.json", history: "depth-history.json", label: "UHND" },
     oddsHistory: { file: "odds-history.json" },
