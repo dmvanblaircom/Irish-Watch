@@ -51,16 +51,21 @@ Prioritize news, recruiting, roster movement, schedule, history, and upcoming ev
 
 ## Team Identity
 
-Suite should inherit team identity from TeamOS:
+Suite inherits team identity from TeamOS. **Implemented in Phase 6**: `app.js` reads one
+object, `TeamOS.identity.create(TEAM_CONFIG, TEAM)`, and applies it in one place,
+`paintIdentity()`, which sets the document head, the header lockup, the motto, the
+sr-only headings and the stylesheet's `--t-*` tokens. `app.css` keeps its own rules,
+spacing, layout and semantic colours; what it no longer keeps is a team's values.
 
-- Colors
-- Logos
-- Typography
-- Imagery
-- Terminology
-- Team-specific capabilities
+- Colours — as a **fill** (`accent`) and, separately, as legible **text** (`accentText`)
+- Typography — three stacks: body, display, headline
+- Terminology — product name, program label, motto, the News tab's rule
+- Artwork — favicon, app icons, share image; each optional, each omitted when absent
+- Team-specific capabilities — through `TeamOS.snapshots` (Phase 5B)
 
-The team should feel like the product rather than a filter applied to a generic sports interface.
+The team should feel like the product rather than a filter applied to a generic sports
+interface. The test is that the Suite contains no team name, no team colour and no
+`if (TEAM.id === ...)`; `tools/adaptercheck.js` asserts all three.
 
 ## Future My Teams
 

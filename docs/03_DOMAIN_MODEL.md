@@ -27,19 +27,30 @@ Fields (all required):
 
 Team is provider-neutral: it carries no ESPN, Kalshi or other provider identifiers. Those live in the team config's `sources` section (see `docs/04_TEAM_CONFIG.md` and `docs/decisions/0001-team-is-provider-neutral.md`).
 
-Not yet modelled, pending a real need or a second team: `shortName`, conference/division, identity/branding, capabilities, history.
+Not yet modelled, pending a real need: `shortName`, conference/division, history. Identity is a separate object (below); capabilities arrived in Phase 5B as snapshot declarations.
 
 ### Team Identity
 
-Represents presentation and branding data:
+How a team is presented. **Implemented in Phase 6** as `TeamOS.identity.create()` in
+`teamos/identity.js`, which validates the `identity` section of a team config, refuses
+one that would render unreadable text, and returns a frozen object.
 
-- Primary color
-- Secondary color
-- Accent color
-- Logos
-- Typography choices where supported
-- Imagery
-- Display terminology
+What it carries is exactly what the Suite renders, and nothing else:
+
+- `productName`, `programLabel` — the product's name for this team, and the label above it
+- `title` / `shareTitle`, `description` / `shareDescription` — the document head and the share cards
+- `motto` — a team thing, `null` for a team without one
+- `newsLabel` — the rule above the News tab
+- `manifest` — the team's own web-app manifest
+- `colors` — eleven roles, of which `accent` is a **fill** and `accentText` is the
+  separately configured colour for accent-coloured **type**; plus optional `text` /
+  `textDim` when a team's surface needs a different neutral
+- `fonts` — `ui`, `display`, `headline` as CSS stacks
+- `assets` — favicon, icons, share image; each optional, and each omitted from the
+  document when the team does not have it
+
+Not modelled, because nothing renders them: logos, wordmarks, helmets, imagery,
+secondary/tertiary colour scales.
 
 ### Venue
 

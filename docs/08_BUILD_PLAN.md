@@ -75,9 +75,26 @@ Use the second-team implementation to identify what belongs in TeamOS, what belo
 
 Once the team model works, make branding and identity team-driven instead of hard-coded Notre Dame styling.
 
+Status: **complete 2026-09-18.** A sixth config section, `identity`, and one TeamOS
+module now carry the product name, head copy, colours, type and artwork; `paintIdentity()`
+applies them in one place and `app.css` holds team values only as `--t-*` tokens. The
+same Suite rendered **Buckeye Watch** — Ohio State's name, palette, type and copy, with
+intentional empty states where it has no depth chart, no odds history, no beat feed and
+no artwork — from a config swap alone, with 846 text elements passing WCAG AA and no
+Notre Dame in the page. Notre Dame is unchanged but for nine sub-perceptual colour
+values. `docs/engineering/phase-6-team-identity.md`,
+`docs/decisions/0007-identity-is-team-data.md`.
+
 ## Phase 7: Team Selection
 
 Allow a user to select a team and instantiate the corresponding Suite.
+
+Carried into this phase, with evidence from Phases 5 and 6: the service worker
+precaches one team's shell (`teams/notre-dame.js`, its artwork) and one team's snapshot
+files whatever team is configured, because a worker cannot read `TEAM_CONFIG`; the
+static `index.html` head and `:root` defaults carry the deployed team; and switching
+teams required clearing the shell and HTTP caches by hand. Whatever mechanism Phase 7
+chooses for selecting a team has to answer all three together.
 
 ## Phase 8: My Teams
 
