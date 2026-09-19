@@ -65,15 +65,36 @@ Add Ohio State using configuration and the same Suite/application code.
 
 This is the most important architectural proof point: determine whether the abstractions genuinely generalize without copying the application.
 
+Status: **5A run on 2026-09-18** — `teams/ohio-state.js` plus a one-line script swap rendered every ESPN-fed surface correctly with no application change; what leaked through was Notre Dame *data* the Action writes (depth chart, odds history, beat feeds) and the Notre Dame identity layer. Findings and the proposed 5B in `docs/engineering/phase-5a-ohio-state-proof.md`.
+
+**5B implemented 2026-09-18** — the three data leaks are closed: the team config declares which Action-written snapshots the team has (`snapshots`), `teamos/snapshots.js` answers the capability and ownership questions, and the Depth, odds and News surfaces show an intentional unavailable state for a team that declares none. Notre Dame renders byte-identically. What remains for a second team is identity (Phase 6), team selection and the service worker (Phase 7), and an Action that produces snapshots for it. `docs/engineering/phase-5b-data-ownership.md`, `docs/decisions/0006-snapshots-are-owned-by-declaration.md`.
+
 Use the second-team implementation to identify what belongs in TeamOS, what belongs in Suite, and what was unnecessarily abstracted.
 
 ## Phase 6: Extract Team Identity / Theme
 
 Once the team model works, make branding and identity team-driven instead of hard-coded Notre Dame styling.
 
+Status: **complete 2026-09-18.** A sixth config section, `identity`, and one TeamOS
+module now carry the product name, head copy, colours, type and artwork; `paintIdentity()`
+applies them in one place and `app.css` holds team values only as `--t-*` tokens. The
+same Suite rendered **Buckeye Watch** — Ohio State's name, palette, type and copy, with
+intentional empty states where it has no depth chart, no odds history, no beat feed and
+no artwork — from a config swap alone, with 846 text elements passing WCAG AA and no
+Notre Dame in the page. Notre Dame is unchanged but for nine sub-perceptual colour
+values. `docs/engineering/phase-6-team-identity.md`,
+`docs/decisions/0007-identity-is-team-data.md`.
+
 ## Phase 7: Team Selection
 
 Allow a user to select a team and instantiate the corresponding Suite.
+
+Carried into this phase, with evidence from Phases 5 and 6: the service worker
+precaches one team's shell (`teams/notre-dame.js`, its artwork) and one team's snapshot
+files whatever team is configured, because a worker cannot read `TEAM_CONFIG`; the
+static `index.html` head and `:root` defaults carry the deployed team; and switching
+teams required clearing the shell and HTTP caches by hand. Whatever mechanism Phase 7
+chooses for selecting a team has to answer all three together.
 
 ## Phase 8: My Teams
 

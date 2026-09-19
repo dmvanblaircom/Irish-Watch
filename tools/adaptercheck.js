@@ -1,13 +1,15 @@
 #!/usr/bin/env node
 /* Check the TeamOS ESPN adapter against a fixture.
 
-   Loads the same three files the page loads - the team config, the Team
-   model, the ESPN adapter - into a bare Node scope with no window, no
-   document and no fetch, so the adapter cannot quietly depend on any of
-   them. Then runs the fixtures in tools/fixtures/ through it and checks what
-   comes out: Games (shape, the team's point of view, neutral sites,
-   broadcasts and the fallback, series), roster groups and Players, the
-   team's rank and record - and that nothing ESPN-shaped leaks through.
+   Loads the same four files the page loads - the team config, the Team
+   model, snapshot ownership, the ESPN adapter - into a bare Node scope with
+   no window, no document and no fetch, so the adapter cannot quietly depend
+   on any of them. Then runs the fixtures in tools/fixtures/ through it and
+   checks what comes out: Games (shape, the team's point of view, neutral
+   sites, broadcasts and the fallback, series), roster groups and Players,
+   the team's rank and record - and that nothing ESPN-shaped leaks through.
+   A second context loads the Ohio State config and checks that the two
+   teams get different answers from TeamOS.snapshots down the same code.
 
    Usage:  node tools/adaptercheck.js
    Exit status is 1 if anything fails, so it can gate a push. */
@@ -18,10 +20,14 @@ var root = path.join(__dirname, "..");
 function read(p) { return fs.readFileSync(path.join(root, p), "utf8"); }
 
 // A context with nothing but the two globals the scripts define.
-var ctx = vm.createContext({});
-["teams/notre-dame.js", "teamos/team.js", "teamos/espn.js"].forEach(function (f) {
-  vm.runInContext(read(f), ctx, { filename: f });
-});
+function load(teamFile) {
+  var c = vm.createContext({});
+  [teamFile, "teamos/team.js", "teamos/snapshots.js", "teamos/identity.js", "teamos/espn.js"].forEach(function (f) {
+    vm.runInContext(read(f), c, { filename: f });
+  });
+  return c;
+}
+var ctx = load("teams/notre-dame.js");
 var TEAM_CONFIG = ctx.TEAM_CONFIG, TeamOS = ctx.TeamOS;
 var fixture = JSON.parse(read("tools/fixtures/espn-schedule.json"));
 
@@ -317,6 +323,185 @@ console.log("exports");
 eq(Object.keys(TeamOS.espn).sort(),
    ["gameDetail","gameOdds","news","newsUrl","rankings","rankingsUrl","roster","rosterUrl","schedule","scheduleUrl","scoreboard","scoreboardUrl","seasonStats","seasonStatsUrl","summaryUrl","teamStatus","teamUrl"],
    "exactly the documented functions");
+
+// ---- snapshot ownership: the same questions, two teams, two answers ----
+console.log("teamos/snapshots.js");
+var snapSrc = read("teamos/snapshots.js");
+ok(!/\bfetch\s*\(/.test(snapSrc),                                        "does not call fetch()");
+ok(!/\b(document|window|navigator|localStorage|caches)\b/.test(snapSrc),   "does not touch the DOM or browser storage");
+ok(!/\bTEAM_ID\b|\bS\.\w|\bTEAM\b(?!_CONFIG)/.test(snapSrc), "does not read application globals (TEAM, TEAM_ID, S)");
+ok(!/notre|irish|ohio|buckeye/i.test(snapSrc.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, "")), "names no team in code");
+eq(Object.keys(TeamOS.snapshots).sort(), ["get","owned"], "exactly the documented functions");
+
+var osu = load("teams/ohio-state.js");
+var ND = TeamOS.createTeam(TEAM_CONFIG.team), OSU = osu.TeamOS.createTeam(osu.TEAM_CONFIG.team);
+var ndFiles = { depth: JSON.parse(read("depth.json")), history: JSON.parse(read("depth-history.json")),
+                odds: JSON.parse(read("odds-history.json")), news: JSON.parse(read("news.json")) };
+
+console.log(" notre-dame");
+eq(TeamOS.snapshots.get(TEAM_CONFIG, "depth"),       { file:"depth.json", history:"depth-history.json", label:"UHND" }, "declares a depth chart");
+eq(TeamOS.snapshots.get(TEAM_CONFIG, "oddsHistory"), { file:"odds-history.json" }, "declares an odds history");
+eq(TeamOS.snapshots.get(TEAM_CONFIG, "beatNews"),    { file:"news.json" },         "declares beat news");
+ok(TeamOS.snapshots.owned(ND, ndFiles.depth),   "owns the committed depth.json");
+ok(TeamOS.snapshots.owned(ND, ndFiles.history), "owns the committed depth-history.json");
+ok(TeamOS.snapshots.owned(ND, ndFiles.odds),    "owns the committed odds-history.json");
+ok(TeamOS.snapshots.owned(ND, ndFiles.news),    "owns the committed news.json");
+ok(ndFiles.depth.team == null && ndFiles.odds.team == null && ndFiles.news.team == null,
+   "(the committed files carry no team field - ownership rests on the declaration; see decision 0006)");
+
+console.log(" ohio-state");
+eq(osu.TeamOS.snapshots.get(osu.TEAM_CONFIG, "depth"),       null, "declares no depth chart");
+eq(osu.TeamOS.snapshots.get(osu.TEAM_CONFIG, "oddsHistory"), null, "declares no odds history");
+eq(osu.TeamOS.snapshots.get(osu.TEAM_CONFIG, "beatNews"),    null, "declares no beat news");
+eq(TeamOS.snapshots.get({ team: osu.TEAM_CONFIG.team }, "depth"), null, "a config with no snapshots section declares nothing");
+
+console.log(" a stamped file");
+var stamped = { team: "notre-dame", points: [] };
+ok(TeamOS.snapshots.owned(ND, stamped),   "a file stamped notre-dame is Notre Dame's");
+ok(!TeamOS.snapshots.owned(OSU, stamped), "and is refused for Ohio State even if declared");
+ok(!TeamOS.snapshots.owned(ND, null),     "no payload is not owned");
+ok(!TeamOS.snapshots.owned(ND, "text"),   "a non-object payload is not owned");
+ok(TeamOS.snapshots.owned(OSU, { points: [] }), "an unstamped file is owned by whoever declared it (the documented limitation)");
+
+console.log(" malformed declarations fail loudly");
+function throws(fn, what) { try { fn(); ok(false, what); } catch (e) { ok(true, what + " (" + e.message + ")"); } }
+throws(function () { TeamOS.snapshots.get(TEAM_CONFIG, "depthChart"); }, "an unknown kind throws");
+throws(function () { TeamOS.snapshots.get({ snapshots: { depth: { history: "x.json" } } }, "depth"); }, "a declaration without a file throws");
+throws(function () { TeamOS.snapshots.get({ snapshots: { depth: "depth.json" } }, "depth"); }, "a bare string throws");
+eq(TeamOS.snapshots.get({ snapshots: { oddsHistory: { file: "x.json" } } }, "oddsHistory"), { file: "x.json" }, "a minimal declaration passes through");
+
+
+// ---- team identity: the same questions, two teams, two answers ----
+console.log("teamos/identity.js");
+var idSrc = read("teamos/identity.js");
+function uncomment(t) { return t.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, ""); }
+ok(!/\bfetch\s*\(/.test(idSrc), "does not call fetch()");
+ok(!/\b(document|window|navigator|localStorage|caches)\b/.test(uncomment(idSrc)), "does not touch the DOM or browser storage");
+ok(!/notre|irish|ohio|buckeye|navy|scarlet/i.test(uncomment(idSrc)), "names no team and no team colour in code");
+eq(Object.keys(TeamOS.identity).sort(), ["MIN", "contrast", "create", "luminance"], "exactly the documented functions");
+
+// The contrast maths, against ratios computed independently.
+ok(Math.abs(TeamOS.identity.contrast("#FFFFFF", "#000000") - 21) < 0.01, "white on black is 21:1");
+ok(Math.abs(TeamOS.identity.contrast("#C99700", "#07192F") - 6.65) < 0.01, "Notre Dame gold on its page is 6.65:1");
+ok(Math.abs(TeamOS.identity.contrast("#BA0C2F", "#0B1115") - 2.88) < 0.01, "Ohio State scarlet on its page is 2.88:1");
+eq(TeamOS.identity.MIN, 4.5, "the minimum is WCAG AA for normal text");
+
+var ndId = TeamOS.identity.create(TEAM_CONFIG, ND);
+var osuId = osu.TeamOS.identity.create(osu.TEAM_CONFIG, OSU);
+
+console.log(" notre-dame identity");
+eq(ndId.productName, "Irish Watch", "product name");
+eq(ndId.programLabel, "NOTRE DAME FOOTBALL", "program label");
+eq(ndId.title, "Irish Watch — Notre Dame football", "document title");
+eq(ndId.shareTitle, "Irish Watch — Notre Dame Football", "the share card keeps its own capitalisation");
+eq(ndId.shareDescription, "Game day. Every day.", "share description");
+eq(ndId.motto, "Leave No Doubt", "the 2026 team motto");
+eq(ndId.newsLabel, "LATEST FROM SOUTH BEND", "the News tab rule, unchanged wording");
+eq(ndId.manifest, "assets/notre-dame/manifest.json", "its own manifest");
+eq(ndId.colors.accent, "#C99700", "accent");
+eq(ndId.colors.accentText, "#C99700", "accent text is the same gold, because it passes");
+eq(ndId.colors.accentRgb, "201,151,0", "accent channels, for the stylesheet's 43 tints");
+eq(ndId.colors.surfaceRgb, "12,35,64", "surface channels");
+eq(Object.keys(ndId.assets).filter(function (k) { return ndId.assets[k]; }).sort(),
+   ["appleTouch", "favicon", "icon32", "icon64", "og"], "declares all five pieces of artwork");
+ok(Object.keys(ndId.assets).every(function (k) {
+  return !ndId.assets[k] || ndId.assets[k].indexOf("assets/notre-dame/") === 0;
+}), "all of it under its own team folder");
+
+console.log(" ohio-state identity");
+eq(osuId.productName, "Buckeye Watch", "product name");
+eq(osuId.programLabel, "OHIO STATE FOOTBALL", "program label");
+eq(osuId.title, "Buckeye Watch · Ohio State Football", "document title");
+eq(osuId.shareTitle, osuId.title, "no separate share title, so it falls back to the title");
+eq(osuId.motto, null, "no motto: Leave No Doubt belongs to Notre Dame");
+eq(osuId.newsLabel, "LATEST BUCKEYE NEWS", "its own News tab rule");
+eq(osuId.colors.accent, "#BA0C2F", "BUX scarlet");
+eq(osuId.colors.accentText, "#EFF1F2", "accent TEXT is BUX gray-light, not a lightened scarlet");
+ok(osuId.colors.accentText !== osuId.colors.accent, "a team whose accent cannot carry text says so explicitly");
+eq(Object.keys(osuId.assets).filter(function (k) { return osuId.assets[k]; }), [], "declares no artwork, so none is referenced");
+eq(osuId.fonts.ui.indexOf("BuckeyeSans"), 1, "BuckeyeSans leads the UI stack");
+ok(/Barlow/.test(osuId.fonts.ui), "with a fallback, because the font files are not distributed");
+
+console.log(" the two teams differ where identity lives");
+["productName", "programLabel", "title", "description", "manifest", "newsLabel"].forEach(function (k) {
+  ok(ndId[k] !== osuId[k], "identity." + k + " differs");
+});
+["accent", "accentText", "accentInk", "surface", "surfaceDeep"].forEach(function (k) {
+  ok(ndId.colors[k] !== osuId.colors[k], "identity.colors." + k + " differs");
+});
+["ui", "display", "headline"].forEach(function (k) {
+  ok(ndId.fonts[k] !== osuId.fonts[k], "identity.fonts." + k + " differs");
+});
+
+console.log(" every configured team is legible (WCAG AA)");
+[["notre-dame", ndId], ["ohio-state", osuId]].forEach(function (p) {
+  var n = p[0], c = p[1].contrast;
+  ok(c.accentText >= 4.5, n + ": accentText on the page is " + c.accentText + ":1");
+  ok(c.accentSoft >= 4.5, n + ": accentSoft on the page is " + c.accentSoft + ":1");
+  ok(c.accentInk >= 4.5, n + ": accentInk on the accent is " + c.accentInk + ":1");
+  ok(c.text === null || c.text >= 4.5,
+     n + ": declared text colour is " + (c.text === null ? "not overridden" : c.text + ":1"));
+  console.log("       (accent as text would be " + c.accentOnSurface + ":1 - reported, never enforced)");
+});
+
+console.log(" a config that would ship an unreadable page is refused");
+function baseIdentity() {
+  return { identity: {
+    productName: "P", programLabel: "L", title: "T", description: "D", manifest: "m.json",
+    newsLabel: "N",
+    colors: { accent: "#BA0C2F", accentText: "#EFF1F2", accentInk: "#FFFFFF", accentSoft: "#A7B1B7",
+              accentTint: "#EFF1F2", accentTintSoft: "#F6F7F8", focus: "#EFF1F2",
+              surface: "#212325", surfaceDeep: "#0B1115", surfaceAbyss: "#070A0C", surfaceRaise: "#3F4443" },
+    fonts: { ui: "a", display: "b", headline: "c" }, assets: {} } };
+}
+ok((function () { try { TeamOS.identity.create(baseIdentity(), ND); return true; } catch (e) { return false; } })(),
+   "the baseline config these cases mutate is itself valid");
+function idThrows(mutate, what) {
+  var cfg = baseIdentity();
+  mutate(cfg);
+  try { TeamOS.identity.create(cfg, ND); ok(false, what); }
+  catch (e) { ok(true, what + " (" + e.message + ")"); }
+}
+idThrows(function (c) { c.identity.colors.accentText = "#BA0C2F"; }, "accent text that fails on the surface throws");
+idThrows(function (c) { c.identity.colors.accentInk = "#4A0513"; }, "ink that fails on the accent throws");
+idThrows(function (c) { c.identity.colors.accentSoft = "#3F4443"; }, "a soft tone that fails throws");
+idThrows(function (c) { c.identity.colors.text = "#3F4443"; }, "a declared text colour that fails throws");
+idThrows(function (c) { c.identity.colors.accent = "BA0C2F"; }, "a colour that is not #rrggbb throws");
+idThrows(function (c) { delete c.identity.colors.surfaceDeep; }, "a missing colour throws");
+idThrows(function (c) { delete c.identity.productName; }, "a missing product name throws");
+idThrows(function (c) { delete c.identity.fonts; }, "missing type throws");
+idThrows(function (c) { delete c.identity.manifest; }, "a missing manifest throws");
+ok((function () { try { TeamOS.identity.create({}, ND); return false; } catch (e) { return true; } })(),
+   "a config with no identity section throws");
+
+// ---- the stylesheet names no team ----
+console.log("app.css");
+var css = read("app.css");
+var cssClean = uncomment(css);
+var tokenBlock = cssClean.match(/--t-accent:[\s\S]*?--t-accent-line:[^;}]*}/);
+ok(!!tokenBlock, "the team token block is where it says it is");
+var cssRules = cssClean.replace(tokenBlock ? tokenBlock[0] : "\u0000", "");
+ok(!/#C99700|#0C2340|#07192F|#061525|#D8B84F|201,151,0|12,35,64/.test(cssRules),
+   "no Notre Dame colour survives outside that block");
+ok(!/\.nd\b/.test(css), "the team's own rows are .mine, not .nd");
+ok(/\.row\.mine\b/.test(css) && /\.obar\.mine\b/.test(css), "and .mine carries those rules");
+ok(!/notre|irish|ohio|buckeye|south bend|columbus/i.test(cssRules),
+   "no team and no home town named in any selector or value");
+ok(!/--gold|--navy/.test(css), "no team-flavoured variable name survives (--gold holding scarlet reads as a lie)");
+ok(/#panel-news:before{content:var\(--t-news-label\)}/.test(css), "the News tab rule comes from the team");
+ok(!/:before{content:"[^"]*[A-Z]{2,}[^"]*"}/.test(cssRules.replace(/#panel-(schedule|around|game|depth):before{content:"[^"]*"}/g, "")),
+   "every other section label is team-neutral copy");
+ok(!/'Barlow|'Grenze/.test(cssRules), "type comes from the team's stacks, not from the rules");
+
+// ---- app.js names no team, no colour, no team branch ----
+console.log("app.js");
+var js = read("app.js");
+var jsBody = uncomment(js);
+ok(!/#[0-9A-Fa-f]{6}\b/.test(jsBody), "carries no colour literal");
+ok(!/notre dame|irish watch|fighting irish|ohio state|buckeye/i.test(jsBody), "names no team and no product");
+ok(!/TEAM\.id\s*===|TEAM_CONFIG\.team\.id\s*===/.test(jsBody), "branches on no team id");
+ok(/paintIdentity\(\);/.test(js), "applies identity once, in one place");
+ok(!/\bnd\b/.test(jsBody), "no leftover nd identifier");
 
 console.log("\n" + (failures ? failures + " check(s) FAILED" : "all adapter checks passed"));
 process.exit(failures ? 1 : 0);

@@ -6,9 +6,9 @@
 
 Team configuration separates team identity and team-specific capabilities from generic Suite behavior.
 
-## Current Shape (Phase 2)
+## Current Shape (Phase 6)
 
-A team is one file in `teams/` that defines `TEAM_CONFIG`, loaded by `index.html` before `teamos/team.js` and `app.js`. It has four sections, each owned by a different layer:
+A team is one file in `teams/` that defines `TEAM_CONFIG`, loaded by `index.html` before `teamos/team.js` and `app.js`. It has six sections, each owned by a different layer:
 
 ```js
 var TEAM_CONFIG = {
@@ -34,11 +34,34 @@ var TEAM_CONFIG = {
   series: [ /* [opponent regex, trophy name] */ ],
 
   // The team's own pages.
-  links: { roster: { url: "...", label: "..." } }
+  links: { roster: { url: "...", label: "..." } },
+
+  // The team-data files the Action writes for this team, by kind. A kind
+  // the team has no source for is left out, and the Suite shows that
+  // surface as unavailable instead of reading another team's file.
+  // Read through TeamOS.snapshots (Phase 5B, decision 0006).
+  snapshots: {
+    depth:       { file: "depth.json", history: "depth-history.json", label: "UHND" },
+    oddsHistory: { file: "odds-history.json" },
+    beatNews:    { file: "news.json" }
+  },
+
+  // How the team is presented: the product's name for it, the head copy, its
+  // colours, its type and its artwork. Read through TeamOS.identity, applied
+  // by paintIdentity() in app.js (Phase 6, decision 0007).
+  identity: {
+    productName: "Irish Watch", programLabel: "NOTRE DAME FOOTBALL",
+    title: "...", description: "...", motto: "Leave No Doubt",
+    newsLabel: "LATEST FROM SOUTH BEND",
+    manifest: "assets/notre-dame/manifest.json",
+    colors: { accent: "#C99700", accentText: "#C99700", /* ...nine more */ },
+    fonts:  { ui: "...", display: "...", headline: "..." },
+    assets: { favicon: "assets/notre-dame/favicon.svg", /* ...four more */ }
+  }
 };
 ```
 
-The real file is `teams/notre-dame.js`. Values shown here are abbreviated.
+The real files are `teams/notre-dame.js` and `teams/ohio-state.js` (which declares `snapshots: {}`). Values shown here are abbreviated.
 
 ## What Belongs in Configuration
 
@@ -46,8 +69,16 @@ The real file is `teams/notre-dame.js`. Values shown here are abbreviated.
 - `sources` — provider identifiers and provider-specific matching or fallback rules
 - `series` — team-specific schedule data no public feed carries
 - `links` — the team's official pages
+- `snapshots` — which of the Action-written team-data files this team has (the depth chart is a capability; the beat feed is a content source; the odds history is team-scoped) and where they are
+- `identity` — how the team is presented: product name, head copy, colours, type, artwork
 
-Not yet in configuration, pending a real need or a second team: branding/theme, capabilities, content sources (the RSS feeds and depth-chart source still live in `.github/workflows/odds.yml`), history.
+`identity.colors` separates the **fill** (`accent`) from accent-coloured **text**
+(`accentText`), because a team's crest colour is not always legible on a dark page:
+Notre Dame's gold reaches 6.65:1 and Ohio State's scarlet only 2.88:1. TeamOS refuses
+a config whose text colours fall below 4.5:1 rather than inventing a lighter tone
+(`docs/decisions/0007-identity-is-team-data.md`).
+
+Not yet in configuration, pending a real need: history. The sources behind the snapshots — the RSS feed list and the depth-chart scrape — still live in `.github/workflows/odds.yml`; the config declares that the team has them, not yet how they are produced.
 
 ## What Does Not Belong in Configuration
 
@@ -66,6 +97,8 @@ Avoid fields such as:
 A second team should be addable by supplying a second configuration object and any required provider/source mappings.
 
 The Suite should not need to be duplicated.
+
+Run three times (Phase 5A, 5B, 6 — `docs/engineering/`): every ESPN-fed surface rendered Ohio State from configuration alone; the three surfaces fed by the Action's Notre Dame files show an honest unavailable state because its config declares no snapshots; and in Phase 6 the same Suite rendered **Buckeye Watch** — its own name, head, palette, type and section copy — from a second `identity` block, with 846 text elements passing contrast and no Notre Dame anywhere in the page.
 
 ## Exceptions
 

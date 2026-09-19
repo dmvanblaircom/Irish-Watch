@@ -61,6 +61,19 @@ news.json       ->  beatItem() in app.js     ->  NewsItem[]  /
 
 With 4C every ESPN payload the Suite consumes crosses `teamos/espn.js`, and `app.js` no longer carries the ESPN base URL or the ESPN team id. What remains provider-shaped in `app.js` — Kalshi odds and the Open-Meteo forecast — is the deferred Phase 4D; the depth chart is the project's own snapshot.
 
+### The team-data snapshots (Phase 5B)
+
+```text
+TEAM_CONFIG.snapshots  ->  TeamOS.snapshots.get(config, kind)   ->  { file, history?, label? } | null
+loaded snapshot JSON   ->  TeamOS.snapshots.owned(team, json)   ->  true | false
+
+depth.json / depth-history.json  ->  Depth tab (two-deep, injury report, week by week)   or the roster + "No depth chart."
+odds-history.json                ->  sparklines under the odds numbers                    or the numbers alone
+news.json                        ->  beatItem() -> NewsItem[] merged into the News tab    or ESPN alone
+```
+
+The four files `.github/workflows/odds.yml` commits are Notre Dame's data, not the application's. Since 5B the Suite reads their names from the team config's `snapshots` section and asks TeamOS whether a loaded file is the team's; a team that declares no snapshot for a kind fetches nothing for it and shows the unavailable state. The files carry no `team` field yet, so today ownership rests on the declaration (decision 0006 records the limitation); when the Action stamps one, a mismatched file is refused without a Suite change. The service worker's `DATA_FILES` precache list still names the six Notre Dame files for whichever team is loaded — a Phase 7 concern, noted in decision 0006.
+
 ## Target Flow
 
 ```text
@@ -98,7 +111,7 @@ They should eventually represent normalized data rather than leaking provider-sp
 
 ## GitHub Actions
 
-The current GitHub Actions workflows perform significant Notre Dame-specific ingestion and processing. They can remain initially.
+The current GitHub Actions workflows perform significant Notre Dame-specific ingestion and processing. They can remain initially. As of Phase 5B the Suite no longer assumes their output belongs to whichever team is loaded; the workflows themselves are unchanged.
 
 Over time, move toward configurable pipelines where the team and provider are inputs rather than assumptions embedded in workflow logic.
 
