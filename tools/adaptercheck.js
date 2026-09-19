@@ -503,5 +503,51 @@ ok(!/TEAM\.id\s*===|TEAM_CONFIG\.team\.id\s*===/.test(jsBody), "branches on no t
 ok(/paintIdentity\(\);/.test(js), "applies identity once, in one place");
 ok(!/\bnd\b/.test(jsBody), "no leftover nd identifier");
 
+
+// ---- the Buckeye Watch test page ----
+// buckeye.html is index.html with the team swapped: a different config script
+// and the identity words that are visible before app.js runs. Nothing else may
+// differ, or the two pages start drifting into two applications - so the check
+// below neutralises exactly the identity and compares everything else byte for
+// byte. Team selection proper, and what the worker should precache for it, is
+// Phase 7; this page is a deployment convenience, not that.
+console.log("buckeye.html");
+var idx = read("index.html").replace(/\r\n/g, "\n");
+var bw = read("buckeye.html").replace(/\r\n/g, "\n");
+
+function skeleton(t) {
+  return t
+    .replace(/<!--[\s\S]*?-->/g, "")                                  // comments
+    .slice(t.replace(/<!--[\s\S]*?-->/g, "").indexOf("</head>"))      // head is identity
+    .replace(/<script src="teams\/[a-z-]+\.js" defer><\/script>/, '<script src="TEAM" defer></script>')
+    .replace(/(<div class="brand-kicker">)[^<]*(<\/div>)/, "$1KICKER$2")
+    .replace(/(<h1>)[^<]*(<\/h1>)/, "$1PRODUCT$2")
+    .replace(/(<h2 class="sr-only" id="heroHead">)[^<]*(<\/h2>)/, "$1HERO$2")
+    .replace(/(<h2 class="sr-only" id="dataHead">)[^<]*(<\/h2>)/, "$1DATA$2")
+    .replace(/(<p class="motto" id="motto">)[^<]*(<\/p>)/, "$1MOTTO$2");
+}
+ok(skeleton(bw) === skeleton(idx),
+   "identical to index.html below </head> once the team's own words are set aside");
+ok(/<script src="teams\/ohio-state\.js" defer><\/script>/.test(bw), "loads the Ohio State config");
+ok(/<script src="teams\/notre-dame\.js" defer><\/script>/.test(idx), "and index.html still loads Notre Dame's");
+
+var bwHead = bw.slice(0, bw.indexOf("</head>")).replace(/<!--[\s\S]*?-->/g, "");
+var bwVisible = bw.replace(/<!--[\s\S]*?-->/g, "");
+ok(!/notre-dame|irish-watch/i.test(bwVisible), "references no Notre Dame file");
+ok(!/Notre Dame|Irish Watch|Leave No Doubt/.test(bwVisible), "shows no Notre Dame words before a script runs");
+ok(!/rel="icon"|apple-touch-icon|og:image|twitter:image|twitter:card/.test(bwHead),
+   "declares no artwork tags, because Ohio State has no artwork");
+ok(/<link rel="manifest" href="assets\/ohio-state\/manifest\.json">/.test(bwHead), "points at its own manifest");
+ok(/<title>Buckeye Watch/.test(bwHead), "the tab says Buckeye Watch before any script runs");
+
+console.log(" its manifest");
+var osuMan = JSON.parse(read("assets/ohio-state/manifest.json"));
+var ndMan = JSON.parse(read("assets/notre-dame/manifest.json"));
+eq(osuMan.short_name, "Buckeye Watch", "short name");
+eq(osuMan.start_url, "../../buckeye.html", "installing it opens Buckeye Watch, not the Notre Dame page");
+eq(osuMan.icons, [], "no icons, because there is no approved artwork");
+eq(ndMan.start_url, "../../", "Notre Dame's still opens the site root");
+ok(osuMan.theme_color !== ndMan.theme_color, "the two manifests carry different theme colours");
+
 console.log("\n" + (failures ? failures + " check(s) FAILED" : "all adapter checks passed"));
 process.exit(failures ? 1 : 0);
